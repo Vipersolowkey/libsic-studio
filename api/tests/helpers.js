@@ -24,7 +24,43 @@ function fakeSceneModel(scenes, { fail = false } = {}) {
   return {
     find: () => result(scenes),
     findOne: (filter) => result(scenes.find((s) => s.slug === filter.slug) || null),
+    exists: async (filter) => {
+      if (fail) throw new Error('database is down');
+      return scenes.some((s) => s.slug === filter.slug) ? { _id: 1 } : null;
+    },
   };
 }
 
-module.exports = { validationErrors, fakeSceneModel };
+// Pretend database for the Room model. The documents are real Mongoose documents (so the real
+// validation runs), but "saving" just puts them in a Map instead of talking to MongoDB.
+// duplicateFirst: how many saves should fail with "this code already exists" (MongoDB error 11000).
+function installFakeRoomStore(Room, { duplicateFirst = 0 } = {}) {
+  const store = new Map();
+  let duplicatesLeft = duplicateFirst;
+
+  Room.prototype.save = async function save() {
+    await this.validate();
+    if (duplicatesLeft > 0) {
+      duplicatesLeft -= 1;
+      throw Object.assign(new Error('E11000 duplicate key error'), { code: 11000 });
+    }
+    store.set(this.code, this);
+    return this;
+  };
+  Room.findOne = (filter) => {
+    const found = store.get(filter.code) || null;
+    return { select: () => Promise.resolve(found), then: (ok, fail) => Promise.resolve(found).then(ok, fail) };
+  };
+  Room.deleteOne = async (filter) => ({ deletedCount: store.delete(filter.code) ? 1 : 0 });
+
+  return {
+    store,
+    restore() {
+      delete Room.prototype.save;
+      delete Room.findOne;
+      delete Room.deleteOne;
+    },
+  };
+}
+
+module.exports = { validationErrors, fakeSceneModel, installFakeRoomStore };

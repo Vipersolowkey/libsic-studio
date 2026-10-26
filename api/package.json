@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "jest",
-    "seed:scenes": "node src/seed/seedScenes.js"
+    "seed:scenes": "node src/seed/seedScenes.js",
+    "try:rooms": "node scripts/tryRooms.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
