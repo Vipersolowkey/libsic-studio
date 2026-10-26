@@ -1,0 +1,453 @@
+openapi: 3.0.3
+info:
+  title: Libsic Studio API
+  version: 0.1.0
+  description: |
+    REST API behind **Libsic Studio**, an ambient music room for the web. Visitors pick a layered scene,
+    load a CD into a retro CD player and save the result as a *room* with a short share link.
+
+    **No accounts.** Anyone with a room's code can open it. When a room is created, the API returns a
+    secret **edit key** once. Changing or deleting the room needs that key in the `x-edit-key` header.
+    Only a hash of the key is stored on the server.
+
+    Data is sent and received as JSON. Errors always look like `{ "error": "..." }`.
+servers:
+  - url: /
+    description: This server
+  - url: http://localhost:4000
+    description: Local development
+
+tags:
+  - name: Health
+    description: Check that the server is running.
+  - name: Scenes
+    description: The layered scenes a room can use. Read only (scenes are loaded by a seed script).
+  - name: Rooms
+    description: Saved rooms. Anyone can open one, only the holder of the edit key can change or delete it.
+  # Tracks and CDs are added here by the music side of the team.
+
+paths:
+  # ---------------------------------------------------------------- Health
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Check that the API is running
+      operationId: getHealth
+      responses:
+        '200':
+          description: The server is running.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  # ---------------------------------------------------------------- Scenes
+  /api/scenes:
+    get:
+      tags: [Scenes]
+      summary: List all scenes
+      description: Returns every scene with its layers and clickable objects, sorted by name.
+      operationId: listScenes
+      responses:
+        '200':
+          description: The scenes (an empty list if none were seeded yet).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Scene'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/scenes/{slug}:
+    get:
+      tags: [Scenes]
+      summary: Get one scene
+      operationId: getScene
+      parameters:
+        - $ref: '#/components/parameters/SceneSlug'
+      responses:
+        '200':
+          description: The scene.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scene'
+        '404':
+          $ref: '#/components/responses/SceneNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ---------------------------------------------------------------- Rooms
+  /api/rooms:
+    post:
+      tags: [Rooms]
+      summary: Save a new room
+      description: |
+        Creates a room and returns it together with its share `code` and a secret `editKey`.
+        **The edit key is shown only this once.** Keep it: it is the only way to change or delete the room.
+      operationId: createRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomInput'
+            example:
+              name: Late night reading
+              sceneSlug: cozy-cabin
+              settings:
+                effect: snow
+                lightOn: false
+      responses:
+        '201':
+          description: The room was saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomCreated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/rooms/{code}:
+    parameters:
+      - $ref: '#/components/parameters/RoomCode'
+    get:
+      tags: [Rooms]
+      summary: Open a room
+      description: Anyone who knows the code can open the room. The edit key is never included.
+      operationId: getRoom
+      responses:
+        '200':
+          description: The room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags: [Rooms]
+      summary: Change a room
+      description: |
+        Send only the fields you want to change; the others stay as they are.
+        The room's code and edit key cannot be changed.
+      operationId: updateRoom
+      security:
+        - EditKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomInput'
+            example:
+              name: Renamed room
+              settings:
+                lightOn: true
+      responses:
+        '200':
+          description: The room after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/EditKeyMissing'
+        '403':
+          $ref: '#/components/responses/EditKeyWrong'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags: [Rooms]
+      summary: Delete a room
+      description: Deletes the room for everyone. This cannot be undone.
+      operationId: deleteRoom
+      security:
+        - EditKey: []
+      responses:
+        '204':
+          description: The room was deleted. There is no response body.
+        '401':
+          $ref: '#/components/responses/EditKeyMissing'
+        '403':
+          $ref: '#/components/responses/EditKeyWrong'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    EditKey:
+      type: apiKey
+      in: header
+      name: x-edit-key
+      description: The secret edit key that was returned when the room was created.
+
+  parameters:
+    SceneSlug:
+      name: slug
+      in: path
+      required: true
+      description: The scene's readable name in the address.
+      schema:
+        type: string
+      example: rainy-cafe
+    RoomCode:
+      name: code
+      in: path
+      required: true
+      description: The room's share code (the last part of its share link).
+      schema:
+        type: string
+      example: k4m9x2qa
+
+  responses:
+    BadRequest:
+      description: The request body is not valid JSON, or a value is not allowed. `details` names each field.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+          example:
+            error: Validation failed
+            details:
+              sceneSlug: Unknown scene "atlantis"
+    EditKeyMissing:
+      description: No edit key was sent.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Send the edit key in the x-edit-key header
+    EditKeyWrong:
+      description: The edit key does not belong to this room.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Wrong edit key
+    SceneNotFound:
+      description: No scene has that slug.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Scene not found
+    RoomNotFound:
+      description: No room has that code (it may have been deleted).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Room not found
+    ServerError:
+      description: Something went wrong on the server (for example the database is down).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Something went wrong on the server
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    ValidationError:
+      type: object
+      required: [error, details]
+      properties:
+        error:
+          type: string
+          example: Validation failed
+        details:
+          type: object
+          description: The message for each field that was not accepted, keyed by field name.
+          additionalProperties:
+            type: string
+
+    Effect:
+      type: string
+      enum: [rain, snow, fireflies, stars]
+      description: An animated weather or sky effect.
+
+    Scene:
+      type: object
+      required: [slug, name, layers, objects, effects, effectLayer]
+      properties:
+        slug:
+          type: string
+          example: rainy-cafe
+        name:
+          type: string
+          example: Rainy Café
+        description:
+          type: string
+          example: A late-night café with a big window onto a rainy, neon-lit street.
+        layers:
+          type: array
+          description: Transparent images stacked from far to near.
+          items:
+            $ref: '#/components/schemas/SceneLayer'
+        objects:
+          type: array
+          description: Clickable objects in the scene.
+          items:
+            $ref: '#/components/schemas/SceneObject'
+        effects:
+          type: array
+          description: The effects this scene can show.
+          items:
+            $ref: '#/components/schemas/Effect'
+        defaultEffect:
+          $ref: '#/components/schemas/Effect'
+        effectLayer:
+          type: integer
+          minimum: 0
+          description: Position in `layers` of the layer the effect is drawn on top of.
+          example: 1
+
+    SceneLayer:
+      type: object
+      required: [name, image, depth]
+      properties:
+        name:
+          type: string
+          example: city street
+        image:
+          type: string
+          description: Path of the image file on the website.
+          example: /scenes/rainy-cafe/layer-2.svg
+        depth:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 0 is far away and hardly moves with the mouse, 1 is nearest and moves the most.
+          example: 0.2
+
+    SceneObject:
+      type: object
+      description: A clickable object. Position and size are percentages of the scene (0 to 100).
+      required: [key, label, layer, x, y, width, height, action]
+      properties:
+        key:
+          type: string
+          example: jukebox
+        label:
+          type: string
+          example: Jukebox
+        layer:
+          type: integer
+          minimum: 0
+          description: Position in `layers` of the layer the object is drawn on.
+        x: { type: number, minimum: 0, maximum: 100 }
+        y: { type: number, minimum: 0, maximum: 100 }
+        width: { type: number, minimum: 0, maximum: 100 }
+        height: { type: number, minimum: 0, maximum: 100 }
+        action:
+          type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+              enum: [toggleLight, toggleEffect, nextTrack]
+            effect:
+              $ref: '#/components/schemas/Effect'
+          description: What a click does. `effect` is given when the type is `toggleEffect`.
+
+    RoomSettings:
+      type: object
+      properties:
+        effect:
+          type: string
+          enum: [none, rain, snow, fireflies, stars]
+          default: none
+        lightOn:
+          type: boolean
+          default: true
+        volume:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.7
+
+    Room:
+      type: object
+      required: [code, name, sceneSlug, cdCode, settings, createdAt, updatedAt]
+      properties:
+        code:
+          type: string
+          description: Share code, 8 characters.
+          example: k4m9x2qa
+        name:
+          type: string
+          maxLength: 60
+          example: Late night reading
+        sceneSlug:
+          type: string
+          example: cozy-cabin
+        cdCode:
+          type: string
+          nullable: true
+          description: The CD loaded in the CD player, if any.
+        settings:
+          $ref: '#/components/schemas/RoomSettings'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    RoomInput:
+      type: object
+      description: |
+        The fields a visitor can set. When creating a room, `sceneSlug` is required.
+        Any other field (such as `code`) is ignored.
+      properties:
+        name:
+          type: string
+          maxLength: 60
+          default: Untitled room
+        sceneSlug:
+          type: string
+          description: The slug of an existing scene.
+        cdCode:
+          type: string
+          nullable: true
+        settings:
+          $ref: '#/components/schemas/RoomSettings'
+
+    RoomCreated:
+      type: object
+      required: [room, editKey]
+      properties:
+        room:
+          $ref: '#/components/schemas/Room'
+        editKey:
+          type: string
+          description: Secret needed to change or delete the room. Shown only once.
+          example: I7Z0dp881g9oLOTQPfVr3x_DKoMIqnN-

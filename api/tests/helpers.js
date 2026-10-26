@@ -44,6 +44,8 @@ function installFakeRoomStore(Room, { duplicateFirst = 0 } = {}) {
       duplicatesLeft -= 1;
       throw Object.assign(new Error('E11000 duplicate key error'), { code: 11000 });
     }
+    this.createdAt = this.createdAt || new Date(); // Mongoose sets these two when saving for real
+    this.updatedAt = new Date();
     store.set(this.code, this);
     return this;
   };

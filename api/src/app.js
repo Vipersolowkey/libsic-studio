@@ -1,7 +1,14 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yaml');
 const scenesRouter = require('./routes/scenes');
 const roomsRouter = require('./routes/rooms');
+
+// The written description of the API (see openapi.yaml). It is read once when the app starts.
+const apiSpec = YAML.parse(fs.readFileSync(path.join(__dirname, '..', 'openapi.yaml'), 'utf8'));
 
 // Builds the Express app but does not start listening.
 // Keeping this separate from server.js lets the tests call the app without opening a real port.
@@ -17,6 +24,10 @@ function createApp(models = {}) {
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
   });
+
+  // The online documentation: a web page where every address can be tried out, and the raw document.
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(apiSpec, { customSiteTitle: 'Libsic Studio API' }));
+  app.get('/openapi.json', (req, res) => res.json(apiSpec));
 
   app.use('/api/scenes', scenesRouter(Scene));
   app.use('/api/rooms', roomsRouter({ Room, Scene }));
