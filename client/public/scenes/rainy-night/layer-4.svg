@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<title>Rainy Night: desk</title>
+<defs>
+<linearGradient id="top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5c3e"/><stop offset="1" stop-color="#6b4630"/></linearGradient>
+<linearGradient id="shade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d9913c"/><stop offset=".5" stop-color="#ffd27a"/><stop offset="1" stop-color="#d9913c"/></linearGradient>
+</defs>
+<rect x="0" y="690" width="1600" height="56" fill="url(#top)"/>
+<rect x="0" y="690" width="1600" height="5" fill="#b08060" opacity=".6"/>
+<rect x="0" y="746" width="1600" height="154" fill="#3a2518"/>
+<line x1="0" y1="746" x2="0" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<line x1="160" y1="746" x2="160" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<line x1="320" y1="746" x2="320" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<line x1="480" y1="746" x2="480" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<line x1="640" y1="746" x2="640" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<line x1="800" y1="746" x2="800" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<line x1="960" y1="746" x2="960" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<line x1="1120" y1="746" x2="1120" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<line x1="1280" y1="746" x2="1280" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<line x1="1440" y1="746" x2="1440" y2="900" stroke="#2a1a10" stroke-width="3"/>
+<rect x="560" y="780" width="200" height="14" rx="4" fill="#6b4630"/><rect x="1040" y="780" width="200" height="14" rx="4" fill="#6b4630"/>
+<!-- lamp -->
+<ellipse cx="272" cy="712" rx="54" ry="10" fill="#1d1d26"/>
+<rect x="266" y="600" width="12" height="110" fill="#2b2b38"/>
+<polygon points="222,522 322,522 352,600 192,600" fill="url(#shade)"/>
+<ellipse cx="272" cy="602" rx="80" ry="9" fill="#fff0b8"/>
+<!-- radio -->
+<rect x="1216" y="572" width="192" height="112" rx="16" fill="#8f6038"/>
+<rect x="1216" y="572" width="192" height="12" rx="6" fill="#b07a4a"/>
+<rect x="1232" y="592" width="104" height="80" rx="8" fill="#2f2118"/>
+<line x1="1244" y1="600" x2="1244" y2="664" stroke="#5a4636" stroke-width="3"/>
+<line x1="1254" y1="600" x2="1254" y2="664" stroke="#5a4636" stroke-width="3"/>
+<line x1="1264" y1="600" x2="1264" y2="664" stroke="#5a4636" stroke-width="3"/>
+<line x1="1274" y1="600" x2="1274" y2="664" stroke="#5a4636" stroke-width="3"/>
+<line x1="1284" y1="600" x2="1284" y2="664" stroke="#5a4636" stroke-width="3"/>
+<line x1="1294" y1="600" x2="1294" y2="664" stroke="#5a4636" stroke-width="3"/>
+<line x1="1304" y1="600" x2="1304" y2="664" stroke="#5a4636" stroke-width="3"/>
+<line x1="1314" y1="600" x2="1314" y2="664" stroke="#5a4636" stroke-width="3"/>
+<line x1="1324" y1="600" x2="1324" y2="664" stroke="#5a4636" stroke-width="3"/>
+<circle cx="1374" cy="614" r="20" fill="#e3d3a8"/><line x1="1374" y1="614" x2="1386" y2="600" stroke="#7a2a2a" stroke-width="3"/>
+<circle cx="1360" cy="656" r="9" fill="#e3d3a8"/><circle cx="1390" cy="656" r="9" fill="#e3d3a8"/>
+<line x1="1388" y1="572" x2="1404" y2="560" stroke="#ccc" stroke-width="3"/>
+<!-- mug, books, notebook -->
+<rect x="690" y="640" width="64" height="50" rx="8" fill="#e8e1d0"/><path d="M754 652 q26 4 0 28" fill="none" stroke="#e8e1d0" stroke-width="8"/>
+<path d="M706 628 q-8-14 0-26 M726 630 q-8-14 0-26" fill="none" stroke="#fff" stroke-width="3" opacity=".35"/>
+<rect x="500" y="654" width="150" height="16" fill="#3a5a8a"/><rect x="510" y="638" width="130" height="16" fill="#8a4a4a"/><rect x="520" y="622" width="112" height="16" fill="#4a7a5a"/>
+<polygon points="900,690 1080,690 1100,664 920,664" fill="#e9e2c8"/><line x1="930" y1="676" x2="1060" y2="676" stroke="#b0a888" stroke-width="2"/>
+<line x1="1010" y1="650" x2="1090" y2="684" stroke="#d9a441" stroke-width="5"/>
+</svg>

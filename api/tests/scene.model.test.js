@@ -6,7 +6,7 @@ const validScene = () => ({
   name: 'Test room',
   layers: [{ name: 'sky', image: '/scenes/test-room/layer-1.svg', depth: 0.1 }],
   objects: [
-    { key: 'lamp', label: 'Lamp', x: 10, y: 20, width: 5, height: 8, action: { type: 'toggleLight' } },
+    { key: 'lamp', label: 'Lamp', layer: 0, x: 10, y: 20, width: 5, height: 8, action: { type: 'toggleLight' } },
   ],
   effects: ['rain'],
   defaultEffect: 'rain',
@@ -52,5 +52,17 @@ describe('Scene model', () => {
     const data = validScene();
     data.effects = ['tornado'];
     expect(Object.keys(await validationErrors(new Scene(data))).length).toBeGreaterThan(0);
+  });
+
+  it('rejects an object that points to a layer the scene does not have', async () => {
+    const data = validScene();
+    data.objects[0].layer = 5;
+    expect(Object.keys(await validationErrors(new Scene(data))).length).toBeGreaterThan(0);
+  });
+
+  it('requires every object to say which layer it sits on', async () => {
+    const data = validScene();
+    delete data.objects[0].layer;
+    expect((await validationErrors(new Scene(data)))['objects.0.layer']).toBeDefined();
   });
 });

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<title>Deep Space: viewport wall</title>
+<defs><linearGradient id="hull" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232842"/><stop offset="1" stop-color="#14172b"/></linearGradient></defs>
+<path d="M0 0H1600V900H0ZM518 90H1082Q1152 90 1152 160V398Q1152 468 1082 468H518Q448 468 448 398V160Q448 90 518 90Z" fill="url(#hull)" fill-rule="evenodd"/>
+<rect x="434" y="76" width="732" height="406" rx="84" fill="none" stroke="#3f4670" stroke-width="28"/>
+<rect x="422" y="64" width="756" height="430" rx="96" fill="none" stroke="#6b74a8" stroke-width="3" opacity=".8"/>
+<rect x="450" y="92" width="700" height="374" rx="68" fill="none" stroke="#9aa5e0" stroke-width="2" opacity=".6"/>
+<circle cx="1164" cy="279" r="5" fill="#8c95cc"/>
+<circle cx="1128" cy="366" r="5" fill="#8c95cc"/>
+<circle cx="1027" cy="436" r="5" fill="#8c95cc"/>
+<circle cx="881" cy="475" r="5" fill="#8c95cc"/>
+<circle cx="719" cy="475" r="5" fill="#8c95cc"/>
+<circle cx="573" cy="436" r="5" fill="#8c95cc"/>
+<circle cx="472" cy="366" r="5" fill="#8c95cc"/>
+<circle cx="436" cy="279" r="5" fill="#8c95cc"/>
+<circle cx="472" cy="192" r="5" fill="#8c95cc"/>
+<circle cx="573" cy="122" r="5" fill="#8c95cc"/>
+<circle cx="719" cy="83" r="5" fill="#8c95cc"/>
+<circle cx="881" cy="83" r="5" fill="#8c95cc"/>
+<circle cx="1027" cy="122" r="5" fill="#8c95cc"/>
+<circle cx="1128" cy="192" r="5" fill="#8c95cc"/>
+<line x1="0" y1="300" x2="400" y2="300" stroke="#0c0e1c" stroke-width="3"/><line x1="1200" y1="300" x2="1600" y2="300" stroke="#0c0e1c" stroke-width="3"/>
+<line x1="400" y1="0" x2="400" y2="900" stroke="#0c0e1c" stroke-width="3"/><line x1="1200" y1="0" x2="1200" y2="900" stroke="#0c0e1c" stroke-width="3"/>
+<rect x="60" y="60" width="260" height="8" rx="2" fill="#0c0e1c"/><rect x="1280" y="60" width="260" height="8" rx="2" fill="#0c0e1c"/>
+<rect x="60" y="82" width="260" height="8" rx="2" fill="#0c0e1c"/><rect x="1280" y="82" width="260" height="8" rx="2" fill="#0c0e1c"/>
+<rect x="60" y="104" width="260" height="8" rx="2" fill="#0c0e1c"/><rect x="1280" y="104" width="260" height="8" rx="2" fill="#0c0e1c"/>
+<rect x="60" y="126" width="260" height="8" rx="2" fill="#0c0e1c"/><rect x="1280" y="126" width="260" height="8" rx="2" fill="#0c0e1c"/>
+<rect x="60" y="148" width="260" height="8" rx="2" fill="#0c0e1c"/><rect x="1280" y="148" width="260" height="8" rx="2" fill="#0c0e1c"/>
+<rect x="60" y="170" width="260" height="8" rx="2" fill="#0c0e1c"/><rect x="1280" y="170" width="260" height="8" rx="2" fill="#0c0e1c"/>
+<circle cx="80" cy="260" r="7" fill="#5af2a0"/><circle cx="1300" cy="260" r="7" fill="#5af2a0"/>
+<circle cx="120" cy="260" r="7" fill="#ffd45a"/><circle cx="1340" cy="260" r="7" fill="#ffd45a"/>
+<circle cx="160" cy="260" r="7" fill="#ff6a6a"/><circle cx="1380" cy="260" r="7" fill="#ff6a6a"/>
+<circle cx="200" cy="260" r="7" fill="#5ac8ff"/><circle cx="1420" cy="260" r="7" fill="#5ac8ff"/>
+<circle cx="240" cy="260" r="7" fill="#5af2a0"/><circle cx="1460" cy="260" r="7" fill="#5af2a0"/>
+<circle cx="280" cy="260" r="7" fill="#ffd45a"/><circle cx="1500" cy="260" r="7" fill="#ffd45a"/>
+</svg>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scene preview</title>
+  <!-- Plain test page for the scene art. Open it by double-clicking the file.
+       The data below is a copy of api/src/seed/scenes.js (layers and objects), for this preview only. -->
+  <style>
+    body { margin: 0; background: #0b0b10; color: #e8e8f0; font-family: system-ui, sans-serif; }
+    header { display: flex; gap: 16px; align-items: center; justify-content: center; padding: 12px; flex-wrap: wrap; }
+    select, label { font-size: 15px; }
+    .stage { position: relative; width: min(100vw, 1200px); aspect-ratio: 16 / 9; margin: 0 auto; overflow: hidden; background: #000; }
+    .layer { position: absolute; inset: 0; will-change: transform; }
+    .layer img { width: 100%; height: 100%; display: block; }
+    .obj { position: absolute; border: 2px dashed rgba(255, 255, 255, 0.75); box-sizing: border-box; border-radius: 6px; cursor: pointer; }
+    .obj span { position: absolute; left: 0; top: -22px; font-size: 12px; background: rgba(0,0,0,.7); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+    .hide-boxes .obj { border-color: transparent; }
+    .hide-boxes .obj span { display: none; }
+    p { text-align: center; opacity: .7; margin: 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header>
+    <label>Scene <select id="scene"></select></label>
+    <label><input type="checkbox" id="boxes" checked /> Show clickable areas</label>
+  </header>
+  <div class="stage" id="stage"></div>
+  <p>Move the mouse over the picture: near layers shift more than far ones.</p>
+
+  <script>
+    const SCENES = {
+      'rainy-night': {
+        name: 'Rainy Night', depths: [0.05, 0.2, 0.5, 0.9],
+        objects: [
+          { label: 'Desk lamp', layer: 3, x: 12, y: 58, width: 10, height: 22 },
+          { label: 'Window', layer: 2, x: 30, y: 12, width: 40, height: 40 },
+          { label: 'Radio', layer: 3, x: 76, y: 62, width: 12, height: 14 },
+        ],
+      },
+      'cozy-cabin': {
+        name: 'Cozy Cabin', depths: [0.05, 0.25, 0.5, 0.9],
+        objects: [
+          { label: 'Oil lamp', layer: 3, x: 14, y: 56, width: 9, height: 20 },
+          { label: 'Window', layer: 2, x: 34, y: 14, width: 34, height: 36 },
+          { label: 'Old radio', layer: 3, x: 72, y: 60, width: 14, height: 14 },
+        ],
+      },
+      'deep-space': {
+        name: 'Deep Space', depths: [0.05, 0.2, 0.55, 0.9],
+        objects: [
+          { label: 'Console light', layer: 3, x: 10, y: 62, width: 9, height: 14 },
+          { label: 'Viewport', layer: 2, x: 28, y: 10, width: 44, height: 42 },
+          { label: 'Comms radio', layer: 3, x: 78, y: 64, width: 12, height: 12 },
+        ],
+      },
+    };
+
+    const stage = document.getElementById('stage');
+    const select = document.getElementById('scene');
+    let layerEls = [];
+    let depths = [];
+
+    for (const [slug, s] of Object.entries(SCENES)) select.add(new Option(s.name, slug));
+
+    function show(slug) {
+      const scene = SCENES[slug];
+      stage.innerHTML = '';
+      depths = scene.depths;
+      layerEls = depths.map((_, i) => {
+        const layer = document.createElement('div');
+        layer.className = 'layer';
+        layer.innerHTML = `<img src="${slug}/layer-${i + 1}.svg" alt="" />`;
+        scene.objects.filter((o) => o.layer === i).forEach((o) => {
+          const box = document.createElement('div');
+          box.className = 'obj';
+          box.style.cssText = `left:${o.x}%;top:${o.y}%;width:${o.width}%;height:${o.height}%`;
+          box.innerHTML = `<span>${o.label}</span>`;
+          layer.appendChild(box);
+        });
+        stage.appendChild(layer);
+        return layer;
+      });
+      move(0.5, 0.5);
+    }
+
+    function move(px, py) {
+      const max = stage.clientWidth * 0.025; // biggest shift in pixels
+      layerEls.forEach((el, i) => {
+        const dx = -(px - 0.5) * 2 * max * depths[i];
+        const dy = -(py - 0.5) * 2 * max * depths[i];
+        el.style.transform = `translate(${dx}px, ${dy}px) scale(1.06)`;
+      });
+    }
+
+    stage.addEventListener('mousemove', (e) => {
+      const r = stage.getBoundingClientRect();
+      move((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+    });
+    select.addEventListener('change', () => show(select.value));
+    document.getElementById('boxes').addEventListener('change', (e) => {
+      stage.classList.toggle('hide-boxes', !e.target.checked);
+    });
+    show(select.value);
+  </script>
+</body>
+</html>

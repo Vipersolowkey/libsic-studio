@@ -22,6 +22,9 @@ const objectSchema = new Schema(
   {
     key: { type: String, required: true }, // for example "lamp"
     label: { type: String, required: true }, // shown on hover
+    // Position in the layers list (0 = first layer) of the image this object is drawn on,
+    // so the object moves together with that layer when the mouse moves.
+    layer: { type: Number, required: true, min: 0 },
     x: percent,
     y: percent,
     width: percent,
@@ -53,5 +56,9 @@ const sceneSchema = new Schema({
   effects: { type: [{ type: String, enum: EFFECTS }], default: [] },
   defaultEffect: { type: String, enum: EFFECTS },
 });
+
+sceneSchema.path('objects').validate(function (objects) {
+  return objects.every((object) => object.layer < this.layers.length);
+}, 'An object points to a layer the scene does not have');
 
 module.exports = mongoose.model('Scene', sceneSchema);
