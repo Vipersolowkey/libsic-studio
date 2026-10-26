@@ -21,4 +21,9 @@ describe('scene seed data', () => {
   it.each(scenes.map((s) => [s.slug, s]))('%s default effect is one of its own effects', (slug, scene) => {
     expect(scene.effects).toContain(scene.defaultEffect);
   });
+
+  it.each(scenes.map((s) => [s.slug, s]))('%s draws its effect on one of its own layers', (slug, scene) => {
+    expect(scene.effectLayer).toBeGreaterThanOrEqual(0);
+    expect(scene.effectLayer).toBeLessThan(scene.layers.length);
+  });
 });

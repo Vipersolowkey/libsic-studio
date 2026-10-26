@@ -65,4 +65,14 @@ describe('Scene model', () => {
     delete data.objects[0].layer;
     expect((await validationErrors(new Scene(data)))['objects.0.layer']).toBeDefined();
   });
+
+  it('draws effects on the first layer unless the scene says otherwise', () => {
+    expect(new Scene(validScene()).effectLayer).toBe(0);
+  });
+
+  it('rejects an effect layer the scene does not have', async () => {
+    const data = validScene();
+    data.effectLayer = 3;
+    expect(Object.keys(await validationErrors(new Scene(data))).length).toBeGreaterThan(0);
+  });
 });

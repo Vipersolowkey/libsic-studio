@@ -1,0 +1,178 @@
+/* The stage keeps the picture's 16:9 shape so clickable areas (percentages) line up. */
+.stage {
+  position: relative;
+  width: min(100%, calc((100vh - 92px) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* only the object buttons catch clicks */
+  transition: transform 0.25s ease-out;
+  will-change: transform;
+  transform: scale(1.06); /* slightly bigger than the stage so the edges never show while moving */
+}
+
+.layer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+/* "Lights off": a dark layer over the whole picture. */
+.dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 6, 22, 0.62);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.stage.lights-off .dim {
+  opacity: 1;
+}
+
+/* Clickable objects */
+.hotspot {
+  position: absolute;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: border-color 0.2s, background 0.2s, transform 0.1s;
+}
+.hotspot:hover,
+.hotspot:focus-visible {
+  border-color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+.hotspot:active {
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.hotspot-label {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 6px);
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.hotspot:hover .hotspot-label,
+.hotspot:focus-visible .hotspot-label {
+  opacity: 1;
+}
+
+/* ---------- Effects ---------- */
+.effect {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size; /* lets the animations use "cqh" = a share of this box's height */
+  pointer-events: none;
+  animation: effect-in 0.8s ease both;
+}
+.effect i {
+  position: absolute;
+  display: block;
+}
+@keyframes effect-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Rain */
+.effect-rain i {
+  top: -10cqh;
+  left: var(--x);
+  width: 1.5px;
+  height: var(--len);
+  background: linear-gradient(to bottom, transparent, rgba(190, 210, 255, var(--alpha)));
+  animation: rain-fall var(--dur) linear var(--delay) infinite;
+}
+@keyframes rain-fall {
+  to { transform: translate(-22px, 125cqh); }
+}
+
+/* Snow */
+.effect-snow i {
+  top: -4cqh;
+  left: var(--x);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: #fff;
+  opacity: var(--alpha);
+  animation: snow-fall var(--dur) linear var(--delay) infinite;
+}
+@keyframes snow-fall {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(16px, 28cqh); }
+  50% { transform: translate(-12px, 56cqh); }
+  75% { transform: translate(14px, 84cqh); }
+  100% { transform: translate(0, 112cqh); }
+}
+
+/* Fireflies */
+.effect-fireflies i {
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: #f4ff9a;
+  box-shadow: 0 0 10px 4px rgba(220, 255, 120, 0.7);
+  animation:
+    firefly-drift var(--dur) ease-in-out var(--delay) infinite alternate,
+    firefly-blink var(--blink) ease-in-out var(--delay) infinite;
+}
+@keyframes firefly-drift {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(40px, -26px); }
+  100% { transform: translate(-30px, 18px); }
+}
+@keyframes firefly-blink {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 1; }
+}
+
+/* Stars */
+.effect-stars i {
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px 1px rgba(200, 225, 255, 0.8);
+  animation: twinkle var(--dur) ease-in-out var(--delay) infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* People who ask their device for less motion: no falling rain or snow, no parallax glide. */
+@media (prefers-reduced-motion: reduce) {
+  .effect-rain,
+  .effect-snow { display: none; }
+  .effect i { animation: none !important; }
+  .layer { transition: none; }
+}

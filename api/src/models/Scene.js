@@ -55,10 +55,17 @@ const sceneSchema = new Schema({
   objects: { type: [objectSchema], default: [] },
   effects: { type: [{ type: String, enum: EFFECTS }], default: [] },
   defaultEffect: { type: String, enum: EFFECTS },
+  // Effects (rain, snow...) are drawn on top of this layer and behind the ones after it.
+  // For a window, that is the layer just behind the wall, so the rain only shows through the glass.
+  effectLayer: { type: Number, min: 0, default: 0 },
 });
 
 sceneSchema.path('objects').validate(function (objects) {
   return objects.every((object) => object.layer < this.layers.length);
 }, 'An object points to a layer the scene does not have');
+
+sceneSchema.path('effectLayer').validate(function (effectLayer) {
+  return effectLayer < this.layers.length;
+}, 'The effect layer is a layer the scene does not have');
 
 module.exports = mongoose.model('Scene', sceneSchema);

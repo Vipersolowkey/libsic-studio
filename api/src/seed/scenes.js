@@ -23,6 +23,7 @@ module.exports = [
     ],
     effects: ['rain'],
     defaultEffect: 'rain',
+    effectLayer: 1, // between the city and the window wall
   },
   {
     slug: 'cozy-cabin',
@@ -41,6 +42,7 @@ module.exports = [
     ],
     effects: ['snow', 'fireflies'],
     defaultEffect: 'snow',
+    effectLayer: 1, // between the pines and the wall
   },
   {
     slug: 'moon-base',
@@ -59,5 +61,6 @@ module.exports = [
     ],
     effects: ['stars'],
     defaultEffect: 'stars',
+    effectLayer: 0, // in the sky, behind the ridges
   },
 ];
