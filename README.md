@@ -1,13 +1,13 @@
 # Libsic Studio
 
-An ambient music room for the web. Pick a layered scene (rainy night, cozy cabin, deep space), load a CD into a retro CD player, click objects in the room to change the mood, then leave the page open while you study, work or relax. Rooms and CDs can be saved and shared with a short link.
+An ambient music room for the web. Pick a layered scene (rainy café, cozy cabin, moon base), load a CD into a retro CD player, click objects in the room to change the mood, then leave the page open while you study, work or relax. Rooms and CDs can be saved and shared with a short link.
 
 Course project for **Web Application Development**.
 
 ## Features
 
 - Layered 2D scenes with mouse-parallax depth and animated effects (rain, snow, fireflies, stars)
-- Clickable objects in the room (lamp, window, radio)
+- Clickable objects in the room (window, lamp or neon sign, music object)
 - Retro CD player: CD shelf, spinning disc, LCD track display, play, pause, next, previous, volume
 - Official CDs and custom CDs made from our royalty-free tracks
 - Save a room to get a share link; "My rooms" is remembered in the browser (no login)
@@ -20,6 +20,7 @@ Course project for **Web Application Development**.
 | Database | MongoDB (Atlas) |
 | API server | Node.js, Express, Mongoose, Swagger UI |
 | Front end | React (Vite), plain CSS |
+| Tests | Jest and Supertest (API), Vitest and Testing Library (client) |
 | Hosting | To be chosen (free tiers) |
 
 ## Repository layout
@@ -35,18 +36,48 @@ libsic-studio/
 
 | Requirement | Status |
 | --- | --- |
-| Database (MySQL or MongoDB) | MongoDB, not set up yet |
-| RESTful API server (Node.js + Express) | Not started |
-| Front end (React) | Not started |
+| Database (MySQL or MongoDB) | MongoDB Atlas: scenes and rooms done; tracks and CDs to do |
+| RESTful API server (Node.js + Express) | Scenes and rooms done; tracks and CDs to do |
+| Front end (React) | Room scene, saving and sharing done; CD player to do |
 | Source code for API and client on GitHub | This repository |
-| Online API documentation | Planned at `/api-docs` |
+| Online API documentation | `/api-docs` on the API server (scenes and rooms done) |
 | Public API base URL | Not deployed yet |
 | Live URL | Not deployed yet |
 | PowerPoint presentation + short Word file | Not started |
 
 ## Running the project
 
-Setup commands will be added here as each part is built (API in Task 2, client in Task 6; see `docs/TASKS.md`).
+You need [Node.js](https://nodejs.org) 20.19 or newer and a free MongoDB Atlas cluster.
+
+### API
+
+```
+cd api
+npm install
+copy .env.example .env        (Mac/Linux: cp .env.example .env)
+```
+
+Open `.env` and fill in `MONGODB_URI` with your Atlas connection string, including the database name (for example `.../libsic?...`). Never commit this file. If the connection fails with a `querySrv` error, add `DNS_SERVERS=8.8.8.8,1.1.1.1` to `.env`.
+
+```
+npm run seed:scenes           load the starter scenes into the database (safe to run again)
+npm start                     API at http://localhost:4000
+npm test                      run the API tests
+npm run try:rooms             walk through saving, changing and deleting a room (API must be running)
+```
+
+The API documentation is at http://localhost:4000/api-docs while the API runs.
+
+### Client
+
+```
+cd client
+npm install
+npm run dev                   website at http://localhost:5173 (the API must be running)
+npm test                      run the client tests
+```
+
+The client talks to the API at `http://localhost:4000` by default. To use another address, copy `client/.env.example` to `client/.env` and change `VITE_API_URL`.
 
 ## Team
 
