@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<title>Moon Base: surface and habitat</title>
+<defs>
+<filter id="bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+<linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a90ab"/><stop offset="1" stop-color="#3a3f5c"/></linearGradient>
+<radialGradient id="dm" cx=".35" cy=".25" r=".9"><stop offset="0" stop-color="#e9eefc"/><stop offset="1" stop-color="#6f78a0"/></radialGradient>
+<clipPath id="dc"><path d="M910 770 A220 220 0 0 1 1350 770Z"/></clipPath>
+</defs>
+<path d="M0 720 Q220 690 460 716 T980 730 T1600 700 V900 H0Z" fill="url(#gr)"/>
+<ellipse cx="300" cy="790" rx="120" ry="26" fill="#2a2e48" opacity=".75"/><ellipse cx="300" cy="786" rx="110" ry="20" fill="#4a5070" opacity=".8"/>
+<ellipse cx="640" cy="830" rx="90" ry="20" fill="#2a2e48" opacity=".75"/><ellipse cx="640" cy="826" rx="83" ry="15" fill="#4a5070" opacity=".8"/>
+<ellipse cx="1450" cy="810" rx="110" ry="24" fill="#2a2e48" opacity=".75"/><ellipse cx="1450" cy="806" rx="101" ry="19" fill="#4a5070" opacity=".8"/>
+<ellipse cx="880" cy="850" rx="70" ry="15" fill="#2a2e48" opacity=".75"/><ellipse cx="880" cy="846" rx="64" ry="12" fill="#4a5070" opacity=".8"/>
+<rect x="780" y="716" width="140" height="64" rx="10" fill="#9ea6c4"/><rect x="780" y="716" width="140" height="10" rx="5" fill="#cfd6ea"/><rect x="786" y="740" width="24" height="26" rx="4" fill="#2a2f4a"/>
+<path d="M910 770 A220 220 0 0 1 1350 770Z" fill="url(#dm)"/><g clip-path="url(#dc)" stroke="#8a93b8" stroke-width="3" fill="none" opacity=".8"><path d="M1130 550 V770 M1020 570 Q1000 680 1000 770 M1240 570 Q1260 680 1260 770 M910 700 H1350 M930 640 H1330 M980 596 H1280"/></g>
+<rect x="990" y="690" width="38" height="26" rx="6" fill="#ffe9a8"/><rect x="990" y="690" width="38" height="26" rx="6" fill="#ffd27a" opacity=".5" filter="url(#bl)"/>
+<rect x="1050" y="650" width="38" height="26" rx="6" fill="#ffe9a8"/><rect x="1050" y="650" width="38" height="26" rx="6" fill="#ffd27a" opacity=".5" filter="url(#bl)"/>
+<rect x="1130" y="640" width="38" height="26" rx="6" fill="#ffe9a8"/><rect x="1130" y="640" width="38" height="26" rx="6" fill="#ffd27a" opacity=".5" filter="url(#bl)"/>
+<rect x="1210" y="650" width="38" height="26" rx="6" fill="#ffe9a8"/><rect x="1210" y="650" width="38" height="26" rx="6" fill="#ffd27a" opacity=".5" filter="url(#bl)"/>
+<rect x="1270" y="690" width="38" height="26" rx="6" fill="#ffe9a8"/><rect x="1270" y="690" width="38" height="26" rx="6" fill="#ffd27a" opacity=".5" filter="url(#bl)"/>
+<rect x="900" y="764" width="460" height="16" fill="#5a628a"/>
+<rect x="1394" y="430" width="10" height="340" fill="#aab2d0"/><path d="M1370 450 Q1399 410 1428 450Z" fill="#cfd6ea"/><line x1="1399" y1="438" x2="1399" y2="400" stroke="#cfd6ea" stroke-width="4"/><circle cx="1399" cy="396" r="6" fill="#ff5a5a"/>
+<polygon points="1440,740 1580,720 1596,766 1456,786" fill="#243a7a"/><polygon points="1440,740 1580,720 1584,732 1444,752" fill="#4a64b8" opacity=".6"/><line x1="1488" y1="734" x2="1500" y2="780" stroke="#9aa5e0" stroke-width="2"/><line x1="1536" y1="728" x2="1548" y2="774" stroke="#9aa5e0" stroke-width="2"/>
+</svg>

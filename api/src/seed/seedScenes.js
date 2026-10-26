@@ -5,7 +5,8 @@ const Scene = require('../models/Scene');
 const scenes = require('./scenes');
 
 // Saves the starter scenes. Safe to run again: a scene with the same slug is updated,
-// not duplicated, and rooms that point to it keep working.
+// not duplicated, and rooms that point to it keep working. Scenes whose slug is no
+// longer in scenes.js are deleted, so the database always matches this file.
 async function seedScenes() {
   await connectDb(process.env.MONGODB_URI);
   const result = await Scene.bulkWrite(
@@ -13,7 +14,9 @@ async function seedScenes() {
       updateOne: { filter: { slug: scene.slug }, update: { $set: scene }, upsert: true },
     }))
   );
-  console.log(`Scenes saved: ${result.upsertedCount} new, ${result.modifiedCount} updated`);
+  // Remove scenes from older versions of this file (for example the first draft slugs).
+  const removed = await Scene.deleteMany({ slug: { $nin: scenes.map((s) => s.slug) } });
+  console.log(`Scenes saved: ${result.upsertedCount} new, ${result.modifiedCount} updated, ${removed.deletedCount} old removed`);
 }
 
 seedScenes()

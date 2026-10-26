@@ -45,7 +45,7 @@ const objectSchema = new Schema(
 );
 
 const sceneSchema = new Schema({
-  slug: { type: String, required: true, unique: true, trim: true }, // for example "rainy-night"
+  slug: { type: String, required: true, unique: true, trim: true }, // for example "rainy-cafe"
   name: { type: String, required: true, trim: true },
   description: { type: String, default: '' },
   layers: {

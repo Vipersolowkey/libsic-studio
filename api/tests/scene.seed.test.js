@@ -13,9 +13,9 @@ describe('scene seed data', () => {
     expect(await validationErrors(new Scene(scene))).toEqual({});
   });
 
-  it.each(scenes.map((s) => [s.slug, s]))('%s has 4 layers and a lamp, window and radio', (slug, scene) => {
+  it.each(scenes.map((s) => [s.slug, s]))('%s has 4 layers and one object for each kind of click', (slug, scene) => {
     expect(scene.layers).toHaveLength(4);
-    expect(scene.objects.map((o) => o.key).sort()).toEqual(['lamp', 'radio', 'window']);
+    expect(scene.objects.map((o) => o.action.type).sort()).toEqual(['nextTrack', 'toggleEffect', 'toggleLight']);
   });
 
   it.each(scenes.map((s) => [s.slug, s]))('%s default effect is one of its own effects', (slug, scene) => {

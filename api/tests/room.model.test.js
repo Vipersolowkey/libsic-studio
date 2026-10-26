@@ -4,7 +4,7 @@ const { validationErrors } = require('./helpers');
 const validRoom = () => ({
   code: 'abc12345',
   editKeyHash: 'hash-of-the-edit-key',
-  sceneSlug: 'rainy-night',
+  sceneSlug: 'rainy-cafe',
 });
 
 describe('Room model', () => {

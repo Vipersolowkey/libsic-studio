@@ -1,24 +1,25 @@
 // The three starter scenes. Image files are drawn in Task 4 and live in
 // client/public/scenes/<slug>/. Object positions are percentages of the scene, and
 // "layer" is the index of the layer the object is drawn on (0 = first layer).
+// Every scene has one object for each kind of click: toggleLight, toggleEffect, nextTrack.
 const layers = (slug, items) =>
   items.map(([name, depth], i) => ({ name, image: `/scenes/${slug}/layer-${i + 1}.svg`, depth }));
 
 module.exports = [
   {
-    slug: 'rainy-night',
-    name: 'Rainy Night',
-    description: 'A quiet desk by a window, with the city glowing in the rain.',
-    layers: layers('rainy-night', [
+    slug: 'rainy-cafe',
+    name: 'Rainy Café',
+    description: 'A late-night café with a big window onto a rainy, neon-lit street.',
+    layers: layers('rainy-cafe', [
       ['sky', 0.05],
-      ['city', 0.2],
-      ['window frame', 0.5],
-      ['desk', 0.9],
+      ['city street', 0.2],
+      ['window wall', 0.5],
+      ['foreground', 0.9],
     ]),
     objects: [
-      { key: 'lamp', label: 'Desk lamp', layer: 3, x: 12, y: 58, width: 10, height: 22, action: { type: 'toggleLight' } },
-      { key: 'window', label: 'Window', layer: 2, x: 30, y: 12, width: 40, height: 40, action: { type: 'toggleEffect', effect: 'rain' } },
-      { key: 'radio', label: 'Radio', layer: 3, x: 76, y: 62, width: 12, height: 14, action: { type: 'nextTrack' } },
+      { key: 'window', label: 'Window', layer: 2, x: 9.4, y: 12.2, width: 81.2, height: 53.3, action: { type: 'toggleEffect', effect: 'rain' } },
+      { key: 'neon', label: 'Neon sign', layer: 2, x: 63.1, y: 15.6, width: 17.5, height: 12.2, action: { type: 'toggleLight' } },
+      { key: 'jukebox', label: 'Jukebox', layer: 3, x: 2.5, y: 44.4, width: 15.6, height: 48.9, action: { type: 'nextTrack' } },
     ],
     effects: ['rain'],
     defaultEffect: 'rain',
@@ -26,35 +27,35 @@ module.exports = [
   {
     slug: 'cozy-cabin',
     name: 'Cozy Cabin',
-    description: 'A warm wooden cabin with fireflies drifting past the window.',
+    description: 'A log cabin living room with a crackling fireplace and snow falling outside.',
     layers: layers('cozy-cabin', [
-      ['forest', 0.05],
-      ['cabin wall', 0.25],
-      ['window', 0.5],
-      ['table', 0.9],
+      ['snowy night', 0.05],
+      ['pines and snow', 0.2],
+      ['wall and fireplace', 0.5],
+      ['living room', 0.9],
     ]),
     objects: [
-      { key: 'lamp', label: 'Oil lamp', layer: 3, x: 14, y: 56, width: 9, height: 20, action: { type: 'toggleLight' } },
-      { key: 'window', label: 'Window', layer: 2, x: 34, y: 14, width: 34, height: 36, action: { type: 'toggleEffect', effect: 'fireflies' } },
-      { key: 'radio', label: 'Old radio', layer: 3, x: 72, y: 60, width: 14, height: 14, action: { type: 'nextTrack' } },
+      { key: 'window', label: 'Window', layer: 2, x: 68.8, y: 15.6, width: 22.5, height: 36.7, action: { type: 'toggleEffect', effect: 'snow' } },
+      { key: 'lamp', label: 'Floor lamp', layer: 3, x: 25.9, y: 33.3, width: 8.2, height: 53.3, action: { type: 'toggleLight' } },
+      { key: 'record', label: 'Record player', layer: 3, x: 8.1, y: 64.4, width: 16.2, height: 8.9, action: { type: 'nextTrack' } },
     ],
-    effects: ['fireflies', 'snow'],
-    defaultEffect: 'fireflies',
+    effects: ['snow', 'fireflies'],
+    defaultEffect: 'snow',
   },
   {
-    slug: 'deep-space',
-    name: 'Deep Space',
-    description: 'A small cabin window looking out at slowly twinkling stars.',
-    layers: layers('deep-space', [
-      ['stars', 0.05],
-      ['planet', 0.2],
-      ['window frame', 0.55],
-      ['console', 0.9],
+    slug: 'moon-base',
+    name: 'Moon Base',
+    description: 'A quiet outpost on the moon, with a huge planet hanging in the starry sky.',
+    layers: layers('moon-base', [
+      ['stars and planet', 0.05],
+      ['lunar ridges', 0.2],
+      ['surface and habitat', 0.5],
+      ['foreground', 0.9],
     ]),
     objects: [
-      { key: 'lamp', label: 'Console light', layer: 3, x: 10, y: 62, width: 9, height: 14, action: { type: 'toggleLight' } },
-      { key: 'window', label: 'Viewport', layer: 2, x: 28, y: 10, width: 44, height: 42, action: { type: 'toggleEffect', effect: 'stars' } },
-      { key: 'radio', label: 'Comms radio', layer: 3, x: 78, y: 64, width: 12, height: 12, action: { type: 'nextTrack' } },
+      { key: 'telescope', label: 'Telescope', layer: 3, x: 26.9, y: 52.2, width: 15.6, height: 37.8, action: { type: 'toggleEffect', effect: 'stars' } },
+      { key: 'beacon', label: 'Beacon light', layer: 3, x: 6.2, y: 40.0, width: 8.1, height: 48.9, action: { type: 'toggleLight' } },
+      { key: 'radio', label: 'Comms radio', layer: 3, x: 76.9, y: 66.7, width: 16.2, height: 22.2, action: { type: 'nextTrack' } },
     ],
     effects: ['stars'],
     defaultEffect: 'stars',
