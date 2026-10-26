@@ -17,3 +17,23 @@ export const scene = {
   defaultEffect: 'rain',
   effectLayer: 0,
 };
+
+export const otherScene = {
+  ...scene,
+  slug: 'other',
+  name: 'Other Room',
+  effects: ['stars'],
+  defaultEffect: 'stars',
+  effectLayer: 1,
+};
+
+// A room as the API returns it.
+export const savedRoom = {
+  code: 'abc12345',
+  name: 'Study',
+  sceneSlug: 'other',
+  cdCode: null,
+  settings: { effect: 'stars', lightOn: false, volume: 0.7 },
+  createdAt: '2026-10-26T10:00:00.000Z',
+  updatedAt: '2026-10-26T10:00:00.000Z',
+};

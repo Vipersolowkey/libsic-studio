@@ -26,8 +26,16 @@ export async function request(path, { method = 'GET', body, headers = {} } = {})
     const data = await res.json().catch(() => ({}));
     throw new ApiError(data.error || `Request failed (${res.status})`, res.status);
   }
-  return res.json();
+  return res.status === 204 ? null : res.json(); // 204 = success with nothing to send back
 }
 
 export const getScenes = () => request('/api/scenes');
 export const getScene = (slug) => request(`/api/scenes/${encodeURIComponent(slug)}`);
+
+// Rooms. Creating a room returns { room, editKey }; keep the editKey, it is shown only once.
+export const getRoom = (code) => request(`/api/rooms/${encodeURIComponent(code)}`);
+export const createRoom = (data) => request('/api/rooms', { method: 'POST', body: data });
+export const updateRoom = (code, editKey, data) =>
+  request(`/api/rooms/${encodeURIComponent(code)}`, { method: 'PUT', body: data, headers: { 'x-edit-key': editKey } });
+export const deleteRoom = (code, editKey) =>
+  request(`/api/rooms/${encodeURIComponent(code)}`, { method: 'DELETE', headers: { 'x-edit-key': editKey } });

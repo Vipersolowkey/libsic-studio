@@ -1,7 +1,7 @@
 /* The stage keeps the picture's 16:9 shape so clickable areas (percentages) line up. */
 .stage {
   position: relative;
-  width: min(100%, calc((100vh - 92px) * 16 / 9));
+  width: min(100%, calc((100vh - 150px) * 16 / 9));
   aspect-ratio: 16 / 9;
   margin: 0 auto;
   overflow: hidden;

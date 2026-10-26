@@ -1,13 +1,8 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import RoomScreen from '../room/RoomScreen.jsx';
 
-// Placeholder: opening a saved room by its share code arrives in Task 10b.
+// /r/:code opens a saved room. The key makes the screen start fresh when the code changes.
 export default function RoomPage() {
   const { code } = useParams();
-  return (
-    <main className="message-page">
-      <h1>Room {code}</h1>
-      <p>Opening saved rooms is coming soon.</p>
-      <Link to="/">Back to the room</Link>
-    </main>
-  );
+  return <RoomScreen key={code} code={code} />;
 }
