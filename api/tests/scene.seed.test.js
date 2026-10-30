@@ -119,6 +119,11 @@ describe('night-study customization', () => {
     expect(scene.catalog.filter((e) => e.unique).map((e) => e.key)).toEqual(['player']);
   });
 
+  it('draws the record sleeve in front of the player, as it leans against it, when the room starts', () => {
+    // objects are drawn by the height of their home, nearer (larger y) later
+    expect(entry('sleeve').home.y).toBeGreaterThan(entry('player').home.y);
+  });
+
   it('moves the record, the tonearm and the display glow with the player', () => {
     const playerLayers = scene.layers.filter((l) => l.item === 'player').map((l) => l.name);
     expect(playerLayers).toEqual(expect.arrayContaining(['music player', 'record', 'record shine', 'tonearm', 'display glow']));

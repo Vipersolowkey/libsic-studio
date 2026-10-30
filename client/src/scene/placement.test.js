@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDrawList, clampToSurface, defaultItems, itemBounds, newItem, placeBox, scaleAt } from './placement.js';
+import { buildDrawList, clampToSurface, defaultItems, drawOrder, itemBounds, newItem, placeBox, scaleAt } from './placement.js';
 
 // Two surfaces. The desk gets bigger towards the viewer (0.5 at y 60, 1.5 at y 100); the window is flat.
 const desk = { key: 'desk', area: { x: 0, y: 60, width: 100, height: 40 }, drawAt: 3, perspective: { farY: 60, nearY: 100, farScale: 0.5, nearScale: 1.5 } };
@@ -131,6 +131,18 @@ describe('buildDrawList', () => {
   it('draws the items at the end when drawAt is beyond the last layer', () => {
     const late = { ...scene, surfaces: [{ ...desk, drawAt: 99 }, glass] };
     expect(keys(buildDrawList(late, [item()])).slice(-2)).toEqual(['mug:4', 'mug:5']);
+  });
+});
+
+describe('drawOrder', () => {
+  it('lists the ids of the items from the back to the front, as they are drawn', () => {
+    const items = [item({ id: 'c', y: 90 }), item({ id: 'star', key: 'star', x: 50, y: 70 }), item({ id: 'b', y: 70 }), item({ id: 'a', y: 70 })];
+    // the window is behind the desk, whatever the heights; on the desk nearer ones (larger y) come later
+    expect(drawOrder(scene, items)).toEqual(['star', 'a', 'b', 'c']);
+  });
+
+  it('leaves out items the scene cannot draw', () => {
+    expect(drawOrder(scene, [item({ id: 'x', key: 'teapot' }), item({ id: 'a' })])).toEqual(['a']);
   });
 });
 

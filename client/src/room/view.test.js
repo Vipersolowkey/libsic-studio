@@ -20,6 +20,10 @@ describe('startZoom', () => {
     expect(startZoom(1600, 900)).toBeCloseTo(1);
     expect(startZoom(1024, 768)).toBeCloseTo(1 + (fillZoom(1024, 768) - 1) / 2);
   });
+
+  it('never starts beyond the largest zoom, even on a tall phone', () => {
+    expect(startZoom(360, 800)).toBe(MAX_ZOOM);
+  });
 });
 
 describe('clampZoom', () => {
