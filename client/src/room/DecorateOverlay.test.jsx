@@ -28,6 +28,25 @@ describe('DecorateOverlay', () => {
     expect(screen.getAllByRole('button')).toHaveLength(1);
   });
 
+  it('keeps the grab boxes in the same order in the page when an object is moved past another', () => {
+    const { rerender } = setup();
+    const names = () => screen.getAllByRole('button').map((box) => box.getAttribute('aria-label'));
+    expect(names()).toEqual(['Mug', 'Music player']);
+    const mugBox = screen.getByRole('button', { name: 'Mug' });
+    // the mug is now nearer than the player; a box that changes place in the page would lose the pointer
+    rerender(<DecorateOverlay scene={scene} items={[{ ...mug, y: 95 }, player]} selectedId={null} onSelect={vi.fn()} onMove={vi.fn()} />);
+    expect(names()).toEqual(['Mug', 'Music player']);
+    expect(screen.getByRole('button', { name: 'Mug' })).toBe(mugBox);
+  });
+
+  it('stacks the boxes like the objects are drawn, and puts the selected one on top', () => {
+    const { rerender } = setup({ items: [{ ...mug, y: 95 }, player] });
+    const z = (name) => Number(screen.getByRole('button', { name }).style.zIndex);
+    expect(z('Mug')).toBeGreaterThan(z('Music player')); // the mug is nearer
+    rerender(<DecorateOverlay scene={scene} items={[{ ...mug, y: 95 }, player]} selectedId="player" onSelect={vi.fn()} onMove={vi.fn()} />);
+    expect(z('Music player')).toBeGreaterThan(z('Mug'));
+  });
+
   it('selects an object when it is pressed', () => {
     const { onSelect } = setup();
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Mug' }), { clientX: 400, clientY: 450 });

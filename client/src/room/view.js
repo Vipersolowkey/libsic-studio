@@ -13,13 +13,13 @@ export function fillZoom(width, height) {
   return Math.max(width, (height * 16) / 9) / fitWidth(width, height);
 }
 
-// Where the room starts: halfway between "whole picture" and "covers the window".
-export function startZoom(width, height) {
-  return 1 + (fillZoom(width, height) - 1) / 2;
-}
-
 export function clampZoom(zoom) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
+}
+
+// Where the room starts: halfway between "whole picture" and "covers the window".
+export function startZoom(width, height) {
+  return clampZoom(1 + (fillZoom(width, height) - 1) / 2);
 }
 
 // How far to shift the picture so that the mouse looks around it. `pointer` is the mouse position from 0 to 1

@@ -381,6 +381,13 @@ describe('decorating the room', () => {
     vi.spyOn(api, 'createRoom').mockResolvedValue({ room: decorRoom, editKey: 'new-secret' });
   });
 
+  it('keeps the zoom buttons, because the picture does not pan while decorating and the edges need Fit', async () => {
+    const { container } = await decorate();
+    await userEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Show the whole room' }));
+    expect(Number(container.querySelector('.room').style.getPropertyValue('--zoom'))).toBe(1);
+  });
+
   it('offers Decorate only in a room whose scene has objects to move', async () => {
     renderAt('/new');
     await screen.findByTestId('stage');
@@ -396,7 +403,7 @@ describe('decorating the room', () => {
     expect(screen.getByRole('button', { name: 'Reset room' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add Mug' })).toBeInTheDocument();
-    for (const name of ['Switch room', 'Save room', 'Zoom in', 'Decorate']) expect(screen.queryByRole('button', { name })).toBeNull();
+    for (const name of ['Switch room', 'Save room', 'Decorate']) expect(screen.queryByRole('button', { name })).toBeNull();
   });
 
   it('keeps the click areas of the room switched off while decorating', async () => {

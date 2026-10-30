@@ -219,7 +219,12 @@ export default function RoomScreen({ code }) {
           <RoomNameField name={name} onNameChange={setName} />
         </div>
         {decorating ? (
-          <DecorateHud scene={scene} editor={editor} onDone={() => setDecorating(false)} />
+          <>
+            <DecorateHud scene={scene} editor={editor} onDone={() => setDecorating(false)} />
+            <div className="hud-bl hud-fade">
+              <ZoomControls zoom={view.zoom} onZoomIn={view.zoomIn} onZoomOut={view.zoomOut} onFit={view.fit} />
+            </div>
+          </>
         ) : (
           <>
             <div className="hud-tr hud-fade">

@@ -73,6 +73,12 @@ export function buildDrawList(scene, items) {
   return list;
 }
 
+// The ids of the items from the back to the front, in the order they are drawn. Items the scene cannot draw are left out.
+export function drawOrder(scene, items) {
+  const ids = buildDrawList(scene, items).flatMap((entry) => (entry.itemId ? [entry.itemId] : []));
+  return [...new Set(ids)];
+}
+
 // The area an item covers (what a visitor grabs), or null when the scene does not know the object.
 export function itemBounds(scene, item) {
   const entry = entryOf(scene, item.key);

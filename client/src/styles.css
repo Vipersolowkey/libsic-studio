@@ -223,7 +223,7 @@ a.chip { text-decoration: none; display: inline-block; }
 .hit::after { content: ''; position: absolute; inset: -14px; } /* a bigger area to grab with a finger */
 .hit:hover { border-color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.06); }
 .hit:active { cursor: grabbing; }
-.hit.selected { z-index: 1; border-color: var(--accent); background: rgba(232, 184, 106, 0.12); } /* on top, so it can be grabbed even when others overlap it */
+.hit.selected { border-color: var(--accent); background: rgba(232, 184, 106, 0.12); }
 .hit:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 
 .tray {
