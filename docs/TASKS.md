@@ -14,20 +14,21 @@ Four weeks, from 20 Oct to 20 Nov 2026 (last days are buffer). Both members do f
 - [ ] **Task 3b: Scene and Room models + seed data** (Lane B). 3 scenes in `api/src/seed/scenes.js`.
 - [ ] **Task 4: Scene art** (Lane B). 3 scenes with 4 transparent SVG layers each, plus positions of the clickable objects.
 - [ ] **Task 5a: Tracks and CDs read endpoints** (Lane A). `GET /api/tracks`, `/api/tracks/:id`, `/api/cds`, `/api/cds/:code`.
-- [ ] **Task 5b: Scenes read endpoints** (Lane B). `GET /api/scenes`, `/api/scenes/:id`.
+- [x] **Task 5b: Scenes read endpoints** (Lane B). `GET /api/scenes`, `/api/scenes/:id`.
 
 ## Week 2: the React app (27 Oct to 2 Nov)
 
-- [ ] **Task 6: Client skeleton** (together). Vite + React, routes `/`, `/r/:code`, `/cd/:code`, and `client/src/api.js`.
-- [ ] **Task 7: Layered scene, effects and clickable objects** (Lane B). Parallax hook, rain, snow, fireflies and stars effects, lamp, window and radio.
+- [x] **Task 6: Client skeleton** (together). Vite + React, routes `/`, `/r/:code`, `/cd/:code`, and `client/src/api.js`.
+- [x] **Task 7: Layered scene, effects and clickable objects** (Lane B). Parallax hook, rain, snow, fireflies and stars effects, lamp, window and radio.
+- [x] **Task 7b: Room customization** (Lane B). Full-screen room with zoom, Decorate mode (drag, resize, flip, remove, add from a tray, undo), `items` saved in the room, scene `catalog` and `surfaces`, validation and docs. Done when a saved arrangement reopens the same from the share link.
 - [ ] **Task 8: Retro CD player** (Lane A). Audio hook, CD shelf, spinning disc, LCD display, controls.
 
 ## Week 3: save, share and document (3 to 9 Nov)
 
-- [ ] **Task 9b: Rooms write endpoints + edit key** (Lane B). Share codes, hashed edit keys, `requireEditKey` middleware, `POST/PUT/DELETE /api/rooms`. Build this first so Lane A can reuse it.
+- [x] **Task 9b: Rooms write endpoints + edit key** (Lane B). Share codes, hashed edit keys, `requireEditKey` middleware, `POST/PUT/DELETE /api/rooms`. Build this first so Lane A can reuse it.
 - [ ] **Task 9a: CDs write endpoints** (Lane A). `POST/PUT/DELETE /api/cds` using the edit-key middleware, with validation for empty CDs and unknown tracks.
 - [ ] **Task 10a: CD maker** (Lane A). Pick tracks and a name, create a custom CD.
-- [ ] **Task 10b: Save bar, share link and My rooms** (Lane B). localStorage helper, "Save room", copy link, My rooms list, reopen last room.
+- [x] **Task 10b: Save bar, share link and My rooms** (Lane B). localStorage helper, "Save room", copy link, My rooms list, reopen last room.
 - [ ] **Task 11: API documentation** (together). Lane A writes the tracks and CDs part of `openapi.yaml`, Lane B writes the scenes and rooms part and serves `/api-docs`.
 
 ## Week 4: deploy, polish and present (10 to 16 Nov, buffer to 20 Nov)
