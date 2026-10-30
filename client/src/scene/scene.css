@@ -1,7 +1,7 @@
 /* The stage keeps the picture's 16:9 shape so clickable areas (percentages) line up. */
 .stage {
   position: relative;
-  width: min(100%, calc((100vh - 150px) * 16 / 9));
+  width: min(100%, calc((100vh - var(--chrome, 150px)) * 16 / 9));
   aspect-ratio: 16 / 9;
   margin: 0 auto;
   overflow: hidden;
@@ -16,6 +16,12 @@
   transition: transform 0.25s ease-out;
   will-change: transform;
   transform: scale(1.06); /* slightly bigger than the stage so the edges never show while moving */
+}
+
+/* A mirrored object: the picture is flipped inside its (already mirrored) box. */
+.flip {
+  width: 100%;
+  height: 100%;
 }
 
 .layer img {
@@ -175,4 +181,126 @@
   .effect-snow { display: none; }
   .effect i { animation: none !important; }
   .layer { transition: none; }
+}
+
+/* ---------- Animated layers ---------- */
+/* Glows add light to what is below them. */
+.layer[data-blend='screen'] {
+  mix-blend-mode: screen;
+}
+/* Lamp light and its glow switch off with the lamp. */
+.layer {
+  transition: transform 0.25s ease-out, opacity 0.6s ease;
+}
+.stage.lights-off .layer[data-light] {
+  opacity: 0;
+}
+/* A scene with real lamp layers only gets a gentle dark layer, so the city outside stays lit. */
+.stage.has-lights.lights-off .dim {
+  background: rgba(4, 8, 22, 0.4);
+}
+
+.anim,
+.anim .spin {
+  width: 100%;
+  height: 100%;
+}
+.anim img,
+.anim .spin img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The record turns. */
+.anim-spin {
+  transform: scaleY(var(--squash, 1));
+}
+.anim-spin .spin {
+  animation: spin var(--dur) linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.stage.paused .anim-spin .spin {
+  animation-play-state: paused;
+}
+
+/* The tonearm rests on the record while music plays and lifts away when it stops. */
+.anim-tonearm {
+  transition: transform 1.2s ease;
+}
+.stage.paused .anim-tonearm {
+  transform: rotate(var(--rest, -14deg));
+}
+
+/* Leaves sway a little around the point where they join the stem. */
+.anim-sway {
+  animation: sway var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes sway {
+  from { transform: rotate(-2.2deg); }
+  to { transform: rotate(2.2deg); }
+}
+
+/* Steam rises from the mug and fades. */
+.anim-steam {
+  animation: steam var(--dur) ease-out var(--delay) infinite;
+}
+@keyframes steam {
+  0% { opacity: 0; transform: translateY(6px) scale(0.92); }
+  30% { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(-24px) scale(1.12); }
+}
+
+/* Glows breathe or twinkle. */
+.anim-pulse {
+  animation: pulse var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes pulse {
+  from { opacity: 0.72; }
+  to { opacity: 1; }
+}
+
+/* A small picture repeated over the whole layer (film grain). */
+.tiled {
+  width: 100%;
+  height: 100%;
+  background-repeat: repeat;
+}
+
+/* The live clock */
+.clock {
+  width: 100%;
+  height: 100%;
+}
+.clock-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.clock-face .seg {
+  fill: #5a1512;
+  opacity: 0.28;
+}
+.clock-face .seg.on {
+  fill: #ff6a52;
+  opacity: 1;
+  filter: drop-shadow(0 0 1.2px rgba(255, 90, 70, 0.9));
+}
+.clock-face .colon {
+  animation: colon 2s steps(1) infinite;
+}
+@keyframes colon {
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-sway,
+  .anim-steam,
+  .anim-pulse,
+  .anim-spin .spin,
+  .clock-face .colon { animation: none; }
+  .layer { transition: opacity 0.6s ease; }
 }

@@ -10,10 +10,24 @@ import {
   updateMyRoom,
 } from '../myRooms.js';
 import SceneStage from '../scene/SceneStage.jsx';
+import { itemsEqual } from '../scene/itemsEdit.js';
 import { defaultSettings } from '../scene/sceneSettings.js';
+import CdSlot from './CdSlot.jsx';
 import Controls from './Controls.jsx';
+import DecorateHud from './DecorateHud.jsx';
+import DecorateOverlay from './DecorateOverlay.jsx';
 import MyRooms from './MyRooms.jsx';
-import SaveBar from './SaveBar.jsx';
+import SaveBar, { RoomNameField } from './SaveBar.jsx';
+import { useIdle } from './useIdle.js';
+import { useItemsEditor } from './useItemsEditor.js';
+import { useRoomView } from './useRoomView.js';
+import ZoomControls from './ZoomControls.jsx';
+
+// How long the room waits without any movement before its buttons fade away.
+const IDLE_MS = 4000;
+
+// Stands in for the scene while the scenes are still loading, so the hooks below always have one.
+const NO_SCENE = { slug: '', layers: [], catalog: [], surfaces: [] };
 
 // One room on screen. With a `code` it opens that saved room, without one it is a new, unsaved room.
 export default function RoomScreen({ code }) {
@@ -28,6 +42,15 @@ export default function RoomScreen({ code }) {
   const [slug, setSlug] = useState('');
   const [settings, setSettings] = useState({ effect: 'none', lightOn: true });
   const [name, setName] = useState('');
+  const [items, setItems] = useState(null); // the objects the visitor placed; null = the scene's default arrangement
+  const [decorating, setDecorating] = useState(false);
+
+  const scene = scenes?.find((s) => s.slug === slug) || scenes?.[0] || NO_SCENE;
+  const editor = useItemsEditor(scene, items, setItems);
+  const canDecorate = Boolean(scene.catalog?.length); // older scenes have no catalog
+
+  const idle = useIdle(IDLE_MS); // the buttons fade away when nobody is using the room
+  const view = useRoomView({ panning: !decorating }); // zoom level and panning of the picture
 
   const [myRooms, setMyRooms] = useState(getMyRooms);
   const [busy, setBusy] = useState(false);
@@ -42,12 +65,14 @@ export default function RoomScreen({ code }) {
       .then(([list, room]) => {
         if (cancelled) return;
         setScenes(list);
+        setDecorating(false);
         if (room) {
           const scene = list.find((s) => s.slug === room.sceneSlug) || list[0];
           setSaved(room);
           setSlug(scene?.slug ?? '');
           setSettings({ effect: room.settings.effect, lightOn: room.settings.lightOn });
           setName(room.name);
+          setItems(room.items ?? null);
           setLastRoomCode(room.code);
         } else if (list.length > 0) {
           setSlug(list[0].slug);
@@ -103,17 +128,17 @@ export default function RoomScreen({ code }) {
     );
   }
 
-  const scene = scenes.find((s) => s.slug === slug) || scenes[0];
   const isOwner = Boolean(saved && editKey);
   const dirty =
     saved !== null &&
     (name !== saved.name ||
       slug !== saved.sceneSlug ||
       settings.effect !== saved.settings.effect ||
-      settings.lightOn !== saved.settings.lightOn);
+      settings.lightOn !== saved.settings.lightOn ||
+      !itemsEqual(items, saved.items));
   const link = saved ? `${window.location.origin}/r/${saved.code}` : '';
 
-  const payload = () => ({ name: name.trim() || 'Untitled room', sceneSlug: scene.slug, settings });
+  const payload = () => ({ name: name.trim() || 'Untitled room', sceneSlug: scene.slug, settings, items });
 
   // Runs a save/delete action: blocks the buttons meanwhile and shows any error from the API.
   async function run(action) {
@@ -131,6 +156,7 @@ export default function RoomScreen({ code }) {
   const chooseScene = (next) => {
     setSlug(next.slug);
     setSettings(defaultSettings(next));
+    setItems(null); // the old objects belong to the old scene
   };
 
   // Saves a new room (or a copy of someone else's), remembers its edit key in this browser and opens its page.
@@ -176,26 +202,59 @@ export default function RoomScreen({ code }) {
     }
   }
 
+  // The room fills the whole window and every control floats on top of it in a corner.
   return (
-    <div className="home">
-      <SceneStage scene={scene} settings={settings} onSettingsChange={setSettings} />
-      <Controls scenes={scenes} scene={scene} settings={settings} onChooseScene={chooseScene} onSettingsChange={setSettings} />
-      <div className="room-bar">
-        <SaveBar
-          saved={saved}
-          isOwner={isOwner}
-          name={name}
-          onNameChange={setName}
-          dirty={dirty}
-          busy={busy}
-          status={status}
-          link={link}
-          onSaveNew={saveNew}
-          onSaveChanges={saveChanges}
-          onDelete={removeRoom}
-          onCopy={copyLink}
-        />
-        <MyRooms rooms={myRooms} scenes={scenes} currentCode={code} onForget={forget} />
+    <div ref={view.roomRef} className={`room${idle ? ' idle' : ''}`} style={{ '--zoom': view.zoom }} onWheel={view.onWheel}>
+      <SceneStage scene={scene} settings={settings} onSettingsChange={setSettings} items={items} frozen={decorating}>
+        {decorating && (
+          <DecorateOverlay scene={scene} items={editor.items} selectedId={editor.selectedId} onSelect={editor.select} onMove={editor.move} />
+        )}
+      </SceneStage>
+      <div className="hud">
+        <div className="hud-tl">
+          <Link className="brand" to="/new" aria-label="Libsic Studio, start a new room">
+            <span className="brand-disc" aria-hidden="true" />
+            <span className="brand-name">Libsic Studio</span>
+          </Link>
+          <RoomNameField name={name} onNameChange={setName} />
+        </div>
+        {decorating ? (
+          <DecorateHud scene={scene} editor={editor} onDone={() => setDecorating(false)} />
+        ) : (
+          <>
+            <div className="hud-tr hud-fade">
+              <SaveBar
+                saved={saved}
+                isOwner={isOwner}
+                dirty={dirty}
+                busy={busy}
+                status={status}
+                link={link}
+                onSaveNew={saveNew}
+                onSaveChanges={saveChanges}
+                onDelete={removeRoom}
+                onCopy={copyLink}
+              />
+              <MyRooms rooms={myRooms} scenes={scenes} currentCode={code} onForget={forget} />
+            </div>
+            <div className="hud-mr hud-fade">
+              <ZoomControls zoom={view.zoom} onZoomIn={view.zoomIn} onZoomOut={view.zoomOut} onFit={view.fit} />
+            </div>
+            <div className="hud-bl hud-fade">
+              <Controls
+                scenes={scenes}
+                scene={scene}
+                settings={settings}
+                onChooseScene={chooseScene}
+                onSettingsChange={setSettings}
+                onDecorate={canDecorate ? () => setDecorating(true) : undefined}
+              />
+            </div>
+          </>
+        )}
+        <div className="hud-br">
+          <CdSlot />
+        </div>
       </div>
     </div>
   );
