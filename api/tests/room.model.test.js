@@ -39,4 +39,17 @@ describe('Room model', () => {
     const room = new Room({ ...validRoom(), name: 'x'.repeat(61) });
     expect((await validationErrors(room)).name).toBeDefined();
   });
+
+  it('has no items until a visitor places some', () => {
+    expect(new Room(validRoom()).items).toBeUndefined();
+  });
+
+  it('needs an id, a key and a position for every item and fills in scale and flip', async () => {
+    const empty = await validationErrors(new Room({ ...validRoom(), items: [{}] }));
+    for (const field of ['id', 'key', 'x', 'y']) expect(empty[`items.0.${field}`]).toBeDefined();
+
+    const room = new Room({ ...validRoom(), items: [{ id: 'a', key: 'mug', x: 40, y: 80 }] });
+    expect(await validationErrors(room)).toEqual({});
+    expect(room.items[0]).toMatchObject({ scale: 1, flip: false });
+  });
 });

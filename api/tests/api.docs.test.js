@@ -111,6 +111,19 @@ describe('the real answers match the documentation', () => {
     expectDocumented(await request(app).delete(`/api/rooms/${code}`).set('x-edit-key', key), '/api/rooms/{code}', 'delete');
   });
 
+  it('a room with placed objects: create, open, change and reset', async () => {
+    const items = [{ id: 'mug', key: 'mug', x: 40, y: 85, scale: 1.2, flip: true }];
+    const created = await request(app).post('/api/rooms').send({ sceneSlug: 'night-study', items });
+    expectDocumented(created, '/api/rooms', 'post');
+    expect(created.body.room.items).toEqual(items);
+    const { code } = created.body.room;
+    const key = created.body.editKey;
+
+    expectDocumented(await request(app).get(`/api/rooms/${code}`), '/api/rooms/{code}', 'get');
+    expectDocumented(await request(app).put(`/api/rooms/${code}`).set('x-edit-key', key).send({ items: null }), '/api/rooms/{code}', 'put');
+    expectDocumented(await request(app).post('/api/rooms').send({ sceneSlug: 'night-study', items: [{ ...items[0], key: 'teapot' }] }), '/api/rooms', 'post');
+  });
+
   it('the error answers of the room addresses', async () => {
     const created = await request(app).post('/api/rooms').send({ sceneSlug: 'rainy-cafe' });
     const { code } = created.body.room;

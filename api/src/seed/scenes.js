@@ -1,11 +1,15 @@
-// The three starter scenes. Image files are drawn in Task 4 and live in
+// The starter scenes (Rainy Night Study is in its own file because it has many layers).
+// Image files live in
 // client/public/scenes/<slug>/. Object positions are percentages of the scene, and
 // "layer" is the index of the layer the object is drawn on (0 = first layer).
 // Every scene has one object for each kind of click: toggleLight, toggleEffect, nextTrack.
 const layers = (slug, items) =>
   items.map(([name, depth], i) => ({ name, image: `/scenes/${slug}/layer-${i + 1}.svg`, depth }));
 
+const nightStudy = require('./nightStudy');
+
 module.exports = [
+  nightStudy,
   {
     slug: 'rainy-cafe',
     name: 'Rainy Café',

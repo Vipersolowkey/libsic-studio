@@ -329,10 +329,107 @@ components:
           minimum: 0
           description: Position in `layers` of the layer the effect is drawn on top of.
           example: 1
+        surfaces:
+          type: array
+          description: The places where a visitor may put objects (for example the desk). Empty for a scene that cannot be decorated.
+          items:
+            $ref: '#/components/schemas/SceneSurface'
+        catalog:
+          type: array
+          description: The objects a visitor may place in this scene. Empty for a scene that cannot be decorated.
+          items:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    SceneSurface:
+      type: object
+      description: |
+        A place where objects can stand. Objects lower on the surface (larger `y`) look closer: they are drawn
+        bigger and in front of the ones above them.
+      required: [key, area, drawAt]
+      properties:
+        key:
+          type: string
+          example: desk
+        area:
+          type: object
+          description: The contact point of an object must stay inside this box, in percent of the scene.
+          required: [x, y, width, height]
+          properties:
+            x: { type: number, minimum: 0, maximum: 100 }
+            y: { type: number, minimum: 0, maximum: 100 }
+            width: { type: number, minimum: 0, maximum: 100 }
+            height: { type: number, minimum: 0, maximum: 100 }
+          example: { x: 2, y: 73, width: 96, height: 24 }
+        drawAt:
+          type: integer
+          minimum: 0
+          description: The objects of this surface are drawn just before this position in `layers`.
+          example: 36
+        perspective:
+          type: object
+          description: How big an object looks at the far and the near edge of the surface (1 is the size it was drawn at).
+          properties:
+            farY: { type: number, description: The y of the far edge. }
+            nearY: { type: number, description: The y of the near edge. }
+            farScale: { type: number, minimum: 0 }
+            nearScale: { type: number, minimum: 0 }
+          example: { farY: 73, nearY: 97, farScale: 0.8, nearScale: 1.25 }
+
+    CatalogEntry:
+      type: object
+      description: One kind of object a visitor can place. Its pictures are the layers whose `item` is this `key`.
+      required: [key, label, surface, home, bounds, thumb, scale]
+      properties:
+        key:
+          type: string
+          example: mug
+        label:
+          type: string
+          example: Mug
+        surface:
+          type: string
+          description: The `key` of the surface it stands on.
+          example: desk
+        home:
+          type: object
+          description: Where its contact point (bottom centre) sits in the original picture, in percent of the scene.
+          required: [x, y]
+          properties:
+            x: { type: number }
+            y: { type: number }
+        bounds:
+          type: object
+          description: The area the object covers at its home, in percent of the scene. This is what a visitor grabs.
+          required: [x, y, width, height]
+          properties:
+            x: { type: number }
+            y: { type: number }
+            width: { type: number }
+            height: { type: number }
+        thumb:
+          type: string
+          description: Picture shown in the tray.
+          example: /scenes/night-study/c_mug.webp
+        flippable:
+          type: boolean
+          description: False for objects with text on them, such as the clock.
+        unique:
+          type: boolean
+          description: True when a room can hold at most one.
+        inDefault:
+          type: boolean
+          description: True when the object is part of the starting arrangement.
+        scale:
+          type: object
+          description: How small and how big a visitor may make it.
+          required: [min, max]
+          properties:
+            min: { type: number, minimum: 0 }
+            max: { type: number, minimum: 0 }
 
     SceneLayer:
       type: object
-      required: [name, image, depth]
+      required: [name, depth]   # `image` is needed for every layer except a clock
       properties:
         name:
           type: string
@@ -347,6 +444,61 @@ components:
           maximum: 1
           description: 0 is far away and hardly moves with the mouse, 1 is nearest and moves the most.
           example: 0.2
+        kind:
+          type: string
+          enum: [image, clock]
+          default: image
+          description: A `clock` layer draws a live clock and needs no `image`.
+        box:
+          type: object
+          description: Where the layer sits, in percent of the scene. Left out, the layer covers the whole scene.
+          required: [x, y, width, height]
+          properties:
+            x: { type: number, minimum: 0, maximum: 100 }
+            y: { type: number, minimum: 0, maximum: 100 }
+            width: { type: number, minimum: 0, maximum: 100 }
+            height: { type: number, minimum: 0, maximum: 100 }
+        blend:
+          type: string
+          enum: [normal, screen]
+          description: Use `screen` for glows, so they add light to what is below them.
+        tile:
+          type: number
+          minimum: 1
+          maximum: 100
+          description: Repeat the picture side by side (for film grain). It is this wide, in percent of the layer.
+        light:
+          type: boolean
+          description: True for lamp light and its glow. These layers fade out when the lights are switched off.
+        item:
+          type: string
+          description: |
+            The `key` of the catalog object this layer belongs to. Such a layer is a template: it is drawn once
+            for every copy of the object that a room places, instead of in its own place.
+        mirror:
+          type: boolean
+          description: |
+            Only for layers of an object. `false` means the picture is not mirrored when the object is flipped,
+            so a shadow keeps falling away from the lamp.
+        anim:
+          type: object
+          description: A small movement for this layer.
+          required: [name]
+          properties:
+            name:
+              type: string
+              enum: [spin, tonearm, sway, steam, pulse]
+            pivot:
+              type: object
+              description: The point it turns around, in percent of the layer's own picture.
+              properties:
+                x: { type: number }
+                y: { type: number }
+            duration: { type: number, minimum: 0.1, description: Seconds for one round. }
+            delay: { type: number, description: Seconds before it starts. }
+            squash: { type: number, minimum: 0.05, maximum: 1, description: Spin only. How flat the record looks. }
+            rest: { type: number, description: Tonearm only. Angle in degrees when the music is paused. }
+            skew: { type: number, description: Clock only. Tilt in degrees. }
 
     SceneObject:
       type: object
@@ -396,7 +548,7 @@ components:
 
     Room:
       type: object
-      required: [code, name, sceneSlug, cdCode, settings, createdAt, updatedAt]
+      required: [code, name, sceneSlug, cdCode, settings, items, createdAt, updatedAt]
       properties:
         code:
           type: string
@@ -415,12 +567,54 @@ components:
           description: The CD loaded in the CD player, if any.
         settings:
           $ref: '#/components/schemas/RoomSettings'
+        items:
+          $ref: '#/components/schemas/RoomItems'
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
+
+    RoomItems:
+      type: array
+      nullable: true
+      maxItems: 30
+      description: |
+        The objects the visitor placed. `null` means the scene's default arrangement. When a list is sent it
+        replaces the whole list, so leaving an object out removes it. Moving a room to another scene without
+        sending `items` sets them back to `null`.
+      items:
+        $ref: '#/components/schemas/RoomItem'
+
+    RoomItem:
+      type: object
+      description: One object placed in a room. It must match an entry of the scene's catalog.
+      required: [id, key, x, y, scale, flip]
+      properties:
+        id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,16}$'
+          description: Unique inside the room.
+          example: mug2
+        key:
+          type: string
+          description: The `key` of a catalog entry of the room's scene.
+          example: mug
+        x:
+          type: number
+          description: Where the contact point (bottom centre) sits, in percent of the scene. Must stay inside the surface.
+          example: 39
+        y:
+          type: number
+          example: 87.3
+        scale:
+          type: number
+          description: The visitor's own size on top of the perspective size. Limited by the catalog entry.
+          example: 1
+        flip:
+          type: boolean
+          description: Mirrored left to right. Only for entries that are `flippable`.
 
     RoomInput:
       type: object
@@ -440,6 +634,8 @@ components:
           nullable: true
         settings:
           $ref: '#/components/schemas/RoomSettings'
+        items:
+          $ref: '#/components/schemas/RoomItems'
 
     RoomCreated:
       type: object
