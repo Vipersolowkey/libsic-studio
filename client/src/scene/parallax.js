@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 // How far the nearest layer may move, as a share of the scene width.
 export const MAX_SHIFT = 0.025;
@@ -18,10 +18,11 @@ const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 // Gives a scene its mouse parallax. Use it like this:
-//   const { stageRef, layerRef, handlers } = useParallax(depths);
+//   const { stageRef, layerRef, handlers } = useParallax(depths, enabled);
 //   <div ref={stageRef} {...handlers}> <div ref={layerRef(0)} /> ... </div>
 // The layers are moved directly (not through React state), so moving the mouse stays smooth.
-export function useParallax(depths) {
+// While `enabled` is false the layers stay in the middle and ignore the mouse.
+export function useParallax(depths, enabled = true) {
   const stageRef = useRef(null);
   const layerEls = useRef([]);
 
@@ -46,13 +47,17 @@ export function useParallax(depths) {
     []
   );
 
+  useEffect(() => {
+    if (!enabled) moveTo({ x: 0.5, y: 0.5 });
+  }, [enabled, moveTo]);
+
   const onPointerMove = useCallback(
     (e) => {
-      if (prefersReducedMotion()) return;
+      if (!enabled || prefersReducedMotion()) return;
       const rect = stageRef.current.getBoundingClientRect();
       moveTo({ x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height });
     },
-    [moveTo]
+    [enabled, moveTo]
   );
 
   const onPointerLeave = useCallback(() => moveTo({ x: 0.5, y: 0.5 }), [moveTo]);
