@@ -4,7 +4,22 @@ const Room = require('../src/models/Room');
 const { hashEditKey } = require('../src/utils/editKey');
 const { fakeSceneModel, installFakeRoomStore } = require('./helpers');
 
-const scenes = [{ slug: 'rainy-cafe', name: 'Rainy Café' }, { slug: 'moon-base', name: 'Moon Base' }];
+// Both scenes let a visitor place mugs on a desk; only the café also has a lamp that must stay unique.
+const deskScene = (slug, name, extraEntries = []) => ({
+  slug,
+  name,
+  surfaces: [{ key: 'desk', area: { x: 0, y: 60, width: 100, height: 40 } }],
+  catalog: [
+    { key: 'mug', surface: 'desk', flippable: true, unique: false, scale: { min: 0.5, max: 2 } },
+    ...extraEntries,
+  ],
+});
+const scenes = [
+  deskScene('rainy-cafe', 'Rainy Café', [{ key: 'player', surface: 'desk', flippable: false, unique: true, scale: { min: 1, max: 1 } }]),
+  deskScene('moon-base', 'Moon Base'),
+  { slug: 'bare-room', name: 'Bare room' },
+];
+const mug = (overrides = {}) => ({ id: 'mug', key: 'mug', x: 40, y: 80, scale: 1, flip: false, ...overrides });
 
 let fake;
 let app;
@@ -99,6 +114,102 @@ describe('POST /api/rooms', () => {
   });
 });
 
+describe('room items', () => {
+  const put = (code, editKey, body) => request(app).put(`/api/rooms/${code}`).set('x-edit-key', editKey).send(body);
+
+  it('returns items: null for a room created without items', async () => {
+    const { room } = await createRoom();
+    expect(room.items).toBeNull();
+  });
+
+  it('stores valid items, returns them and ignores fields it does not know', async () => {
+    const items = [mug(), mug({ id: 'mug2', x: 60, y: 90, scale: 1.5, flip: true })];
+    const { room } = await createRoom({ sceneSlug: 'rainy-cafe', items: [{ ...items[0], evil: true }, items[1]] });
+
+    expect(room.items).toEqual(items);
+    expect((await request(app).get(`/api/rooms/${room.code}`)).body.items).toEqual(items);
+  });
+
+  it('answers 400 and names the item field for an unknown key', async () => {
+    const res = await request(app).post('/api/rooms').send({ sceneSlug: 'rainy-cafe', items: [mug({ key: 'teapot' })] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+    expect(res.body.details['items[0].key']).toMatch(/teapot/);
+    expect(fake.store.size).toBe(0);
+  });
+
+  it('answers 400 for items that are not a list', async () => {
+    const res = await request(app).post('/api/rooms').send({ sceneSlug: 'rainy-cafe', items: 'mug' });
+    expect(res.status).toBe(400);
+    expect(res.body.details.items).toEqual(expect.any(String));
+  });
+
+  it('refuses items for a scene without a catalog', async () => {
+    const res = await request(app).post('/api/rooms').send({ sceneSlug: 'bare-room', items: [mug()] });
+    expect(res.status).toBe(400);
+  });
+
+  it('reports only the unknown scene when both the scene and the items are wrong', async () => {
+    const res = await request(app).post('/api/rooms').send({ sceneSlug: 'atlantis', items: [mug({ key: 'teapot' })] });
+    expect(Object.keys(res.body.details)).toEqual(['sceneSlug']);
+  });
+
+  it('replaces the whole list on PUT and goes back to the default arrangement with null', async () => {
+    const { room, editKey } = await createRoom({ sceneSlug: 'rainy-cafe', items: [mug()] });
+
+    const replaced = await put(room.code, editKey, { items: [mug({ id: 'b', x: 70 })] });
+    expect(replaced.body.items).toEqual([mug({ id: 'b', x: 70 })]);
+
+    const reset = await put(room.code, editKey, { items: null });
+    expect(reset.status).toBe(200);
+    expect(reset.body.items).toBeNull();
+    expect((await request(app).get(`/api/rooms/${room.code}`)).body.items).toBeNull();
+  });
+
+  it('keeps the items when a PUT sends other fields only', async () => {
+    const { room, editKey } = await createRoom({ sceneSlug: 'rainy-cafe', items: [mug()] });
+    const res = await put(room.code, editKey, { name: 'Renamed' });
+    expect(res.body.items).toEqual([mug()]);
+  });
+
+  it('checks the items of a PUT against the scene the room already has', async () => {
+    const { room, editKey } = await createRoom({ sceneSlug: 'moon-base' });
+    const res = await put(room.code, editKey, { items: [mug({ key: 'player', id: 'p' })] });
+    expect(res.status).toBe(400);
+    expect(res.body.details['items[0].key']).toBeDefined();
+  });
+
+  it('resets the items when a PUT moves the room to another scene without new items', async () => {
+    const { room, editKey } = await createRoom({ sceneSlug: 'rainy-cafe', items: [mug()] });
+    const res = await put(room.code, editKey, { sceneSlug: 'moon-base' });
+    expect(res.body).toMatchObject({ sceneSlug: 'moon-base', items: null });
+  });
+
+  it('keeps the items sent with a scene change when they fit the new scene', async () => {
+    const { room, editKey } = await createRoom({ sceneSlug: 'rainy-cafe' });
+    const res = await put(room.code, editKey, { sceneSlug: 'moon-base', items: [mug({ id: 'm' })] });
+    expect(res.body.items).toEqual([mug({ id: 'm' })]);
+  });
+
+  it('does not reset the items when a PUT names the scene the room already has', async () => {
+    const { room, editKey } = await createRoom({ sceneSlug: 'rainy-cafe', items: [mug()] });
+    const res = await put(room.code, editKey, { sceneSlug: 'rainy-cafe', name: 'Same scene' });
+    expect(res.body.items).toEqual([mug()]);
+  });
+
+  it('answers 400 for invalid items and leaves the stored room unchanged', async () => {
+    const { room, editKey } = await createRoom({ sceneSlug: 'rainy-cafe', items: [mug()] });
+
+    const res = await put(room.code, editKey, { name: 'Changed', items: [mug({ y: 5 })] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.details['items[0].y']).toBeDefined();
+    const stored = (await request(app).get(`/api/rooms/${room.code}`)).body;
+    expect(stored).toMatchObject({ name: 'Untitled room', items: [mug()] });
+  });
+});
+
 describe('GET /api/rooms/:code', () => {
   it('returns the saved room', async () => {
     const { room } = await createRoom({ name: 'Mine', sceneSlug: 'moon-base' });
@@ -187,6 +298,9 @@ describe('PUT /api/rooms/:code', () => {
     expect(badEffect.status).toBe(400);
     expect(badScene.status).toBe(400);
     expect(badScene.body.details.sceneSlug).toEqual(expect.any(String));
+
+    const noScene = await request(app).put(`/api/rooms/${room.code}`).set('x-edit-key', editKey).send({ sceneSlug: null });
+    expect(noScene.status).toBe(400);
   });
 });
 
