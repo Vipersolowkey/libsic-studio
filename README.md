@@ -8,6 +8,8 @@ Course project for **Web Application Development**.
 
 - Layered 2D scenes with mouse-parallax depth and animated effects (rain, snow, fireflies, stars)
 - Clickable objects in the room (window, lamp or neon sign, music object)
+- Full-screen room with floating controls that fade when idle, plus zoom in, zoom out and fit
+- Decorate mode: drag objects anywhere on the desk or the window glass, resize, flip, remove and add more from a tray, with undo and reset (see below)
 - Retro CD player: CD shelf, spinning disc, LCD track display, play, pause, next, previous, volume
 - Official CDs and custom CDs made from our royalty-free tracks
 - Save a room to get a share link; "My rooms" is remembered in the browser (no login)
@@ -38,12 +40,23 @@ libsic-studio/
 | --- | --- |
 | Database (MySQL or MongoDB) | MongoDB Atlas: scenes and rooms done; tracks and CDs to do |
 | RESTful API server (Node.js + Express) | Scenes and rooms done; tracks and CDs to do |
-| Front end (React) | Room scene, saving and sharing done; CD player to do |
+| Front end (React) | Room scene, full-screen UI, Decorate mode, saving and sharing done; CD player to do |
 | Source code for API and client on GitHub | This repository |
 | Online API documentation | `/api-docs` on the API server (scenes and rooms done) |
 | Public API base URL | Not deployed yet |
 | Live URL | Not deployed yet |
 | PowerPoint presentation + short Word file | Not started |
+
+## Decorating a room
+
+Open a room and press **Decorate**. The tray at the top adds objects, and you can then drag, resize, flip or remove any of them. Objects stay on their surface (the desk, or the glass of the window), things lower on the desk look closer, and every object brings its own shadow and reflection. The lamp and the fairy lights stay fixed. **Save room** stores the arrangement, so the share link shows the same room.
+
+How it works:
+
+- A scene lists the objects it allows in `catalog` (name, picture, surface, size limits) and the places they may stand in `surfaces`. Scenes without a catalog (the older ones) have no Decorate button.
+- A room stores its arrangement as `items`: `[{ id, key, x, y, scale, flip }]`, at most 30. `x` and `y` are percentages of the picture. A room with `items: null` shows the scene's default arrangement, so old saved rooms look the same as before.
+- The API refuses (400, with the field named) an item that is not in the scene catalog, stands outside its surface, is too big or too small, repeats a one-only object or has a duplicate `id`. Details are in `/api-docs`.
+- After pulling changes that touch scenes, run `npm run seed:scenes` in `api` again.
 
 ## Running the project
 
@@ -90,7 +103,7 @@ Both members work on the front end and the back end. See [`docs/TASKS.md`](docs/
 
 ## Working agreements
 
-- Each lane works on its own branch (`lane-a-music`, `lane-b-room`) and merges into `main` through a pull request that the other member reviews.
+- Each lane works on its own branches (for example `lane-a-music`, or `feature/decorate-mode` for the room side) and merges into `main` through a pull request that the other member reviews.
 - Secrets (database password, connection string) live in a `.env` file that is never committed. Each part has a `.env.example` instead.
 - Tracks and images are royalty-free or drawn by us, with the license noted.
 - Every member must be able to explain all of the code, not only their own lane.

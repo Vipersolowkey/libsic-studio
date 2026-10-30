@@ -1,10 +1,13 @@
 :root {
   color-scheme: dark;
-  --bg: #0b0b10;
+  --bg: #07090f;
   --panel: #16161e;
+  --glass: rgba(16, 19, 29, 0.72);
+  --line: rgba(255, 255, 255, 0.1);
   --text: #ecebf2;
   --muted: #9a98a8;
   --accent: #e8b86a;
+  --teal: #5fb8c9;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -12,7 +15,11 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(40, 110, 140, 0.28), transparent 60%),
+    radial-gradient(900px 500px at 100% 110%, rgba(232, 150, 70, 0.14), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
 }
 
@@ -26,44 +33,159 @@ body {
 }
 .message-page a { color: var(--accent); }
 
-.home {
+/* The room fills the whole window. The picture is scaled to cover it (a little is cropped when the
+   window is not 16:9) and every button floats on top of it in a corner. */
+.room {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+.room {
+  /* The picture is as wide as the window allows (--fit) times the zoom. --pan-x and --pan-y are set by the
+     mouse (see useRoomView.js) so that a zoomed picture can be looked around. */
+  --fit: min(100vw, calc(100vh * 16 / 9));
+  --stage-w: calc(var(--fit) * var(--zoom, 1));
+}
+@supports (height: 100dvh) {
+  .room { --fit: min(100vw, calc(100dvh * 16 / 9)); }
+}
+.room .stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--stage-w);
+  height: calc(var(--stage-w) * 9 / 16);
+  aspect-ratio: auto;
+  margin: 0;
+  transform: translate(calc(-50% + var(--pan-x, 0px)), calc(-50% + var(--pan-y, 0px)));
+  transition: transform 0.35s ease-out;
+}
+@media (prefers-reduced-motion: reduce) { .room .stage { transition: none; } }
+.room.idle { cursor: none; }
+/* On a tall screen (a phone) start on the part with the turntable and the desk. */
+@media (max-aspect-ratio: 1 / 1) {
+  .room .stage { left: calc(50% - 0.1 * var(--stage-w)); }
+}
+
+/* The layer of buttons. It lets the mouse through everywhere except on the buttons themselves,
+   so the room still follows the mouse and its objects can still be clicked. */
+.hud {
+  --gap: max(16px, env(safe-area-inset-left, 0px));
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+.hud > * { position: absolute; pointer-events: auto; }
+.hud-tl { left: var(--gap); top: max(16px, env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.hud-tr { right: var(--gap); top: max(16px, env(safe-area-inset-top, 0px)); display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: flex-start; gap: 8px; max-width: calc(100vw - 2 * var(--gap) - 250px); }
+.hud-tc { left: 50%; top: max(16px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); }
+.hud-mr { right: var(--gap); top: 50%; transform: translateY(-50%); }
+.hud-bl { left: var(--gap); bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
+.hud-br { right: var(--gap); bottom: max(14px, env(safe-area-inset-bottom, 0px)); width: min(26rem, calc(100vw - 2 * var(--gap))); }
+
+/* After a few quiet seconds the buttons fade away, except the brand, the room name and the CD player. */
+.hud-fade { transition: opacity 0.7s ease; }
+.room.idle .hud-fade:not(:hover):not(:focus-within) { opacity: 0.08; }
+@media (prefers-reduced-motion: reduce) { .hud-fade { transition: none; } }
+
+.brand,
+.room-name,
+.controls,
+.savebar,
+.my-rooms > .chip {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--text);
+  text-decoration: none;
+}
+.brand-name { font-weight: 650; letter-spacing: 0.04em; font-size: 16px; }
+.brand-disc {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--accent) 0 18%, #14161f 19% 24%, transparent 25%),
+    repeating-radial-gradient(circle, #1d2130 0 2px, #0c0e15 2px 4px);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 0 14px rgba(232, 184, 106, 0.35);
+}
+.room-name {
+  width: min(16rem, 60vw);
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+.room-name:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+/* Bottom left: switch room, effects, light */
+.zoom {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
-
+.zoom .chip { min-width: 44px; padding: 6px 8px; text-align: center; }
 .controls {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px 20px;
-  padding: 10px 16px;
-  background: var(--panel);
-}
-.control-group {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
 }
-.control-group > span {
-  margin-right: 4px;
-  color: var(--muted);
-  font-size: 13px;
+.menu { position: relative; }
+.menu-list {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 100%;
+  padding: 8px;
+  border: 1px solid #34343f;
+  border-radius: 14px;
+  background: #14161f;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
+.menu-list .chip { text-align: left; white-space: nowrap; }
 
 .chip {
-  padding: 6px 12px;
+  padding: 6px 13px;
   border: 1px solid #34343f;
   border-radius: 999px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 .chip:hover { border-color: var(--accent); }
+.chip:focus-visible, .cd-btn:focus-visible, .link-button:focus-visible, .link-field input:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
 .chip[aria-pressed='true'] {
   border-color: var(--accent);
   background: rgba(232, 184, 106, 0.16);
@@ -74,67 +196,184 @@ body {
   border-color: var(--accent);
   background: var(--accent);
   color: #1a1408;
+  font-weight: 600;
 }
 .chip.primary:hover { filter: brightness(1.08); }
 .chip.danger:hover { border-color: #e5675f; color: #e5675f; }
 .chip:disabled { opacity: 0.45; cursor: not-allowed; }
 a.chip { text-decoration: none; display: inline-block; }
 
-.room-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 8px 24px;
-  padding: 10px 16px 16px;
-  background: var(--panel);
-  border-top: 1px solid #23232d;
+/* Decorate mode */
+/* The overlay is stretched like a picture layer (see .layer), so a grab box lines up with its object. */
+.decorate-overlay {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.06);
+  touch-action: none; /* a finger drags the object instead of scrolling the page */
 }
+.hit {
+  position: absolute;
+  padding: 0;
+  border: 2px dashed transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+.hit::after { content: ''; position: absolute; inset: -14px; } /* a bigger area to grab with a finger */
+.hit:hover { border-color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.06); }
+.hit:active { cursor: grabbing; }
+.hit.selected { border-color: var(--accent); background: rgba(232, 184, 106, 0.12); }
+.hit:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+.tray {
+  max-width: min(36rem, calc(100vw - 640px)); /* the room name is at the left and the buttons at the right */
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.tray ul { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; overflow-x: auto; }
+.tray-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 78px;
+  padding: 6px 4px;
+  border: 1px solid #34343f;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.tray-item img { width: 48px; height: 48px; object-fit: contain; }
+.tray-item:hover:not(:disabled) { border-color: var(--accent); }
+.tray-item:disabled { opacity: 0.4; cursor: not-allowed; }
+.tray-note { margin: 6px 4px 0; color: var(--muted); font-size: 12px; }
+
+.item-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 11rem;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 14px;
+}
+.item-toolbar label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 13px; }
+.item-toolbar input[type='range'] { width: 100%; accent-color: var(--accent); }
+
+/* CD player stand-in (the real one comes from the music side). A slim bar that can grow into a bigger player. */
+.cd-slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border: 1px solid rgba(232, 184, 106, 0.3);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(60, 44, 30, 0.82), rgba(26, 20, 16, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.cd-disc {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #0a0b10 0 12%, #c8cfd8 13% 22%, transparent 23%),
+    conic-gradient(from 20deg, #8fa7b5, #e6dcc8, #7d8fb0, #d9b3c4, #8fa7b5);
+  opacity: 0.8;
+}
+.cd-display {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #0b0d08;
+  color: #e8b86a;
+  font: 600 12px/1 ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 6px rgba(232, 184, 106, 0.6);
+}
+.cd-buttons { display: flex; gap: 6px; }
+.cd-btn {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 13px;
+}
+.cd-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .savebar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 10px;
-}
-.name-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 13px;
-}
-.savebar input,
-.link-field input {
-  padding: 6px 10px;
-  border: 1px solid #34343f;
-  border-radius: 8px;
-  background: #0f0f15;
-  color: var(--text);
-  font: inherit;
-  font-size: 14px;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--glass);
 }
 .link-field { display: flex; align-items: center; gap: 6px; }
-.link-field input { width: 240px; }
+.link-field input {
+  width: 11rem;
+  padding: 6px 10px;
+  border: 1px solid #34343f;
+  border-radius: 999px;
+  background: rgba(8, 10, 16, 0.7);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
 
-.status { margin: 0; font-size: 14px; flex-basis: 100%; }
-.status.ok { color: #8fd19e; }
+/* Messages after saving or copying pop up above the dock instead of pushing the layout around */
+.status {
+  position: fixed;
+  left: 50%;
+  top: max(76px, calc(env(safe-area-inset-top, 0px) + 64px));
+  z-index: 30;
+  transform: translateX(-50%);
+  max-width: min(90vw, 560px);
+  margin: 0;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(14, 17, 26, 0.94);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+}
+.status.ok { color: #8fd19e; animation: toast-out 0.5s ease 5s forwards; } /* success notes fade away, errors stay */
 .status.error { color: #ff8f88; }
+@media (prefers-reduced-motion: reduce) { .status.ok { animation-duration: 0.01s; } }
 
 .my-rooms { position: relative; }
 .my-rooms-panel {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 8px);
-  z-index: 10;
-  width: 300px;
-  max-height: 50vh;
+  top: calc(100% + 10px);
+  z-index: 30;
+  width: min(300px, calc(100vw - 32px));
+  max-height: 60vh;
   overflow: auto;
   padding: 12px;
   border: 1px solid #34343f;
   border-radius: 12px;
-  background: var(--panel);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  background: #14161f;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 .my-rooms-panel ul { margin: 0 0 10px; padding: 0; list-style: none; }
 .my-rooms-panel li { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; }
@@ -152,3 +391,18 @@ a.chip { text-decoration: none; display: inline-block; }
   cursor: pointer;
 }
 .link-button:hover { color: #ff8f88; }
+
+@keyframes toast-out { to { opacity: 0; visibility: hidden; } }
+
+/* Narrow screens: the buttons use the full width and stack toward the bottom */
+@media (max-width: 700px) {
+  .hud-tr { left: var(--gap); max-width: none; justify-content: flex-start; top: calc(max(16px, env(safe-area-inset-top, 0px)) + 96px); }
+  .hud-bl { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 66px); }
+  .link-field input { width: 8rem; }
+}
+
+/* Not enough room along the top for the objects to add: they go above the CD player instead. */
+@media (max-width: 1000px) {
+  .hud-tc { left: var(--gap); top: auto; bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 66px); transform: none; }
+  .tray { max-width: calc(100vw - 2 * var(--gap)); }
+}

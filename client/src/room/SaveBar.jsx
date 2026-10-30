@@ -1,17 +1,27 @@
 import { Link } from 'react-router-dom';
 
+// The room's name, edited in place at the top of the room.
+export function RoomNameField({ name, onNameChange }) {
+  return (
+    <input
+      className="room-name"
+      type="text"
+      aria-label="Room name"
+      value={name}
+      maxLength={60}
+      placeholder="Untitled room"
+      onChange={(e) => onNameChange(e.target.value)}
+    />
+  );
+}
+
 // Saving and sharing. What it shows depends on the situation:
 //   new room                 -> "Save room"
 //   saved room, our own      -> "Save changes" and "Delete room" (this browser holds the edit key)
 //   saved room, someone else -> "Save my own copy" (without the edit key nobody can change it)
-export default function SaveBar({ saved, isOwner, name, onNameChange, dirty, busy, status, link, onSaveNew, onSaveChanges, onDelete, onCopy }) {
+export default function SaveBar({ saved, isOwner, dirty, busy, status, link, onSaveNew, onSaveChanges, onDelete, onCopy }) {
   return (
     <div className="savebar">
-      <label className="name-field">
-        <span>Room name</span>
-        <input type="text" value={name} maxLength={60} placeholder="Untitled room" onChange={(e) => onNameChange(e.target.value)} />
-      </label>
-
       {!saved && (
         <button type="button" className="chip primary" disabled={busy} onClick={onSaveNew}>
           Save room
