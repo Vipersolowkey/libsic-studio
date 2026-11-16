@@ -122,7 +122,7 @@
 /* Rain: two repeating sheets of streaks slide down at different speeds (see Effects.jsx). A sheet is one square
    picture repeated, and it moves by exactly one square, so the loop has no jump. */
 .effect-rain {
-  --slant: 0.16;
+  --slant: 0.07; /* must equal SLANT in Effects.jsx, or the streaks slide sideways as they fall */
 }
 .effect-rain .rain-sheet {
   inset: calc(var(--tile) * -1) calc(var(--tile) * -0.2) 0 0;
@@ -131,8 +131,8 @@
   animation: rain-fall var(--dur) linear infinite;
   will-change: transform;
 }
-.rain-back { --tile: 22cqw; --dur: 1.2s; opacity: 0.85; }
-.rain-near { --tile: 38cqw; --dur: 0.8s; }
+.rain-back { --tile: 22cqw; --dur: 1.25s; opacity: 0.8; }
+.rain-near { --tile: 38cqw; --dur: 0.72s; }
 @keyframes rain-fall {
   to { transform: translate3d(calc(var(--tile) * var(--slant) * -1), var(--tile), 0); }
 }

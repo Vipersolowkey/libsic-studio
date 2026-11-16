@@ -78,9 +78,9 @@ module.exports = {
     { name: 'c_lamp_lit', image: '/scenes/night-study/c_lamp_lit.webp', depth: 0.9, box: { x: 76.38, y: 27.56, width: 16.12, height: 50.33 }, light: true }, // 67
     { name: 'night lamp', image: '/scenes/night-study/c_lamp_night.webp', depth: 0.9, box: { x: 76.38, y: 27.56, width: 16.12, height: 50.33 }, night: true }, // 68
     { name: 'foreground leaves', image: '/scenes/night-study/c_fg_leaves.webp', depth: 1.0, box: { x: 0.0, y: 62.22, width: 0.12, height: 0.22 } }, // 69
-    { name: 'foreground books', image: '/scenes/night-study/c_fg_books.webp', depth: 1.0, box: { x: 86.56, y: 84.89, width: 13.44, height: 15.11 } }, // 70
-    { name: 'foreground books light', image: '/scenes/night-study/c_fg_books_lit.webp', depth: 1.0, box: { x: 86.56, y: 84.89, width: 13.44, height: 15.11 }, light: true }, // 71
-    { name: 'night books', image: '/scenes/night-study/c_fg_books_night.webp', depth: 1.0, box: { x: 86.56, y: 84.89, width: 13.44, height: 15.11 }, night: true }, // 72
+    { name: 'foreground books', image: '/scenes/night-study/c_fg_books.webp', depth: 0.9, box: { x: 86.56, y: 84.89, width: 13.44, height: 15.11 }, item: 'bookstack' }, // 70
+    { name: 'foreground books light', image: '/scenes/night-study/c_fg_books_lit.webp', depth: 0.9, box: { x: 86.56, y: 84.89, width: 13.44, height: 15.11 }, light: true, item: 'bookstack' }, // 71
+    { name: 'night books', image: '/scenes/night-study/c_fg_books_night.webp', depth: 0.9, box: { x: 86.56, y: 84.89, width: 13.44, height: 15.11 }, night: true, item: 'bookstack' }, // 72
     { name: 'city glow', image: '/scenes/night-study/l6_bloom.webp', depth: 0.5, box: { x: 5.37, y: 14.44, width: 84.63, height: 39.33 } }, // 73
     { name: 'lamp glow', image: '/scenes/night-study/c_glow_lamp.webp', depth: 0.9, box: { x: 54.94, y: 22.22, width: 42.19, height: 60.11 }, light: true }, // 74
     { name: 'dust motes in the lamp beam', image: '/scenes/night-study/c_dust.webp', depth: 0.95, box: { x: 64.25, y: 41.67, width: 14.69, height: 31.33 }, light: true, glide: { to: { x: 1.0, y: -1.8 }, duration: 64, delay: 0, pingpong: true, from: { x: 0, y: 0 } } }, // 75
@@ -109,6 +109,11 @@ module.exports = {
     { name: 'books light', image: '/scenes/night-study/d_books_lit.webp', depth: 0.9, box: { x: 23.25, y: 77.33, width: 11.88, height: 14.78 }, light: true, item: 'books' }, // 98
     { name: 'Paper star', image: '/scenes/night-study/d_stars.webp', depth: 0.5, box: { x: 18.25, y: 5.56, width: 7.62, height: 29.89 }, item: 'stars' }, // 99
     { name: 'Polaroid string', image: '/scenes/night-study/d_polaroids.webp', depth: 0.5, box: { x: 37.25, y: 21.56, width: 19.88, height: 10.0 }, item: 'polaroids' }, // 100
+    // The notepad and pencil were once painted into the desk; docs/art-tools/make_notepad_item.py cut them out so they can be moved.
+    { name: 'notepad shadow', image: '/scenes/night-study/c_notepad_shadow.webp', depth: 0.9, box: { x: 27.81, y: 75.55, width: 15.19, height: 13.22 }, item: 'notepad', mirror: false },
+    { name: 'notepad', image: '/scenes/night-study/c_notepad.webp', depth: 0.9, box: { x: 28.56, y: 76.89, width: 13.69, height: 10.56 }, item: 'notepad' },
+    { name: 'notepad light', image: '/scenes/night-study/c_notepad_lit.webp', depth: 0.9, blend: 'screen', box: { x: 28.56, y: 76.89, width: 13.69, height: 10.56 }, light: true, item: 'notepad' },
+    { name: 'night notepad', image: '/scenes/night-study/c_notepad_night.webp', depth: 0.9, box: { x: 28.56, y: 76.89, width: 13.69, height: 10.56 }, night: true, item: 'notepad' },
   ],
   objects: [
     { key: 'window', label: 'Window', layer: 8, x: 7, y: 4, width: 86, height: 62, action: { type: 'toggleEffect', effect: 'rain' } },
@@ -126,6 +131,8 @@ module.exports = {
     { key: 'clock', label: 'Clock', surface: 'desk', home: { x: 25.37, y: 73.67 }, bounds: { x: 20.69, y: 65.89, width: 9.38, height: 8.44 }, thumb: '/scenes/night-study/c_clock_thumb.webp', flippable: false, unique: false, inDefault: true, scale: { min: 0.6, max: 1.6 } },
     { key: 'sleeve', label: 'Record sleeve', surface: 'desk', home: { x: 44.34, y: 86.89 }, bounds: { x: 38.19, y: 77.11, width: 12.31, height: 10.44 }, thumb: '/scenes/night-study/c_sleeve_thumb.webp', flippable: true, unique: false, inDefault: true, scale: { min: 0.6, max: 2 } },
     { key: 'player', label: 'Music player', surface: 'desk', home: { x: 62.88, y: 82.44 }, bounds: { x: 51.5, y: 64.22, width: 22.75, height: 18.89 }, thumb: '/scenes/night-study/c_player_thumb.webp', flippable: false, unique: true, inDefault: true, scale: { min: 0.7, max: 1.4 } },
+    { key: 'notepad', label: 'Notepad', surface: 'desk', home: { x: 35.4, y: 82.5 }, bounds: { x: 28.56, y: 76.89, width: 13.69, height: 10.56 }, thumb: '/scenes/night-study/c_notepad_thumb.webp', flippable: true, unique: false, inDefault: true, scale: { min: 0.6, max: 2 } },
+    { key: 'bookstack', label: 'Book stack', surface: 'desk', home: { x: 93.28, y: 98.0 }, bounds: { x: 86.56, y: 84.89, width: 13.44, height: 15.11 }, thumb: '/scenes/night-study/c_fg_books_thumb.webp', flippable: true, unique: false, inDefault: true, scale: { min: 0.5, max: 1.6 } },
     { key: 'books', label: 'Books', surface: 'desk', home: { x: 29.5, y: 87.78 }, bounds: { x: 23.25, y: 77.33, width: 11.88, height: 14.78 }, thumb: '/scenes/night-study/d_books_thumb.webp', flippable: true, unique: false, inDefault: false, scale: { min: 0.6, max: 2 } },
     { key: 'candle', label: 'Candle', surface: 'desk', home: { x: 45.38, y: 87.78 }, bounds: { x: 43.38, y: 80.56, width: 3.88, height: 9.11 }, thumb: '/scenes/night-study/d_candle_thumb.webp', flippable: true, unique: false, inDefault: false, scale: { min: 0.6, max: 2.5 } },
     { key: 'photo', label: 'Framed photo', surface: 'desk', home: { x: 57.19, y: 88.44 }, bounds: { x: 53.25, y: 78.33, width: 8.06, height: 10.78 }, thumb: '/scenes/night-study/d_photo_thumb.webp', flippable: true, unique: false, inDefault: false, scale: { min: 0.6, max: 2 } },

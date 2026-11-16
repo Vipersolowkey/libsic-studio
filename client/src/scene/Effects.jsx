@@ -74,20 +74,21 @@ const BUILDERS = {
 // The back sheet holds the far rain (fine, short, faint) and the middle rain; the near sheet holds a few long, bright
 // streaks and falls faster, which gives the rain depth. Every sheet covers the whole picture and moves on every
 // redraw, so each one costs about as much as a full background: two is the fewest that still shows depth.
+// It is a light rain: few, thin, faint streaks that fall unhurried.
 // On top of that a few drops sit on the window glass and run down it now and then.
 const SHEETS = [
   {
     name: 'back',
     seed: 5,
     groups: [
-      { count: 150, length: [7, 15], width: 0.5, alpha: [0.1, 0.24] },
-      { count: 50, length: [24, 46], width: 1.1, alpha: [0.2, 0.45] },
+      { count: 70, length: [6, 12], width: 0.5, alpha: [0.08, 0.2] },
+      { count: 18, length: [16, 30], width: 0.8, alpha: [0.14, 0.3] },
     ],
   },
-  { name: 'near', seed: 7, groups: [{ count: 26, length: [46, 80], width: 1.5, alpha: [0.3, 0.6] }] },
+  { name: 'near', seed: 7, groups: [{ count: 11, length: [18, 34], width: 0.9, alpha: [0.16, 0.34] }] },
 ];
 const TILE = 300; // the sheet is a square picture that repeats; this is its size in drawing units
-const SLANT = 0.16; // the rain leans a little, as if there is some wind
+const SLANT = 0.07; // a light rain falls almost straight down (keep --slant in scene.css the same)
 
 // The repeating picture of one sheet: slanted streaks, each fading in toward its lower end like a falling drop.
 export function rainTile({ seed, groups }) {
