@@ -18,7 +18,7 @@ export default function Sidebar({ open, onToggle, footer, children }) {
   return (
     <aside className="sidebar side-fade" aria-label="Room controls">
       <header className="side-head">
-        <Link className="brand" to="/new" aria-label="Libsic Studio, start a new room">
+        <Link className="brand" to="/" aria-label="Libsic Studio, back to the start page">
           <span className="brand-disc" aria-hidden="true" />
           <span className="brand-text">
             <span className="brand-name">Libsic Studio</span>
