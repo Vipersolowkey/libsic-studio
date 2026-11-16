@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getScene, getScenes, getRoom, createRoom, updateRoom, deleteRoom, request, ApiError } from './api.js';
+import { getScenes, getScene, getRoom, createRoom, updateRoom, deleteRoom, request, ApiError } from './api.js';
 
 const reply = (status, body) => Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(body) });
 
@@ -14,21 +14,21 @@ describe('api', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/scenes');
   });
 
-  it('getScene puts the slug in the address', async () => {
-    const fetchMock = vi.fn(() => reply(200, { slug: 'moon-base' }));
+  it('getScene asks for one whole scene by its slug', async () => {
+    const fetchMock = vi.fn(() => reply(200, { slug: 'night-study', layers: [] }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await getScene('moon-base');
-    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/scenes/moon-base');
+    expect(await getScene('night-study')).toEqual({ slug: 'night-study', layers: [] });
+    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/scenes/night-study');
   });
 
   it('throws an ApiError with the status and the message from the API', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => reply(404, { error: 'Scene not found' })));
+    vi.stubGlobal('fetch', vi.fn(() => reply(404, { error: 'Room not found' })));
 
-    const error = await getScene('nope').catch((e) => e);
+    const error = await getRoom('nope').catch((e) => e);
     expect(error).toBeInstanceOf(ApiError);
     expect(error.status).toBe(404);
-    expect(error.message).toBe('Scene not found');
+    expect(error.message).toBe('Room not found');
   });
 
   it('throws a readable error when the server cannot be reached', async () => {

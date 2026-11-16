@@ -1,7 +1,7 @@
 /* The stage keeps the picture's 16:9 shape so clickable areas (percentages) line up. */
 .stage {
   position: relative;
-  width: min(100%, calc((100vh - 150px) * 16 / 9));
+  width: min(100%, calc((100vh - var(--chrome, 150px)) * 16 / 9));
   aspect-ratio: 16 / 9;
   margin: 0 auto;
   overflow: hidden;
@@ -13,16 +13,33 @@
   position: absolute;
   inset: 0;
   pointer-events: none; /* only the object buttons catch clicks */
-  transition: transform 0.25s ease-out;
-  will-change: transform;
+  transition: transform 0.25s ease-out, opacity 0.6s ease; /* opacity: lamp light and its glow fade with the lamp */
   transform: scale(1.06); /* slightly bigger than the stage so the edges never show while moving */
 }
 
-.layer img {
+/* Every layer keeps its own ready-drawn sheet on the graphics card. Zooming and looking around then only move and
+   enlarge those sheets. Without this the browser redraws each layer after every zoom step to make it sharper, and
+   the layers that are not redrawn in time show up black for a moment. */
+.stage .layer {
+  will-change: transform;
+}
+
+/* A mirrored object: the picture is flipped inside its (already mirrored) box. */
+.flip {
+  width: 100%;
+  height: 100%;
+}
+
+.layer img,
+.layer .sheet {
   display: block;
   width: 100%;
   height: 100%;
   user-select: none;
+}
+/* Of the picture and its sheet on the graphics card (see LayerPicture in SceneStage.jsx) only one is shown. */
+.stage .layer .stepped-aside {
+  display: none; /* written with .stage in front so it also wins over the picture rules of the animated layers below */
 }
 
 /* "Lights off": a dark layer over the whole picture. */
@@ -42,18 +59,22 @@
 .hotspot {
   position: absolute;
   padding: 0;
-  border: 2px solid transparent;
-  border-radius: 10px;
+  border: 1px solid transparent;
+  border-radius: 14px;
   background: transparent;
   cursor: pointer;
   pointer-events: auto;
-  transition: border-color 0.2s, background 0.2s, transform 0.1s;
+  visibility: visible; /* stays clickable when its layer is hidden (a day picture at night) */
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.1s;
 }
+/* Pointing at an object lights it softly from inside (a glow, not a hard white box). The keyboard keeps a clear outline. */
 .hotspot:hover,
 .hotspot:focus-visible {
-  border-color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.08);
+  background: radial-gradient(ellipse closest-side, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0)); /* fades out before the edge: no box */
   outline: none;
+}
+.hotspot:focus-visible {
+  border-color: rgba(255, 255, 255, 0.75);
 }
 .hotspot:active {
   transform: scale(0.97);
@@ -98,17 +119,41 @@
   to { opacity: 1; }
 }
 
-/* Rain */
-.effect-rain i {
-  top: -10cqh;
-  left: var(--x);
-  width: 1.5px;
-  height: var(--len);
-  background: linear-gradient(to bottom, transparent, rgba(190, 210, 255, var(--alpha)));
-  animation: rain-fall var(--dur) linear var(--delay) infinite;
+/* Rain: two repeating sheets of streaks slide down at different speeds (see Effects.jsx). A sheet is one square
+   picture repeated, and it moves by exactly one square, so the loop has no jump. */
+.effect-rain {
+  --slant: 0.07; /* must equal SLANT in Effects.jsx, or the streaks slide sideways as they fall */
 }
+.effect-rain .rain-sheet {
+  inset: calc(var(--tile) * -1) calc(var(--tile) * -0.2) 0 0;
+  background-repeat: repeat;
+  background-size: var(--tile) var(--tile);
+  animation: rain-fall var(--dur) linear infinite;
+  will-change: transform;
+}
+.rain-back { --tile: 22cqw; --dur: 1.25s; opacity: 0.8; }
+.rain-near { --tile: 38cqw; --dur: 0.72s; }
 @keyframes rain-fall {
-  to { transform: translate(-22px, 125cqh); }
+  to { transform: translate3d(calc(var(--tile) * var(--slant) * -1), var(--tile), 0); }
+}
+/* A drop on the window glass: it sits still, then runs down a little way and fades. */
+.effect-rain .rain-drop {
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: calc(var(--size) * 1.25);
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.85) 0 12%, rgba(190, 215, 255, 0.28) 40%, rgba(150, 185, 240, 0.12) 70%, rgba(220, 235, 255, 0.5) 100%);
+  opacity: 0;
+  animation: rain-drop var(--dur) ease-in var(--delay) infinite;
+  will-change: transform, opacity;
+}
+@keyframes rain-drop {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  8% { opacity: 0.9; }
+  62% { transform: translate3d(0, 0, 0); opacity: 0.9; }
+  92% { opacity: 0.7; }
+  100% { transform: translate3d(calc(var(--run) * -0.05), var(--run), 0); opacity: 0; }
 }
 
 /* Snow */
@@ -153,6 +198,76 @@
   50% { opacity: 1; }
 }
 
+/* Dust floating in the sun: tiny soft specks that wander slowly and fade in and out. */
+.effect-dust i {
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  /* a soft glow drawn as a gradient (cheaper to paint than a shadow, and there are many of them) */
+  background: radial-gradient(circle, rgba(255, 246, 220, 1) 0 35%, rgba(255, 226, 160, 0.5) 55%, rgba(255, 226, 160, 0) 100%);
+  transform: scale(2.4);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation:
+    dust-drift var(--dur) ease-in-out var(--delay) infinite alternate,
+    dust-fade var(--blink) ease-in-out var(--delay) infinite;
+}
+@keyframes dust-drift {
+  from { transform: translate3d(0, 0, 0) scale(2.4); }
+  to { transform: translate3d(var(--dx), var(--dy), 0) scale(2.4); }
+}
+@keyframes dust-fade {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* Bubbles rise through the water, wobble a little from side to side and fade away near the top. */
+.effect-bubbles i {
+  left: var(--x);
+  top: 0;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.9) 0 10%, rgba(200, 240, 245, 0.18) 38%, rgba(190, 235, 240, 0.06) 64%, rgba(225, 250, 255, 0.55) 98%);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation:
+    bubble-rise var(--dur) ease-in var(--delay) infinite,
+    bubble-wobble var(--wobdur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes bubble-rise {
+  0% { transform: translate3d(0, 108cqh, 0); opacity: 0; }
+  10% { opacity: 0.9; }
+  85% { opacity: 0.8; }
+  100% { transform: translate3d(0, -12cqh, 0); opacity: 0; }
+}
+@keyframes bubble-wobble {
+  from { translate: 0 0; }
+  to { translate: var(--wob) 0; }
+}
+
+/* Glowing plankton: soft cyan specks that drift and fade in and out. */
+.effect-plankton i {
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(210, 255, 250, 1) 0 30%, rgba(110, 230, 225, 0.45) 55%, rgba(110, 230, 225, 0) 100%);
+  transform: scale(3);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation:
+    plankton-drift var(--dur) ease-in-out var(--delay) infinite alternate,
+    dust-fade var(--blink) ease-in-out var(--delay) infinite;
+}
+@keyframes plankton-drift {
+  from { transform: translate3d(0, 0, 0) scale(3); }
+  to { transform: translate3d(var(--dx), var(--dy), 0) scale(3); }
+}
+
 /* Stars */
 .effect-stars i {
   left: var(--x);
@@ -175,4 +290,295 @@
   .effect-snow { display: none; }
   .effect i { animation: none !important; }
   .layer { transition: none; }
+}
+
+/* ---------- Animated layers ---------- */
+/* Glows add light to what is below them. */
+.layer[data-blend='screen'] {
+  mix-blend-mode: screen;
+}
+/* Shading darkens what is below it and keeps its colour (the room at night). */
+.layer[data-blend='multiply'] {
+  mix-blend-mode: multiply;
+}
+/* Lamp light and its glow switch off with the lamp. */
+/* A layer that has faded out is also hidden (visibility), after its fade has finished. The browser then skips it
+   completely: it is not drawn and its movements stop costing anything. Coming back, it is shown at once and fades in. */
+.stage.lights-off .layer[data-light] {
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.25s ease-out, opacity 0.6s ease, visibility 0s 0.6s;
+}
+/* Night pictures (the night sky in a window) come in slowly when the lights go off. */
+.layer[data-night] {
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.25s ease-out, opacity 1.6s ease, visibility 0s 1.6s;
+}
+.stage.lights-off .layer[data-night] {
+  opacity: 1;
+  visibility: visible;
+  transition: transform 0.25s ease-out, opacity 1.6s ease;
+}
+
+/* Curtains slide shut: the layer grows out of its outer edge. Only transform changes, so it stays smooth. */
+.curtain {
+  width: 100%;
+  height: 100%;
+  transition: transform 1.8s cubic-bezier(0.45, 0, 0.2, 1);
+  will-change: transform;
+}
+.stage.curtains-closed .curtain {
+  transform: scaleX(var(--closed-scale, 2));
+}
+/* the hover label must not be stretched with the cloth */
+.stage.curtains-closed .curtain .hotspot-label {
+  transform: translate(-50%, 6px) scaleX(calc(1 / var(--closed-scale, 2)));
+}
+
+/* A scene with real lamp layers only gets a gentle dark layer, so the city outside stays lit. */
+.stage.has-lights.lights-off .dim {
+  background: rgba(4, 8, 22, var(--dim-alpha, 0.4));
+}
+
+.anim,
+.anim .spin {
+  width: 100%;
+  height: 100%;
+}
+.anim img,
+.anim .sheet,
+.anim .spin img,
+.anim .spin .sheet {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The record turns. */
+.anim-spin {
+  transform: scaleY(var(--squash, 1));
+}
+.anim-spin .spin {
+  animation: spin var(--dur) linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.stage.paused .anim-spin .spin {
+  animation-play-state: paused;
+}
+/* A radar sweep turns all the time, also when the music is paused. */
+.anim-sweep {
+  animation: spin var(--dur) linear infinite;
+  will-change: transform;
+}
+
+/* The tonearm rests on the record while music plays and lifts away when it stops. */
+.anim-tonearm {
+  transition: transform 1.2s ease;
+}
+.stage.paused .anim-tonearm {
+  transform: rotate(var(--rest, -14deg));
+}
+
+/* A shell that closes while the music is paused (the giant clam). Two pictures do it together:
+   "shut" is the upper shell behind the pearl, "cover" is the same shell drawn in front of the pearl. Both fold down by the
+   same amount, and the one in front fades in while they fold, so the shell seems to come down over the pearl. */
+.anim-shut,
+.anim-cover {
+  transition: transform 1.3s cubic-bezier(0.45, 0, 0.2, 1), opacity 0.4s ease 0.9s; /* opening: the front shell fades away at the end */
+}
+.anim-cover {
+  opacity: 0;
+}
+.stage.paused .anim-shut,
+.stage.paused .anim-cover {
+  transform: scaleY(var(--squash, 0.6));
+}
+.stage.paused .anim-cover {
+  opacity: 1;
+  transition: transform 1.3s cubic-bezier(0.45, 0, 0.2, 1), opacity 0.4s ease; /* closing: it appears as the shell starts to fold */
+}
+
+/* Leaves sway a little around the point where they join the stem. */
+.anim-sway {
+  animation: sway var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes sway {
+  from { transform: rotate(calc(var(--amp, 2.2deg) * -1)); }
+  to { transform: rotate(var(--amp, 2.2deg)); }
+}
+
+/* Steam rises from the mug and fades. */
+.anim-steam {
+  animation: steam var(--dur) ease-out var(--delay) infinite;
+}
+@keyframes steam {
+  0% { opacity: 0; transform: translateY(6px) scale(0.92); }
+  30% { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(-24px) scale(1.12); }
+}
+
+/* Glows breathe or twinkle. */
+.anim-pulse {
+  animation: pulse var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes pulse {
+  from { opacity: 0.72; }
+  to { opacity: 1; }
+}
+
+/* All movements below only change transform or opacity, so the browser can run them on the graphics card
+   and they stay smooth. Slow back-and-forth (alternate) with ease-in-out has no jump where a round ends. */
+.anim-breathe,
+.anim-drift,
+.anim-flick,
+.anim-billow,
+.anim-throb,
+.anim-sway,
+.anim-pulse,
+.anim-steam {
+  will-change: transform, opacity;
+}
+
+/* A sleeping cat breathes: the chest rises and falls a little. */
+.anim-breathe {
+  animation: breathe var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes breathe {
+  from { transform: scale(1, 1); }
+  to { transform: scale(1.012, 1.03); }
+}
+
+/* Clouds slide slowly across the sky and back. */
+.anim-drift {
+  animation: drift var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(calc(var(--distance, 4%) * -1), 0, 0); }
+}
+
+/* A slow trip across the scene (a fish swimming by, a jellyfish drifting up): fades in, glides in a straight line, fades out. */
+.glide {
+  width: 100%;
+  height: 100%;
+  animation: glide var(--dur) linear var(--delay) infinite;
+  will-change: transform, opacity;
+}
+@keyframes glide {
+  0% { transform: translate3d(var(--fx), var(--fy), 0); opacity: 0; }
+  7% { opacity: 1; }
+  93% { opacity: 1; }
+  100% { transform: translate3d(var(--tx), var(--ty), 0); opacity: 0; }
+}
+.glide-pingpong {
+  animation-name: glide-pingpong;
+  animation-timing-function: ease-in-out;
+  animation-direction: alternate;
+}
+@keyframes glide-pingpong {
+  from { transform: translate3d(var(--fx), var(--fy), 0); }
+  to { transform: translate3d(var(--tx), var(--ty), 0); }
+}
+.glide-mirror img,
+.glide-mirror .sheet {
+  transform: scaleX(-1);
+}
+
+/* A jellyfish bell squashes and stretches. */
+.anim-throb {
+  animation: throb var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes throb {
+  from { transform: scale(var(--sx0, 1), var(--sy0, 1)); }
+  to { transform: scale(var(--sx1, 1), var(--sy1, 1)); }
+}
+
+/* A tail rests, then flicks once in a while. */
+.anim-flick {
+  animation: flick var(--dur) ease-in-out var(--delay) infinite;
+}
+@keyframes flick {
+  0%, 62%, 100% { transform: rotate(0deg); }
+  70% { transform: rotate(calc(var(--amp, 5deg) * 1)); }
+  78% { transform: rotate(calc(var(--amp, 5deg) * -0.6)); }
+  86% { transform: rotate(calc(var(--amp, 5deg) * 0.3)); }
+}
+
+/* A curtain moves in the breeze: it sways at the top rod and the cloth widens a little. */
+.anim-billow {
+  animation: billow var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes billow {
+  from { transform: skewX(calc(var(--amp, 1.2deg) * -0.6)) scaleX(1); }
+  to { transform: skewX(var(--amp, 1.2deg)) scaleX(1.012); }
+}
+
+/* A small picture repeated over the whole layer (film grain). */
+.tiled {
+  width: 100%;
+  height: 100%;
+  background-repeat: repeat;
+}
+
+/* The live clock */
+.clock {
+  width: 100%;
+  height: 100%;
+}
+.clock-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.clock-face .seg {
+  fill: #5a1512;
+  opacity: 0.28;
+}
+.clock-face .seg.on {
+  fill: #ff6a52;
+  opacity: 1;
+  filter: drop-shadow(0 0 1.2px rgba(255, 90, 70, 0.9));
+}
+.clock-face .colon {
+  animation: colon 2s steps(1) infinite;
+}
+@keyframes colon {
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-sway,
+  .anim-steam,
+  .anim-pulse,
+  .anim-breathe,
+  .anim-drift,
+  .anim-flick,
+  .anim-billow,
+  .anim-throb,
+  .anim-sweep,
+  .anim-spin .spin,
+  .clock-face .colon { animation: none; }
+  .layer { transition: opacity 0.6s ease; }
+  .curtain, .anim-shut, .anim-cover { transition: none; }
+  .glide { animation: none; }
+}
+
+/* A newly opened scene stays see-through until its pictures have arrived, then fades in as one picture
+   (see usePicturesArrived in SceneStage.jsx). */
+.stage { transition: opacity 0.6s ease; }
+.stage.arriving { opacity: 0; transition: none; }
+
+/* Low power mode: every movement of the scene is held still, so nothing changes on screen and the graphics card has
+   nothing to redraw. Falling rain and snow are hidden, because streaks frozen in mid-air look like scratches. */
+.stage.calm .layer,
+.stage.calm .layer * {
+  animation-play-state: paused !important;
+}
+.stage.calm .effect-rain,
+.stage.calm .effect-snow {
+  display: none;
 }

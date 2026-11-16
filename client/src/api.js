@@ -29,6 +29,7 @@ export async function request(path, { method = 'GET', body, headers = {} } = {})
   return res.status === 204 ? null : res.json(); // 204 = success with nothing to send back
 }
 
+// The menu of scenes (slug, name, description), and one whole scene with its layers and objects.
 export const getScenes = () => request('/api/scenes');
 export const getScene = (slug) => request(`/api/scenes/${encodeURIComponent(slug)}`);
 

@@ -11,6 +11,10 @@ info:
     Only a hash of the key is stored on the server.
 
     Data is sent and received as JSON. Errors always look like `{ "error": "..." }`.
+
+    **Fair use.** One visitor may send 300 requests per minute to the `/api` addresses. Above that the API
+    answers `429 Too Many Requests` until the minute is over. Answers are sent compressed (gzip) to browsers
+    that accept it.
 servers:
   - url: /
     description: This server
@@ -51,7 +55,9 @@ paths:
     get:
       tags: [Scenes]
       summary: List all scenes
-      description: Returns every scene with its layers and clickable objects, sorted by name.
+      description: >-
+        Returns the menu of scenes, sorted by name: only the slug, name and description of each one.
+        The layers and clickable objects of a scene are sent by GET /api/scenes/{slug}, for the scene that is opened.
       operationId: listScenes
       responses:
         '200':
@@ -61,7 +67,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Scene'
+                  $ref: '#/components/schemas/SceneSummary'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -101,9 +107,9 @@ paths:
               $ref: '#/components/schemas/RoomInput'
             example:
               name: Late night reading
-              sceneSlug: cozy-cabin
+              sceneSlug: night-study
               settings:
-                effect: snow
+                effect: rain
                 lightOn: false
       responses:
         '201':
@@ -207,7 +213,7 @@ components:
       description: The scene's readable name in the address.
       schema:
         type: string
-      example: rainy-cafe
+      example: night-study
     RoomCode:
       name: code
       in: path
@@ -291,8 +297,23 @@ components:
 
     Effect:
       type: string
-      enum: [rain, snow, fireflies, stars]
+      enum: [rain, snow, fireflies, stars, dust, bubbles, plankton]
       description: An animated weather or sky effect.
+
+    SceneSummary:
+      type: object
+      description: One line of the scene menu. The full scene is read with GET /api/scenes/{slug}.
+      required: [slug, name]
+      properties:
+        slug:
+          type: string
+          example: night-study
+        name:
+          type: string
+          example: Rainy Night Study
+        description:
+          type: string
+          example: A quiet desk above the city at night.
 
     Scene:
       type: object
@@ -300,10 +321,10 @@ components:
       properties:
         slug:
           type: string
-          example: rainy-cafe
+          example: night-study
         name:
           type: string
-          example: Rainy Café
+          example: Rainy Night Study
         description:
           type: string
           example: A late-night café with a big window onto a rainy, neon-lit street.
@@ -329,10 +350,127 @@ components:
           minimum: 0
           description: Position in `layers` of the layer the effect is drawn on top of.
           example: 1
+        nightDim:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: How dark the whole picture gets when the lights are off. Leave it out for the usual dimming; a scene that paints its own night in layers can use a small number.
+        surfaces:
+          type: array
+          description: The places where a visitor may put objects (for example the desk). Empty for a scene that cannot be decorated.
+          items:
+            $ref: '#/components/schemas/SceneSurface'
+        catalog:
+          type: array
+          description: The objects a visitor may place in this scene. Empty for a scene that cannot be decorated.
+          items:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    SceneSurface:
+      type: object
+      description: |
+        A place where objects can stand. Objects lower on the surface (larger `y`) look closer: they are drawn
+        bigger and in front of the ones above them.
+      required: [key, area, drawAt]
+      properties:
+        key:
+          type: string
+          example: desk
+        area:
+          type: object
+          description: The contact point of an object must stay inside this box, in percent of the scene.
+          required: [x, y, width, height]
+          properties:
+            x: { type: number, minimum: 0, maximum: 100 }
+            y: { type: number, minimum: 0, maximum: 100 }
+            width: { type: number, minimum: 0, maximum: 100 }
+            height: { type: number, minimum: 0, maximum: 100 }
+          example: { x: 2, y: 73, width: 96, height: 24 }
+        blocked:
+          type: array
+          description: |
+            Boxes where the contact point of an object may not be, for example the spot of a fixed object. A box
+            may reach past the edge of `area` (then the way out on that side is closed). The editor pushes a dragged
+            object out of a box to the nearest free edge. Omit it (or leave it empty) for a surface without such spots.
+          items:
+            type: object
+            required: [x, y, width, height]
+            properties:
+              x: { type: number, minimum: 0, maximum: 100 }
+              y: { type: number, minimum: 0, maximum: 100 }
+              width: { type: number, minimum: 0, maximum: 100 }
+              height: { type: number, minimum: 0, maximum: 100 }
+          example: [{ x: 0, y: 60, width: 40, height: 27 }]
+        drawAt:
+          type: integer
+          minimum: 0
+          description: The objects of this surface are drawn just before this position in `layers`.
+          example: 36
+        perspective:
+          type: object
+          description: How big an object looks at the far and the near edge of the surface (1 is the size it was drawn at).
+          properties:
+            farY: { type: number, description: The y of the far edge. }
+            nearY: { type: number, description: The y of the near edge. }
+            farScale: { type: number, minimum: 0 }
+            nearScale: { type: number, minimum: 0 }
+          example: { farY: 73, nearY: 97, farScale: 0.8, nearScale: 1.25 }
+
+    CatalogEntry:
+      type: object
+      description: One kind of object a visitor can place. Its pictures are the layers whose `item` is this `key`.
+      required: [key, label, surface, home, bounds, thumb, scale]
+      properties:
+        key:
+          type: string
+          example: mug
+        label:
+          type: string
+          example: Mug
+        surface:
+          type: string
+          description: The `key` of the surface it stands on.
+          example: desk
+        home:
+          type: object
+          description: Where its contact point (bottom centre) sits in the original picture, in percent of the scene.
+          required: [x, y]
+          properties:
+            x: { type: number }
+            y: { type: number }
+        bounds:
+          type: object
+          description: The area the object covers at its home, in percent of the scene. This is what a visitor grabs.
+          required: [x, y, width, height]
+          properties:
+            x: { type: number }
+            y: { type: number }
+            width: { type: number }
+            height: { type: number }
+        thumb:
+          type: string
+          description: Picture shown in the tray.
+          example: /scenes/night-study/c_mug.webp
+        flippable:
+          type: boolean
+          description: False for objects with text on them, such as the clock.
+        unique:
+          type: boolean
+          description: True when a room can hold at most one.
+        inDefault:
+          type: boolean
+          description: True when the object is part of the starting arrangement.
+        scale:
+          type: object
+          description: How small and how big a visitor may make it.
+          required: [min, max]
+          properties:
+            min: { type: number, minimum: 0 }
+            max: { type: number, minimum: 0 }
 
     SceneLayer:
       type: object
-      required: [name, image, depth]
+      required: [name, depth]   # `image` is needed for every layer except a clock
       properties:
         name:
           type: string
@@ -340,13 +478,121 @@ components:
         image:
           type: string
           description: Path of the image file on the website.
-          example: /scenes/rainy-cafe/layer-2.svg
+          example: /scenes/night-study/l2_city.webp
         depth:
           type: number
           minimum: 0
           maximum: 1
           description: 0 is far away and hardly moves with the mouse, 1 is nearest and moves the most.
           example: 0.2
+        kind:
+          type: string
+          enum: [image, clock]
+          default: image
+          description: A `clock` layer draws a live clock and needs no `image`.
+        box:
+          type: object
+          description: Where the layer sits, in percent of the scene. Left out, the layer covers the whole scene.
+          required: [x, y, width, height]
+          properties:
+            x: { type: number, minimum: 0, maximum: 100 }
+            y: { type: number, minimum: 0, maximum: 100 }
+            width: { type: number, minimum: 0, maximum: 100 }
+            height: { type: number, minimum: 0, maximum: 100 }
+        blend:
+          type: string
+          enum: [normal, screen, multiply]
+          description: Use `screen` for glows, so they add light to what is below them, and `multiply` to darken them while keeping their colour (night shading).
+        tile:
+          type: number
+          minimum: 1
+          maximum: 100
+          description: Repeat the picture side by side (for film grain). It is this wide, in percent of the layer.
+        light:
+          type: boolean
+          description: True for lamp light and its glow. These layers fade out when the lights are switched off.
+        glide:
+          type: object
+          required: [from, to, duration]
+          description: |
+            A slow trip across the scene that repeats, for a fish swimming by or a jellyfish drifting up. The layer fades in
+            at `from`, moves in a straight line to `to` and fades out. It can be combined with `anim`.
+          properties:
+            from:
+              type: object
+              required: [x, y]
+              description: "Where the trip starts, in percent of the layer's own width (x) and height (y). It may lie outside the layer."
+              properties:
+                x: { type: number, minimum: -2000, maximum: 2000 }
+                y: { type: number, minimum: -2000, maximum: 2000 }
+            to:
+              type: object
+              required: [x, y]
+              description: Where the trip ends, in the same units as `from`.
+              properties:
+                x: { type: number, minimum: -2000, maximum: 2000 }
+                y: { type: number, minimum: -2000, maximum: 2000 }
+            duration: { type: number, minimum: 1, description: Seconds for one trip. }
+            delay: { type: number, description: "Seconds before it starts; a negative number starts it part of the way along." }
+            mirror: { type: boolean, description: Flip the picture (a fish drawn facing right that swims to the left). }
+            pingpong: { type: boolean, description: "Drift to `to` and back again, smoothly, without fading out and starting over (a jellyfish hanging in the water). `duration` is then one way." }
+        night:
+          type: boolean
+          description: True for a layer that is only shown at night (when the lights are off), such as the night sky in a window.
+        curtain:
+          type: object
+          required: [scale, origin]
+          description: |
+            Marks the layer as a curtain. When the room's curtains are closed it is drawn `scale` times wider,
+            growing out of the edge at `origin`.
+          properties:
+            scale: { type: number, minimum: 1, maximum: 4 }
+            origin: { type: number, minimum: 0, maximum: 100, description: "Percent of the layer's own width that stays in place (0 = the left edge, 100 = the right edge)." }
+        item:
+          type: string
+          description: |
+            The `key` of the catalog object this layer belongs to. Such a layer is a template: it is drawn once
+            for every copy of the object that a room places, instead of in its own place.
+        mirror:
+          type: boolean
+          description: |
+            Only for layers of an object. `false` means the picture is not mirrored when the object is flipped,
+            so a shadow keeps falling away from the lamp.
+        anim:
+          type: object
+          description: A small movement for this layer.
+          required: [name]
+          properties:
+            name:
+              type: string
+              enum: [spin, tonearm, sway, steam, pulse, breathe, drift, flick, billow, throb, sweep, shut, cover]
+            pivot:
+              type: object
+              description: The point it turns around, in percent of the layer's own picture.
+              properties:
+                x: { type: number }
+                y: { type: number }
+            duration: { type: number, minimum: 0.1, description: Seconds for one round. }
+            delay: { type: number, description: Seconds before it starts. }
+            squash: { type: number, minimum: 0.05, maximum: 1, description: "Spin: how flat the record looks. Shut and cover: how low the shell folds when the music is paused." }
+            rest: { type: number, description: Tonearm only. Angle in degrees when the music is paused. }
+            distance: { type: number, minimum: 0, maximum: 100, description: "Drift only. How far it travels, as a percent of the layer's width." }
+            amplitude: { type: number, minimum: 0, maximum: 45, description: "Sway, billow and flick. How far it swings, in degrees." }
+            skew: { type: number, description: Clock only. Tilt in degrees. }
+            scaleFrom:
+              type: object
+              required: [x, y]
+              description: Throb only. The width (x) and height (y) scale it starts at (1 is normal size).
+              properties:
+                x: { type: number, minimum: 0.2, maximum: 3 }
+                y: { type: number, minimum: 0.2, maximum: 3 }
+            scaleTo:
+              type: object
+              required: [x, y]
+              description: Throb only. The scale it ends at.
+              properties:
+                x: { type: number, minimum: 0.2, maximum: 3 }
+                y: { type: number, minimum: 0.2, maximum: 3 }
 
     SceneObject:
       type: object
@@ -373,7 +619,7 @@ components:
           properties:
             type:
               type: string
-              enum: [toggleLight, toggleEffect, nextTrack]
+              enum: [toggleLight, toggleEffect, toggleCurtains, nextTrack]
             effect:
               $ref: '#/components/schemas/Effect'
           description: What a click does. `effect` is given when the type is `toggleEffect`.
@@ -383,11 +629,15 @@ components:
       properties:
         effect:
           type: string
-          enum: [none, rain, snow, fireflies, stars]
+          enum: [none, rain, snow, fireflies, stars, dust, bubbles, plankton]
           default: none
         lightOn:
           type: boolean
           default: true
+          description: "False means night: the sunlight layers fade out and the layers made for the night come in."
+        curtainsClosed:
+          type: boolean
+          default: false
         volume:
           type: number
           minimum: 0
@@ -396,7 +646,7 @@ components:
 
     Room:
       type: object
-      required: [code, name, sceneSlug, cdCode, settings, createdAt, updatedAt]
+      required: [code, name, sceneSlug, cdCode, settings, items, createdAt, updatedAt]
       properties:
         code:
           type: string
@@ -408,19 +658,61 @@ components:
           example: Late night reading
         sceneSlug:
           type: string
-          example: cozy-cabin
+          example: night-study
         cdCode:
           type: string
           nullable: true
           description: The CD loaded in the CD player, if any.
         settings:
           $ref: '#/components/schemas/RoomSettings'
+        items:
+          $ref: '#/components/schemas/RoomItems'
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
+
+    RoomItems:
+      type: array
+      nullable: true
+      maxItems: 30
+      description: |
+        The objects the visitor placed. `null` means the scene's default arrangement. When a list is sent it
+        replaces the whole list, so leaving an object out removes it. Moving a room to another scene without
+        sending `items` sets them back to `null`.
+      items:
+        $ref: '#/components/schemas/RoomItem'
+
+    RoomItem:
+      type: object
+      description: One object placed in a room. It must match an entry of the scene's catalog.
+      required: [id, key, x, y, scale, flip]
+      properties:
+        id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,16}$'
+          description: Unique inside the room.
+          example: mug2
+        key:
+          type: string
+          description: The `key` of a catalog entry of the room's scene.
+          example: mug
+        x:
+          type: number
+          description: Where the contact point (bottom centre) sits, in percent of the scene. Must stay inside the surface.
+          example: 39
+        y:
+          type: number
+          example: 87.3
+        scale:
+          type: number
+          description: The visitor's own size on top of the perspective size. Limited by the catalog entry.
+          example: 1
+        flip:
+          type: boolean
+          description: Mirrored left to right. Only for entries that are `flippable`.
 
     RoomInput:
       type: object
@@ -440,6 +732,8 @@ components:
           nullable: true
         settings:
           $ref: '#/components/schemas/RoomSettings'
+        items:
+          $ref: '#/components/schemas/RoomItems'
 
     RoomCreated:
       type: object

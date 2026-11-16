@@ -49,11 +49,6 @@ export function removeMyRoom(code) {
   return write(ROOMS_KEY, JSON.stringify(getMyRooms().filter((r) => r.code !== code)));
 }
 
-// The edit key for a room, or null when this browser did not create it.
-export function getEditKey(code) {
-  return getMyRooms().find((r) => r.code === code)?.editKey ?? null;
-}
-
 // The room to reopen when the visitor comes back to the home page.
 export const getLastRoomCode = () => read(LAST_KEY) || null;
 export const setLastRoomCode = (code) => write(LAST_KEY, code);

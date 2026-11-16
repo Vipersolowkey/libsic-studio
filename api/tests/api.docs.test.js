@@ -96,12 +96,12 @@ describe('the real answers match the documentation', () => {
   });
 
   it('GET /api/scenes/{slug}: found and not found', async () => {
-    expectDocumented(await request(app).get('/api/scenes/moon-base'), '/api/scenes/{slug}', 'get');
+    expectDocumented(await request(app).get('/api/scenes/golden-loft'), '/api/scenes/{slug}', 'get');
     expectDocumented(await request(app).get('/api/scenes/nope'), '/api/scenes/{slug}', 'get');
   });
 
   it('the whole room life: create, open, change, delete', async () => {
-    const created = await request(app).post('/api/rooms').send({ name: 'Docs test', sceneSlug: 'rainy-cafe', settings: { effect: 'rain' } });
+    const created = await request(app).post('/api/rooms').send({ name: 'Docs test', sceneSlug: 'night-study', settings: { effect: 'rain' } });
     expectDocumented(created, '/api/rooms', 'post');
     const { code } = created.body.room;
     const key = created.body.editKey;
@@ -111,8 +111,21 @@ describe('the real answers match the documentation', () => {
     expectDocumented(await request(app).delete(`/api/rooms/${code}`).set('x-edit-key', key), '/api/rooms/{code}', 'delete');
   });
 
+  it('a room with placed objects: create, open, change and reset', async () => {
+    const items = [{ id: 'mug', key: 'mug', x: 40, y: 85, scale: 1.2, flip: true }];
+    const created = await request(app).post('/api/rooms').send({ sceneSlug: 'night-study', items });
+    expectDocumented(created, '/api/rooms', 'post');
+    expect(created.body.room.items).toEqual(items);
+    const { code } = created.body.room;
+    const key = created.body.editKey;
+
+    expectDocumented(await request(app).get(`/api/rooms/${code}`), '/api/rooms/{code}', 'get');
+    expectDocumented(await request(app).put(`/api/rooms/${code}`).set('x-edit-key', key).send({ items: null }), '/api/rooms/{code}', 'put');
+    expectDocumented(await request(app).post('/api/rooms').send({ sceneSlug: 'night-study', items: [{ ...items[0], key: 'teapot' }] }), '/api/rooms', 'post');
+  });
+
   it('the error answers of the room addresses', async () => {
-    const created = await request(app).post('/api/rooms').send({ sceneSlug: 'rainy-cafe' });
+    const created = await request(app).post('/api/rooms').send({ sceneSlug: 'night-study' });
     const { code } = created.body.room;
 
     expectDocumented(await request(app).post('/api/rooms').send({ sceneSlug: 'atlantis' }), '/api/rooms', 'post');

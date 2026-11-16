@@ -7,7 +7,7 @@ export default function CdPage() {
     <main className="message-page">
       <h1>CD {code}</h1>
       <p>Shared CDs are coming soon.</p>
-      <Link to="/">Back to the room</Link>
+      <Link to="/">Back to the start page</Link>
     </main>
   );
 }

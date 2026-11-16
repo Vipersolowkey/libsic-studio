@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearLastRoomCode,
-  getEditKey,
   getLastRoomCode,
   getMyRooms,
   removeMyRoom,
@@ -10,7 +9,7 @@ import {
   updateMyRoom,
 } from './myRooms.js';
 
-const room = (code, extra = {}) => ({ code, editKey: `key-${code}`, name: `Room ${code}`, sceneSlug: 'rainy-cafe', ...extra });
+const room = (code, extra = {}) => ({ code, editKey: `key-${code}`, name: `Room ${code}`, sceneSlug: 'night-study', ...extra });
 
 beforeEach(() => localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
@@ -45,12 +44,6 @@ describe('My rooms storage', () => {
     saveMyRoom(room('b'));
     removeMyRoom('a');
     expect(getMyRooms().map((r) => r.code)).toEqual(['b']);
-  });
-
-  it('finds the edit key of a room, or null when the browser does not have it', () => {
-    saveMyRoom(room('a'));
-    expect(getEditKey('a')).toBe('key-a');
-    expect(getEditKey('zzz')).toBeNull();
   });
 
   it('remembers and forgets the last room', () => {

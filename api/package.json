@@ -12,9 +12,12 @@
     "try:rooms": "node scripts/tryRooms.js"
   },
   "dependencies": {
+    "compression": "^1.8.2",
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
+    "express-rate-limit": "^8.7.4",
+    "helmet": "^8.3.0",
     "mongoose": "^9.11.4",
     "swagger-ui-express": "^5.0.1",
     "yaml": "^2.9.1"

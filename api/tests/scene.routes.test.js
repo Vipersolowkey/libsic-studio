@@ -8,11 +8,13 @@ const cabin = { slug: 'cozy-cabin', name: 'Cozy Cabin', layers: [{ name: 'sky', 
 const appWith = (scenes, options) => createApp({ Scene: fakeSceneModel(scenes, options) });
 
 describe('GET /api/scenes', () => {
-  it('returns every scene as a list', async () => {
+  it('returns the menu of scenes: slug, name and description, without the layers', async () => {
     const res = await request(appWith([cabin, cafe])).get('/api/scenes');
+    const line = ({ slug, name, description }) => ({ slug, name, description });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([cabin, cafe]);
+    expect(res.body).toEqual([line(cabin), line(cafe)]);
+    expect(res.body[0].layers).toBeUndefined();
   });
 
   it('returns an empty list when there are no scenes yet', async () => {

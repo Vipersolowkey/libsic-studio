@@ -6,7 +6,7 @@ const [windowObject, lamp, radio] = scene.objects;
 
 describe('defaultSettings', () => {
   it('starts with the scene default effect and the light on', () => {
-    expect(defaultSettings(scene)).toEqual({ effect: 'rain', lightOn: true });
+    expect(defaultSettings(scene)).toEqual({ effect: 'rain', lightOn: true, curtainsClosed: false });
   });
 
   it('uses no effect when the scene has no default', () => {
@@ -31,6 +31,14 @@ describe('applyObjectAction', () => {
 
   it('the window switches from another effect to its own', () => {
     expect(applyObjectAction({ effect: 'snow', lightOn: true }, windowObject).effect).toBe('rain');
+  });
+
+  it('the curtains open and close without touching the light', () => {
+    const curtains = { key: 'curtains', label: 'Curtains', layer: 0, action: { type: 'toggleCurtains' } };
+    const closed = applyObjectAction(start, curtains);
+    expect(closed.curtainsClosed).toBe(true);
+    expect(closed.lightOn).toBe(true);
+    expect(applyObjectAction(closed, curtains).curtainsClosed).toBe(false);
   });
 
   it('the radio does not change the settings', () => {

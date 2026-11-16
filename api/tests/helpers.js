@@ -10,7 +10,8 @@ async function validationErrors(doc) {
 }
 
 // A pretend Scene model for route tests, so they run without a real database.
-// It understands only the calls the scene routes make: find().sort().lean() and findOne().lean().
+// It understands only the calls the scene routes make: find().sort().lean() and findOne().lean(),
+// and a list of wanted fields such as { _id: 0, slug: 1, name: 1 } (like MongoDB, it then leaves the others out).
 // Pass `fail: true` to make every call fail, like a database that is down.
 function fakeSceneModel(scenes, { fail = false } = {}) {
   const result = (value) => ({
@@ -22,7 +23,11 @@ function fakeSceneModel(scenes, { fail = false } = {}) {
     },
   });
   return {
-    find: () => result(scenes),
+    find: (filter, fields) => {
+      const wanted = fields && typeof fields === 'object' ? Object.keys(fields).filter((key) => fields[key] === 1) : [];
+      if (wanted.length === 0) return result(scenes);
+      return result(scenes.map((scene) => Object.fromEntries(wanted.filter((key) => key in scene).map((key) => [key, scene[key]]))));
+    },
     findOne: (filter) => result(scenes.find((s) => s.slug === filter.slug) || null),
     exists: async (filter) => {
       if (fail) throw new Error('database is down');

@@ -8,8 +8,12 @@ function scenesRouter(Scene) {
   // "-_id -__v" hides MongoDB's internal fields, which the website does not need.
   const hidden = '-_id -__v';
 
+  // The list is a menu: only what is needed to show and pick a scene. The layers, objects and catalog of a scene
+  // (most of its data) are sent by the address below, for the one scene that is opened.
+  const summary = { _id: 0, slug: 1, name: 1, description: 1 };
+
   router.get('/', async (req, res) => {
-    const scenes = await Scene.find({}, hidden).sort({ name: 1 }).lean();
+    const scenes = await Scene.find({}, summary).sort({ name: 1 }).lean();
     res.json(scenes);
   });
 

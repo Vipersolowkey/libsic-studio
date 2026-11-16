@@ -18,7 +18,7 @@ async function call(label, method, path, { body, key } = {}) {
 
 async function main() {
   const created = await call('1. Save a new room', 'POST', '/api/rooms', {
-    body: { name: 'My test room', sceneSlug: 'rainy-cafe', settings: { effect: 'rain' } },
+    body: { name: 'My test room', sceneSlug: 'night-study', settings: { effect: 'rain' } },
   });
   const { code } = created.room;
   const key = created.editKey;
