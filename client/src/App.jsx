@@ -17,7 +17,7 @@ export default function App() {
         element={
           <main className="message-page">
             <h1>Page not found</h1>
-            <Link to="/">Back to the room</Link>
+            <Link to="/">Back to the start page</Link>
           </main>
         }
       />

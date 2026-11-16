@@ -25,6 +25,7 @@ import { useIdle } from './useIdle.js';
 import { useItemsEditor } from './useItemsEditor.js';
 import { TEST_CD } from './testCd.js';
 import { usePlayer } from './usePlayer.js';
+import { useRainSound } from './useRainSound.js';
 import { useDrawnZoom, useRoomView } from './useRoomView.js';
 import ZoomControls from './ZoomControls.jsx';
 
@@ -68,6 +69,7 @@ export default function RoomScreen({ code }) {
     }
   }, [playerOpen]);
   usePlayerShortcuts(player, playerOpen, setPlayerOpen);
+  useRainSound(settings.effect === 'rain', player.volume, player.playing); // the rain also sounds, softly, under the music
   // Where the hologram floats is a preference of the person looking, like the zoom: it stays in their browser.
   const [playerPlace, setPlayerPlace] = useState(readPlayerPlace);
   const choosePlayerPlace = (place) => {
@@ -120,10 +122,12 @@ export default function RoomScreen({ code }) {
   useEffect(() => {
     let cancelled = false;
     setLoadError(null);
+    // /new?scene=<slug> (a card on the landing page) starts a new room in that scene
+    const wanted = code ? null : new URLSearchParams(location.search).get('scene');
     Promise.all([getScenes(), code ? getRoom(code) : Promise.resolve(null)])
       .then(async ([menu, room]) => {
         // the one scene that is shown first is fetched whole; the others stay menu lines until they are picked
-        const first = await wholeScene((room && menu.find((s) => s.slug === room.sceneSlug)) || menu[0]);
+        const first = await wholeScene((room && menu.find((s) => s.slug === room.sceneSlug)) || menu.find((s) => s.slug === wanted) || menu[0]);
         return [first ? withScene(menu, first) : menu, room];
       })
       .then(([list, room]) => {
@@ -139,8 +143,9 @@ export default function RoomScreen({ code }) {
           setItems(room.items ?? null);
           setLastRoomCode(room.code);
         } else if (list.length > 0) {
-          setSlug(list[0].slug);
-          setSettings(defaultSettings(list[0]));
+          const start = list.find((s) => s.slug === wanted) || list[0];
+          setSlug(start.slug);
+          setSettings(defaultSettings(start));
         }
       })
       .catch((err) => {

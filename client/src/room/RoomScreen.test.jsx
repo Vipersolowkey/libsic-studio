@@ -132,7 +132,7 @@ describe('the side bar', () => {
     await screen.findByTestId('stage');
     const bar = within(screen.getByRole('complementary', { name: 'Room controls' }));
 
-    expect(bar.getByRole('link', { name: /libsic studio/i })).toHaveAttribute('href', '/new');
+    expect(bar.getByRole('link', { name: /libsic studio/i })).toHaveAttribute('href', '/');
     expect(inGroup('Switch room', 'Test Room')).toHaveAttribute('aria-pressed', 'true');
     expect(inGroup('Switch room', 'Other Room')).toHaveAttribute('aria-pressed', 'false');
     await more();
