@@ -132,9 +132,9 @@ describe('night-study customization', () => {
     expect(surface('window').drawAt).toBe(layerNamed('window frame'));
   });
 
-  it('starts with the six objects that are on the desk and lets a visitor add six more', () => {
+  it('starts with the eight objects that are on the desk and lets a visitor add six more', () => {
     const keys = (filter) => scene.catalog.filter(filter).map((e) => e.key);
-    expect(keys((e) => e.inDefault)).toEqual(['plant', 'succulent', 'mug', 'clock', 'sleeve', 'player']);
+    expect(keys((e) => e.inDefault)).toEqual(['plant', 'succulent', 'mug', 'clock', 'sleeve', 'player', 'notepad', 'bookstack']);
     expect(keys((e) => !e.inDefault)).toEqual(['books', 'candle', 'photo', 'cactus', 'stars', 'polaroids']);
   });
 
