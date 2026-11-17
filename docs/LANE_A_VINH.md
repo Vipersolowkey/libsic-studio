@@ -2,6 +2,8 @@
 
 Ngày bàn giao: 17/11/2026. Nhánh: `lane-a-music`. Đây là phần triển khai để Tony review; chưa tự merge vào `main`.
 
+PR: [số 3](https://github.com/Vipersolowkey/libsic-studio/pull/3). Phần thuyết trình của Vinh gồm [5 slide](deliverables/Vinh_Slides.pptx) và [báo cáo Word 2 trang](deliverables/Vinh_BaoCao.docx) để ghép với phần room/deployment của Tony.
+
 ## Đã triển khai
 
 | Task | Kết quả |

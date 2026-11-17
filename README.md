@@ -45,7 +45,7 @@ libsic-studio/
 | Online API documentation | `/api-docs` on the API server (all endpoints) |
 | Public API base URL | Not deployed yet |
 | Live URL | Not deployed yet |
-| PowerPoint presentation + short Word file | Not started |
+| PowerPoint presentation + short Word file | Vinh's 5-slide music section and 2-page report drafted in `docs/deliverables`; joint presentation pending |
 
 ## Decorating a room
 
