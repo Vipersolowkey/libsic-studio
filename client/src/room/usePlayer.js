@@ -115,6 +115,7 @@ export function usePlayer(cd) {
     setError('');
     setPlaying((p) => !p);
   }, [count, error]);
+  const pause = useCallback(() => setPlaying(false), []);
   const next = useCallback(() => { if (count) { setIndex((i) => (i + 1) % count); setRestart((n) => n + 1); } }, [count]);
   const prev = useCallback(() => {
     const audio = audioRef.current;
@@ -139,5 +140,5 @@ export function usePlayer(cd) {
     }
   }, []);
 
-  return { cd, track, index, count, playing, time, duration, volume, error, toggle, next, prev, seek, setVolume };
+  return { cd, track, index, count, playing, time, duration, volume, error, toggle, pause, next, prev, seek, setVolume };
 }

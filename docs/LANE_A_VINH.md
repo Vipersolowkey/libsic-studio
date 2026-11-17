@@ -4,6 +4,8 @@ Ngày bàn giao: 17/11/2026. Nhánh: `lane-a-music`. Đây là phần triển kh
 
 PR: [số 3](https://github.com/Vipersolowkey/libsic-studio/pull/3). Phần thuyết trình của Vinh gồm [5 slide](deliverables/Vinh_Slides.pptx) và [báo cáo Word 2 trang](deliverables/Vinh_BaoCao.docx) để ghép với phần room/deployment của Tony.
 
+Cập nhật nhạc online: phòng mới tự nạp playlist SoundCloud, có danh sách bài và tìm kiếm trong playlist. Ô dán link hỗ trợ SoundCloud, Spotify, YouTube và file audio HTTPS trực tiếp. Nguồn nhạc được lưu cùng phòng; chi tiết và giới hạn của từng dịch vụ ở [ONLINE_MUSIC.md](ONLINE_MUSIC.md). Slide và báo cáo phía trên mô tả bản CD trước cập nhật này.
+
 ## Đã triển khai
 
 | Task | Kết quả |
@@ -23,7 +25,7 @@ Phần tranh, chuyển động và trang trí phòng của Tony được dùng l
 1. Dùng Node 26. Trong `api`: `npm ci`, sao chép `.env.example` thành `.env` và điền `MONGODB_URI`.
 2. Chạy `npm run seed:scenes` và `npm run seed:music`, sau đó `npm start`.
 3. Trong `client`: `npm ci`, `npm run dev`. API mặc định ở cổng 4000; đổi bằng `VITE_API_URL` nếu cần.
-4. Vào `/new`, chọn CD ở CD shelf, bấm vật phát nhạc trong phòng để mở player và bấm Play.
+4. Vào `/new`, chọn playlist trong Discover music hoặc dán link nhạc, rồi bấm Play. Mục Studio CDs and my CDs vẫn cho chọn CD và mở hologram qua vật phát nhạc trong phòng.
 5. Vào `/music` để tạo CD. Dùng share link để mở lại hoặc đưa vào phòng; Save room giữ mã CD cùng phòng.
 
 12 bản nhạc dài khoảng 43–67 giây, được tổng hợp từ sóng âm, không dùng sample. Chúng là nhạc mẫu cho đồ án, chưa phải một thư viện album thương mại. Mã tái tạo và credit ở `docs/art-tools/make_music_tracks.py` và `client/public/audio/music/CREDITS.md`.

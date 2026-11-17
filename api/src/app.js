@@ -11,6 +11,7 @@ const scenesRouter = require('./routes/scenes');
 const roomsRouter = require('./routes/rooms');
 const { tracksRouter } = require('./routes/tracks');
 const cdsRouter = require('./routes/cds');
+const { musicRouter } = require('./routes/music');
 
 // The written description of the API (see openapi.yaml). It is read once when the app starts.
 const apiSpec = YAML.parse(fs.readFileSync(path.join(__dirname, '..', 'openapi.yaml'), 'utf8'));
@@ -63,6 +64,7 @@ function createApp(models = {}, { requestsPerMinute = Number(process.env.REQUEST
   app.use('/api/rooms', roomsRouter({ Room, Scene }));
   app.use('/api/tracks', tracksRouter(Track));
   app.use('/api/cds', cdsRouter({ Cd, Track }));
+  app.use('/api/music', musicRouter());
 
   // Any other /api address does not exist.
   app.use('/api', (req, res) => {

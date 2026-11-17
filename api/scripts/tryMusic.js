@@ -34,9 +34,29 @@ async function main() {
     const scenes = await call('/api/scenes', 200);
     room = await call('/api/rooms', 201, { method: 'POST', body: { name: 'Music smoke room', sceneSlug: scenes[0].slug, cdCode: created.cd.code } });
     assert.equal((await call(`/api/rooms/${room.room.code}`, 200)).cdCode, created.cd.code);
+    const roomUrl = `/api/rooms/${room.room.code}`;
+    const roomAuth = { 'x-edit-key': room.editKey };
+    for (const link of [
+      'https://soundcloud.com/chillhopdotcom/sets/chillhop-essentials-fall-2024',
+      'https://open.spotify.com/playlist/6zCID88oNjNv9zx6puDHKj',
+      'https://youtu.be/M7lc1UVf-VE',
+      'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    ]) {
+      const source = await call('/api/music/resolve', 200, { method: 'POST', body: { url: link } });
+      const changed = await call(roomUrl, 200, { method: 'PUT', headers: roomAuth, body: { musicSource: source } });
+      assert.equal(changed.cdCode, null);
+      assert.deepEqual((await call(roomUrl, 200)).musicSource, source);
+    }
+    await call(roomUrl, 401, { method: 'PUT', body: { musicSource: null } });
+    const cdAgain = await call(roomUrl, 200, { method: 'PUT', headers: roomAuth, body: { cdCode: created.cd.code } });
+    assert.equal(cdAgain.musicSource, null);
+    await call('/api/music/resolve', 400, { method: 'POST', body: { url: 'https://example.org/page' } });
     const spec = await call('/openapi.json', 200);
     assert.ok(spec.paths['/api/cds/{code}'].put);
     assert.ok(spec.components.schemas.Track);
+    assert.ok(spec.paths['/api/music/resolve'].post);
+    assert.ok(spec.paths['/api/music/soundcloud/metadata'].post);
+    assert.ok(spec.components.schemas.MusicSource);
   } finally {
     if (room) await call(`/api/rooms/${room.room.code}`, 204, { method: 'DELETE', headers: { 'x-edit-key': room.editKey } });
     if (created) {

@@ -6,6 +6,10 @@ import App from '../App.jsx';
 import * as api from '../api.js';
 import { getLastRoomCode, getMyRooms, saveMyRoom, setLastRoomCode } from '../myRooms.js';
 import { decorScene, otherScene, savedRoom, scene } from '../test/fixtures.js';
+import { DEFAULT_MUSIC_SOURCE } from '../music/discovery.js';
+
+// Provider integration has its own SDK tests; room regression tests avoid external scripts.
+vi.mock('../music/ExternalMusic.jsx', () => ({ default: () => null, EMPTY_ONLINE_PLAYER: { cd: { title: 'Online music', tracks: [] }, track: null, playing: false, volume: 0.7, toggle() {}, next() {}, prev() {}, pause() {} } }));
 
 // The rooms and the effects are groups of buttons in the side bar: pick one by the name of its group and its own name.
 const inGroup = (group, item) => within(screen.getByRole('group', { name: group })).getByRole('button', { name: item });
@@ -283,7 +287,7 @@ describe('saving a new room', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Light on' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save room' }));
 
-    expect(api.createRoom).toHaveBeenCalledWith({ name: 'My room', sceneSlug: 'other', cdCode: null, settings: { effect: 'stars', lightOn: false, curtainsClosed: false }, items: null });
+    expect(api.createRoom).toHaveBeenCalledWith({ name: 'My room', sceneSlug: 'other', cdCode: null, musicSource: DEFAULT_MUSIC_SOURCE, settings: { effect: 'stars', lightOn: false, curtainsClosed: false }, items: null });
     expect(getMyRooms()[0]).toMatchObject({ code: savedRoom.code, editKey: 'new-secret' });
     expect(getLastRoomCode()).toBe(savedRoom.code);
 
@@ -386,6 +390,7 @@ describe('editing your own room', () => {
       name: 'Study 2',
       sceneSlug: 'other',
       cdCode: null,
+      musicSource: null,
       settings: { effect: 'stars', lightOn: false, curtainsClosed: false },
       items: null,
     });

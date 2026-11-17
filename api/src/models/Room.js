@@ -29,6 +29,13 @@ const roomSchema = new Schema(
     // so re-running the seed scripts never breaks a saved room.
     sceneSlug: { type: String, required: true },
     cdCode: { type: String, default: null },
+    musicSource: {
+      type: new Schema({
+        provider: { type: String, enum: ['soundcloud', 'spotify', 'youtube', 'audio'], required: true },
+        url: { type: String, required: true, maxlength: 2048 },
+      }, { _id: false }),
+      default: null,
+    },
     settings: {
       effect: { type: String, enum: [...EFFECTS, 'none'], default: 'none' },
       lightOn: { type: Boolean, default: true },

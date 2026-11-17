@@ -105,6 +105,8 @@ Both members work on the front end and the back end. See [`docs/TASKS.md`](docs/
 
 ## Music and custom CDs
 
+New rooms automatically load the full track list of a featured SoundCloud playlist. **Discover music** switches playlists and searches their songs. **Or paste a music link** supports SoundCloud, Spotify, YouTube and direct HTTPS audio files. Provider embeds remain visible, and saving a room remembers the selected source. Spotify may provide previews and uses its own controls for track selection/volume. See [`docs/ONLINE_MUSIC.md`](docs/ONLINE_MUSIC.md) for supported links and limitations.
+
 Open a room and use **CD shelf** to load an official CD or enter a shared CD code. Click the music object in the room to show the player. Playback starts after pressing Play. A saved room remembers its CD code; a deleted CD leaves the room usable with a message to choose another disc.
 
 **Make a CD / My CDs** opens `/music`: name a mix, choose tracks and arrange their order. `/cd/:code` plays and shares a CD, links to a room with it loaded, and lets its creator edit/delete it. The creator's key is kept in that browser; share links never contain it. Official CDs are read only. Keep a separate copy of your edit key before clearing browser data; an entered key can restore editing on the CD page.

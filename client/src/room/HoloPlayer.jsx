@@ -50,7 +50,7 @@ export default function HoloPlayer({ player, now }) {
   return (
     <section className={`hp${playing ? ' hp-playing' : ''}`} aria-label="Music player">
       <p className={`hp-title${started && track ? ' hp-track' : ''}`}>{started && track ? track.title : day}</p>
-      <p className="hp-sub">{started && track ? `${player.cd.title} · ${player.index + 1} / ${player.count}` : date}</p>
+      <p className="hp-sub">{started && track ? `${player.cd.title}${player.count ? ` · ${player.index + 1} / ${player.count}` : ''}` : date}</p>
       <p className="hp-time">
         <span aria-hidden="true">- </span>
         {time}
@@ -65,7 +65,7 @@ export default function HoloPlayer({ player, now }) {
           max={duration || 1}
           step="1"
           value={Math.min(player.time, duration || 1)}
-          disabled={!duration}
+          disabled={!duration || player.canSeek === false}
           style={{ '--done': `${duration ? (player.time / duration) * 100 : 0}%` }}
           onChange={(e) => player.seek(Number(e.target.value))}
         />
@@ -75,7 +75,7 @@ export default function HoloPlayer({ player, now }) {
         <span className="hp-bars" aria-hidden="true">
           <i /><i /><i /><i />
         </span>
-        <button type="button" className="hp-btn hp-prev" aria-label="Previous track" disabled={!track} onClick={player.prev}>
+        <button type="button" className="hp-btn hp-prev" aria-label="Previous track" disabled={!track || player.canNavigate === false} onClick={player.prev}>
           <SkipIcon />
         </button>
         <button type="button" className="hp-btn hp-play" aria-label={playing ? 'Pause' : 'Play'} disabled={!track} onClick={player.toggle}>
@@ -83,13 +83,15 @@ export default function HoloPlayer({ player, now }) {
             {playing ? <path d="M3.5 2.5 H6.5 V13.5 H3.5 Z M9.5 2.5 H12.5 V13.5 H9.5 Z" /> : <path d="M4 2.5 L13 8 L4 13.5 Z" />}
           </svg>
         </button>
-        <button type="button" className="hp-btn" aria-label="Next track" disabled={!track} onClick={player.next}>
+        <button type="button" className="hp-btn" aria-label="Next track" disabled={!track || player.canNavigate === false} onClick={player.next}>
           <SkipIcon />
         </button>
         <input
           className="hp-volume"
           type="range"
           aria-label="Volume"
+          disabled={player.canVolume === false}
+          title={player.canVolume === false ? 'Use the source player for volume' : 'Volume'}
           min="0"
           max="1"
           step="0.05"
@@ -98,7 +100,7 @@ export default function HoloPlayer({ player, now }) {
           onChange={(e) => player.setVolume(Number(e.target.value))}
         />
       </div>
-      {!track && <p className="hp-sub">Choose a CD from the shelf.</p>}
+      {!track && <p className="hp-sub">Choose music from the library.</p>}
       {player.error && <p className="hp-sub" role="alert">{player.error}</p>}
     </section>
   );

@@ -43,6 +43,8 @@ export const deleteRoom = (code, editKey) =>
   request(`/api/rooms/${encodeURIComponent(code)}`, { method: 'DELETE', headers: { 'x-edit-key': editKey } });
 
 export const getTracks = () => request('/api/tracks');
+export const resolveMusicLink = (url) => request('/api/music/resolve', { method: 'POST', body: { url } });
+export const getSoundcloudMetadata = (ids) => request('/api/music/soundcloud/metadata', { method: 'POST', body: { ids } });
 export const getTrack = (id) => request(`/api/tracks/${encodeURIComponent(id)}`);
 export const getCds = () => request('/api/cds');
 export const getCd = (code) => request(`/api/cds/${encodeURIComponent(code)}`);
