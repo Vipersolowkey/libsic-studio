@@ -75,15 +75,15 @@ export default function HoloPlayer({ player, now }) {
         <span className="hp-bars" aria-hidden="true">
           <i /><i /><i /><i />
         </span>
-        <button type="button" className="hp-btn hp-prev" aria-label="Previous track" onClick={player.prev}>
+        <button type="button" className="hp-btn hp-prev" aria-label="Previous track" disabled={!track} onClick={player.prev}>
           <SkipIcon />
         </button>
-        <button type="button" className="hp-btn hp-play" aria-label={playing ? 'Pause' : 'Play'} onClick={player.toggle}>
+        <button type="button" className="hp-btn hp-play" aria-label={playing ? 'Pause' : 'Play'} disabled={!track} onClick={player.toggle}>
           <svg viewBox="0 0 16 16" aria-hidden="true">
             {playing ? <path d="M3.5 2.5 H6.5 V13.5 H3.5 Z M9.5 2.5 H12.5 V13.5 H9.5 Z" /> : <path d="M4 2.5 L13 8 L4 13.5 Z" />}
           </svg>
         </button>
-        <button type="button" className="hp-btn" aria-label="Next track" onClick={player.next}>
+        <button type="button" className="hp-btn" aria-label="Next track" disabled={!track} onClick={player.next}>
           <SkipIcon />
         </button>
         <input
@@ -98,6 +98,8 @@ export default function HoloPlayer({ player, now }) {
           onChange={(e) => player.setVolume(Number(e.target.value))}
         />
       </div>
+      {!track && <p className="hp-sub">Choose a CD from the shelf.</p>}
+      {player.error && <p className="hp-sub" role="alert">{player.error}</p>}
     </section>
   );
 }

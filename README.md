@@ -38,11 +38,11 @@ libsic-studio/
 
 | Requirement | Status |
 | --- | --- |
-| Database (MySQL or MongoDB) | MongoDB Atlas: scenes and rooms done; tracks and CDs to do |
-| RESTful API server (Node.js + Express) | Scenes and rooms done; tracks and CDs to do |
-| Front end (React) | Room scene, full-screen UI, Decorate mode, saving and sharing done; CD player to do |
+| Database (MySQL or MongoDB) | MongoDB models and seed scripts for scenes, rooms, 12 tracks and 3 official CDs |
+| RESTful API server (Node.js + Express) | Scenes, rooms, tracks and CDs implemented |
+| Front end (React) | Room scene, Decorate mode, saving/sharing, CD shelf, player and custom CD maker implemented |
 | Source code for API and client on GitHub | This repository |
-| Online API documentation | `/api-docs` on the API server (scenes and rooms done) |
+| Online API documentation | `/api-docs` on the API server (all endpoints) |
 | Public API base URL | Not deployed yet |
 | Live URL | Not deployed yet |
 | PowerPoint presentation + short Word file | Not started |
@@ -60,7 +60,7 @@ How it works:
 
 ## Running the project
 
-You need [Node.js](https://nodejs.org) 20.19 or newer and a free MongoDB Atlas cluster.
+Use [Node.js](https://nodejs.org) 26 (also used by CI), and MongoDB Atlas or a local MongoDB instance. The current client test dependencies need Node 22.22.2+, 24.15+ or 26+.
 
 ### API
 
@@ -74,9 +74,11 @@ Open `.env` and fill in `MONGODB_URI` with your Atlas connection string, includi
 
 ```
 npm run seed:scenes           load the starter scenes into the database (safe to run again)
+npm run seed:music            load 12 original tracks and 3 official CDs (keeps custom CDs)
 npm start                     API at http://localhost:4000
 npm test                      run the API tests
 npm run try:rooms             walk through saving, changing and deleting a room (API must be running)
+npm run try:music             exercise tracks, CDs and saving a room with a CD (API must be running)
 ```
 
 The API documentation is at http://localhost:4000/api-docs while the API runs.
@@ -96,10 +98,18 @@ The client talks to the API at `http://localhost:4000` by default. To use anothe
 
 | Lane | What it covers | Owner |
 | --- | --- | --- |
-| Lane A: music side | Tracks and CDs, CD player | Teammate |
+| Lane A: music side | Tracks and CDs, CD player | Vinh |
 | Lane B: room side | Scenes and rooms, parallax scene, saving and sharing | Tony |
 
 Both members work on the front end and the back end. See [`docs/TASKS.md`](docs/TASKS.md) for the full task allocation.
+
+## Music and custom CDs
+
+Open a room and use **CD shelf** to load an official CD or enter a shared CD code. Click the music object in the room to show the player. Playback starts after pressing Play. A saved room remembers its CD code; a deleted CD leaves the room usable with a message to choose another disc.
+
+**Make a CD / My CDs** opens `/music`: name a mix, choose tracks and arrange their order. `/cd/:code` plays and shares a CD, links to a room with it loaded, and lets its creator edit/delete it. The creator's key is kept in that browser; share links never contain it. Official CDs are read only. Keep a separate copy of your edit key before clearing browser data; an entered key can restore editing on the CD page.
+
+Audio is served from `client/public/audio/music/`, so the API and client can be hosted separately. All twelve short pieces are synthesized for the project; the credits and generator are included. See [`docs/LANE_A_VINH.md`](docs/LANE_A_VINH.md) for review and deployment instructions.
 
 ## Working agreements
 

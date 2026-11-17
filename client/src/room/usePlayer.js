@@ -29,9 +29,15 @@ export function usePlayer(cd) {
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(readVolume);
+  const [error, setError] = useState('');
+  const [restart, setRestart] = useState(0);
+  const countRef = useRef(cd.tracks.length);
+  countRef.current = cd.tracks.length;
+  const previousCd = useRef(cd);
+  const changedCd = previousCd.current !== cd;
 
   const count = cd.tracks.length;
-  const track = cd.tracks[index] ?? null;
+  const track = cd.tracks[index] ?? cd.tracks[0] ?? null;
 
   // The audio element is made once, and its events keep the numbers on screen up to date.
   useEffect(() => {
@@ -40,52 +46,83 @@ export function usePlayer(cd) {
     audioRef.current = audio;
     const onTime = () => setTime(audio.currentTime);
     const onLength = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
-    const onEnded = () => setIndex((i) => (i + 1) % count); // the next track starts by itself
+    const onEnded = () => {
+      if (!countRef.current) return;
+      setIndex((i) => (i + 1) % countRef.current);
+      setRestart((n) => n + 1); // also replays a one-track CD
+    };
+    const onError = () => { setPlaying(false); setError('This track could not be loaded. Try another track or press Play to retry.'); };
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('durationchange', onLength);
     audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
     return () => {
       audio.pause();
       audio.removeEventListener('timeupdate', onTime);
       audio.removeEventListener('durationchange', onLength);
       audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
       audioRef.current = null;
     };
-  }, [count]);
+  }, []);
+
+  // Inserting a CD always starts at its first track and waits for a click before playing.
+  useEffect(() => {
+    previousCd.current = cd;
+    setIndex(0);
+    setPlaying(false);
+    setError('');
+    setTime(0);
+    setDuration(0);
+  }, [cd]);
 
   // Another track: load its file, and keep playing if music was playing.
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !track) return;
-    audio.src = track.src;
+    if (!audio) return;
+    audio.pause();
+    if (track) audio.src = track.src;
+    else audio.removeAttribute('src');
     setTime(0);
     setDuration(0);
-  }, [track]);
+    setError('');
+  }, [track, restart]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !track) return;
-    if (playing) {
+    let cancelled = false;
+    if (playing && !changedCd) {
       // A browser may refuse to start sound (for example before the first click on the page): then the player shows "paused".
-      Promise.resolve(audio.play()).catch(() => setPlaying(false));
+      Promise.resolve(audio.play()).catch((err) => {
+        if (cancelled) return;
+        setPlaying(false);
+        setError(err.name === 'NotAllowedError' ? 'Press Play to allow sound in this browser.' : 'Could not play this track. Press Play to retry.');
+      });
     } else {
       audio.pause();
     }
-  }, [playing, track]);
+    return () => { cancelled = true; };
+  }, [playing, track, restart, changedCd]);
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
-  const toggle = useCallback(() => setPlaying((p) => !p), []);
-  const next = useCallback(() => setIndex((i) => (i + 1) % count), [count]);
+  const toggle = useCallback(() => {
+    if (!count) return;
+    if (error) setRestart((n) => n + 1);
+    setError('');
+    setPlaying((p) => !p);
+  }, [count, error]);
+  const next = useCallback(() => { if (count) { setIndex((i) => (i + 1) % count); setRestart((n) => n + 1); } }, [count]);
   const prev = useCallback(() => {
     const audio = audioRef.current;
     if (audio && audio.currentTime > 3) {
       audio.currentTime = 0;
       setTime(0);
     } else {
-      setIndex((i) => (i - 1 + count) % count);
+      if (count) { setIndex((i) => (i - 1 + count) % count); setRestart((n) => n + 1); }
     }
   }, [count]);
   const seek = useCallback((seconds) => {
@@ -102,5 +139,5 @@ export function usePlayer(cd) {
     }
   }, []);
 
-  return { cd, track, index, count, playing, time, duration, volume, toggle, next, prev, seek, setVolume };
+  return { cd, track, index, count, playing, time, duration, volume, error, toggle, next, prev, seek, setVolume };
 }

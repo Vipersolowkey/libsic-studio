@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { createRoom, deleteRoom, getRoom, getScene, getScenes, updateRoom } from '../api.js';
+import { createRoom, deleteRoom, getRoom, getScene, getScenes, getCd, updateRoom } from '../api.js';
+import CdShelf from '../music/CdShelf.jsx';
 import {
   clearLastRoomCode,
   getMyRooms,
@@ -23,7 +24,6 @@ import SaveBar, { RoomNameField } from './SaveBar.jsx';
 import Sidebar, { More, Section } from './Sidebar.jsx';
 import { useIdle } from './useIdle.js';
 import { useItemsEditor } from './useItemsEditor.js';
-import { TEST_CD } from './testCd.js';
 import { usePlayer } from './usePlayer.js';
 import { useRainSound } from './useRainSound.js';
 import { useDrawnZoom, useRoomView } from './useRoomView.js';
@@ -34,6 +34,7 @@ const IDLE_MS = 4000;
 
 // Stands in for the scene while the scenes are still loading, so the hooks below always have one.
 const NO_SCENE = { slug: '', layers: [], catalog: [], surfaces: [] };
+const NO_CD = { title: 'No CD', tracks: [] };
 
 // The API's list of scenes is only a menu (slug, name, description). The layers of a scene are fetched when that
 // scene is opened, and then kept in the list, so going back to a room that was already shown asks nothing.
@@ -60,7 +61,29 @@ export default function RoomScreen({ code }) {
   // The browser remembers whether it was left open.
   const [playerOpen, setPlayerOpen] = useState(readPlayerOpen);
   const togglePlayer = useCallback(() => setPlayerOpen((open) => !open), []);
-  const player = usePlayer(TEST_CD); // the real CDs will come from the API (the music side); until then a small test CD
+  const [cdCode, setCdCode] = useState(null);
+  const [cd, setCd] = useState(NO_CD);
+  const [musicError, setMusicError] = useState('');
+  const [musicLoading, setMusicLoading] = useState(false);
+  const [musicAttempt, setMusicAttempt] = useState(0);
+  const player = usePlayer(cd);
+  const chooseCd = (nextCode) => {
+    setCdCode(nextCode);
+    setMusicAttempt((n) => n + 1);
+    if (nextCode) setPlayerOpen(true);
+  };
+  useEffect(() => {
+    let cancelled = false;
+    setCd(NO_CD);
+    setMusicError('');
+    setMusicLoading(Boolean(cdCode));
+    if (cdCode) getCd(cdCode).then((value) => {
+      if (!cancelled) { setCd(value); setMusicLoading(false); }
+    }).catch((err) => {
+      if (!cancelled) { setMusicLoading(false); setMusicError(err.status === 404 ? 'This CD was deleted or its code is wrong. Choose another CD.' : err.message); }
+    });
+    return () => { cancelled = true; };
+  }, [cdCode, musicAttempt]);
   useEffect(() => {
     try {
       localStorage.setItem(PLAYER_OPEN_KEY, playerOpen ? '1' : '');
@@ -140,12 +163,14 @@ export default function RoomScreen({ code }) {
           setSlug(scene?.slug ?? '');
           setSettings({ effect: room.settings.effect, lightOn: room.settings.lightOn, curtainsClosed: Boolean(room.settings.curtainsClosed) });
           setName(room.name);
+          setCdCode(room.cdCode ?? null);
           setItems(room.items ?? null);
           setLastRoomCode(room.code);
         } else if (list.length > 0) {
           const start = list.find((s) => s.slug === wanted) || list[0];
           setSlug(start.slug);
           setSettings(defaultSettings(start));
+          setCdCode(new URLSearchParams(location.search).get('cd'));
         }
       })
       .catch((err) => {
@@ -202,13 +227,14 @@ export default function RoomScreen({ code }) {
     saved !== null &&
     (name !== saved.name ||
       slug !== saved.sceneSlug ||
+      cdCode !== (saved.cdCode ?? null) ||
       settings.effect !== saved.settings.effect ||
       settings.lightOn !== saved.settings.lightOn ||
       settings.curtainsClosed !== Boolean(saved.settings.curtainsClosed) ||
       !itemsEqual(items, saved.items));
   const link = saved ? `${window.location.origin}/r/${saved.code}` : '';
 
-  const payload = () => ({ name: name.trim() || 'Untitled room', sceneSlug: scene.slug, settings, items });
+  const payload = () => ({ name: name.trim() || 'Untitled room', sceneSlug: scene.slug, cdCode, settings, items });
 
   // Runs a save/delete action: blocks the buttons meanwhile and shows any error from the API.
   async function run(action) {
@@ -356,6 +382,7 @@ export default function RoomScreen({ code }) {
                 </button>
               </div>
             </More>
+            <CdShelf code={cdCode} onChoose={chooseCd} loading={musicLoading} error={musicError} />
           </>
         )}
       </Sidebar>

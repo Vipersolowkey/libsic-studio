@@ -9,6 +9,8 @@ const swaggerUi = require('swagger-ui-express');
 const YAML = require('yaml');
 const scenesRouter = require('./routes/scenes');
 const roomsRouter = require('./routes/rooms');
+const { tracksRouter } = require('./routes/tracks');
+const cdsRouter = require('./routes/cds');
 
 // The written description of the API (see openapi.yaml). It is read once when the app starts.
 const apiSpec = YAML.parse(fs.readFileSync(path.join(__dirname, '..', 'openapi.yaml'), 'utf8'));
@@ -20,6 +22,8 @@ const apiSpec = YAML.parse(fs.readFileSync(path.join(__dirname, '..', 'openapi.y
 function createApp(models = {}, { requestsPerMinute = Number(process.env.REQUESTS_PER_MINUTE) || 300 } = {}) {
   const Scene = models.Scene || require('./models/Scene');
   const Room = models.Room || require('./models/Room');
+  const Track = models.Track || require('./models/Track');
+  const Cd = models.Cd || require('./models/Cd');
   const app = express();
 
   // On a host such as Render the API sits behind the host's own front door (a proxy). This tells Express to look
@@ -57,6 +61,8 @@ function createApp(models = {}, { requestsPerMinute = Number(process.env.REQUEST
 
   app.use('/api/scenes', scenesRouter(Scene));
   app.use('/api/rooms', roomsRouter({ Room, Scene }));
+  app.use('/api/tracks', tracksRouter(Track));
+  app.use('/api/cds', cdsRouter({ Cd, Track }));
 
   // Any other /api address does not exist.
   app.use('/api', (req, res) => {
