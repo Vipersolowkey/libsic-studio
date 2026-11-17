@@ -24,7 +24,8 @@ export async function request(path, { method = 'GET', body, headers = {} } = {})
   }
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new ApiError(data.error || `Request failed (${res.status})`, res.status);
+    const details = data.details ? Object.values(data.details).join('. ') : '';
+    throw new ApiError(details || data.error || `Request failed (${res.status})`, res.status);
   }
   return res.status === 204 ? null : res.json(); // 204 = success with nothing to send back
 }
@@ -40,3 +41,15 @@ export const updateRoom = (code, editKey, data) =>
   request(`/api/rooms/${encodeURIComponent(code)}`, { method: 'PUT', body: data, headers: { 'x-edit-key': editKey } });
 export const deleteRoom = (code, editKey) =>
   request(`/api/rooms/${encodeURIComponent(code)}`, { method: 'DELETE', headers: { 'x-edit-key': editKey } });
+
+export const getTracks = () => request('/api/tracks');
+export const resolveMusicLink = (url) => request('/api/music/resolve', { method: 'POST', body: { url } });
+export const getSoundcloudMetadata = (ids) => request('/api/music/soundcloud/metadata', { method: 'POST', body: { ids } });
+export const getTrack = (id) => request(`/api/tracks/${encodeURIComponent(id)}`);
+export const getCds = () => request('/api/cds');
+export const getCd = (code) => request(`/api/cds/${encodeURIComponent(code)}`);
+export const createCd = (data) => request('/api/cds', { method: 'POST', body: data });
+export const updateCd = (code, editKey, data) =>
+  request(`/api/cds/${encodeURIComponent(code)}`, { method: 'PUT', body: data, headers: { 'x-edit-key': editKey } });
+export const deleteCd = (code, editKey) =>
+  request(`/api/cds/${encodeURIComponent(code)}`, { method: 'DELETE', headers: { 'x-edit-key': editKey } });

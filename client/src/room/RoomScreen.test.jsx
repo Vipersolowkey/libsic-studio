@@ -6,6 +6,10 @@ import App from '../App.jsx';
 import * as api from '../api.js';
 import { getLastRoomCode, getMyRooms, saveMyRoom, setLastRoomCode } from '../myRooms.js';
 import { decorScene, otherScene, savedRoom, scene } from '../test/fixtures.js';
+import { DEFAULT_MUSIC_SOURCE } from '../music/discovery.js';
+
+// Provider integration has its own SDK tests; room regression tests avoid external scripts.
+vi.mock('../music/ExternalMusic.jsx', () => ({ default: () => null, EMPTY_ONLINE_PLAYER: { cd: { title: 'Online music', tracks: [] }, track: null, playing: false, volume: 0.7, toggle() {}, next() {}, prev() {}, pause() {} } }));
 
 // The rooms and the effects are groups of buttons in the side bar: pick one by the name of its group and its own name.
 const inGroup = (group, item) => within(screen.getByRole('group', { name: group })).getByRole('button', { name: item });
@@ -29,6 +33,8 @@ const ownRoom = () => saveMyRoom({ code: savedRoom.code, editKey: 'secret-key', 
 
 beforeEach(() => {
   localStorage.clear();
+  vi.spyOn(api, 'getCds').mockResolvedValue([]);
+  vi.spyOn(api, 'getCd').mockResolvedValue({ code: 'night-study', title: 'Quiet Pages', tracks: [{ id: 'lamp-light', title: 'Lamp Light', src: '/audio/music/lamp-light.mp3' }] });
   vi.spyOn(api, 'getScenes').mockResolvedValue([scene, otherScene]);
   vi.spyOn(api, 'getRoom').mockImplementation(async (code) => {
     if (code === savedRoom.code) return savedRoom;
@@ -66,8 +72,9 @@ describe('the hologram player', () => {
   it('plays and pauses with the space bar: the record stops while paused', async () => {
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
-    renderAt('/new');
+    renderAt('/new?cd=night-study');
     const stage = await screen.findByTestId('stage');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Play', hidden: true })).toBeEnabled());
     expect(stage).toHaveClass('paused');
 
     await userEvent.keyboard(' ');
@@ -78,6 +85,24 @@ describe('the hologram player', () => {
 });
 
 describe('a new room (/new)', () => {
+  it('loads a selected CD from the API and includes it when saving a room', async () => {
+    vi.spyOn(api, 'createRoom').mockRejectedValue(new Error('stop after checking payload'));
+    renderAt('/new?cd=night-study');
+    await screen.findByTestId('stage');
+    await waitFor(() => expect(api.getCd).toHaveBeenCalledWith('night-study'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save room' }));
+    expect(api.createRoom).toHaveBeenCalledWith(expect.objectContaining({ cdCode: 'night-study' }));
+  });
+
+  it('opens the saved room even if its CD was deleted, and lets the visitor eject it', async () => {
+    api.getRoom.mockResolvedValue({ ...savedRoom, cdCode: 'gone' });
+    api.getCd.mockRejectedValue(new api.ApiError('CD not found', 404));
+    renderAt(`/r/${savedRoom.code}`);
+    await screen.findByTestId('stage');
+    expect(await screen.findByRole('alert')).toHaveTextContent('This CD was deleted');
+    await userEvent.click(screen.getByRole('button', { name: 'Eject CD' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
   it('shows a loading message, then the first scene with its default effect', async () => {
     const { container } = renderAt('/new');
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
@@ -262,13 +287,13 @@ describe('saving a new room', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Light on' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save room' }));
 
-    expect(api.createRoom).toHaveBeenCalledWith({ name: 'My room', sceneSlug: 'other', settings: { effect: 'stars', lightOn: false, curtainsClosed: false }, items: null });
+    expect(api.createRoom).toHaveBeenCalledWith({ name: 'My room', sceneSlug: 'other', cdCode: null, musicSource: DEFAULT_MUSIC_SOURCE, settings: { effect: 'stars', lightOn: false, curtainsClosed: false }, items: null });
     expect(getMyRooms()[0]).toMatchObject({ code: savedRoom.code, editKey: 'new-secret' });
     expect(getLastRoomCode()).toBe(savedRoom.code);
 
     // The page is now the saved room, and this browser can edit it.
     expect(await screen.findByRole('button', { name: 'Save changes' })).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent(/room saved/i);
+    expect(await screen.findByText(/Room saved! Copy the link/)).toBeInTheDocument();
     expect(screen.getByLabelText('Share link')).toHaveValue(`${window.location.origin}/r/${savedRoom.code}`);
   });
 
@@ -364,6 +389,8 @@ describe('editing your own room', () => {
     expect(api.updateRoom).toHaveBeenCalledWith(savedRoom.code, 'secret-key', {
       name: 'Study 2',
       sceneSlug: 'other',
+      cdCode: null,
+      musicSource: null,
       settings: { effect: 'stars', lightOn: false, curtainsClosed: false },
       items: null,
     });

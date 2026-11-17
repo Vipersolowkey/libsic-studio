@@ -2,9 +2,14 @@
 
 Four weeks, from 20 Oct to 20 Nov 2026 (last days are buffer). Both members do front end and back end work. Tick a box when the task's "done when" is true and the other member has reviewed it.
 
-**Lane A (music side):** teammate  
+**Lane A (music side):** Vinh
+
 **Lane B (room side):** Tony  
 **Together:** both members
+
+### Lane A implementation update — 17 Nov 2026
+
+Tasks **3a, 5a, 8, 9a, 10a** and the music parts of **11/13** are implemented on `lane-a-music`, with API/client tests and a MongoDB HTTP smoke script. See [Vinh's handoff](LANE_A_VINH.md). Boxes below remain unchecked until the other member reviews them, as agreed above. API deployment and the joint presentation still need the team's hosting configuration and final review.
 
 ## Week 1: the API (20 to 26 Oct)
 
