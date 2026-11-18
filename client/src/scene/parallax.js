@@ -25,6 +25,8 @@ const prefersReducedMotion = () =>
 export function useParallax(depths, enabled = true) {
   const stageRef = useRef(null);
   const layerEls = useRef([]);
+  const frameRef = useRef(0);
+  const pendingRef = useRef(null);
 
   const moveTo = useCallback(
     (pointer) => {
@@ -40,6 +42,27 @@ export function useParallax(depths, enabled = true) {
     [depths]
   );
 
+  const moveAt = useCallback(
+    (clientX, clientY) => {
+      const stage = stageRef.current;
+      if (!stage) return;
+      const rect = stage.getBoundingClientRect();
+      moveTo({ x: (clientX - rect.left) / rect.width, y: (clientY - rect.top) / rect.height });
+    },
+    [moveTo]
+  );
+
+  const moveAtRef = useRef(moveAt);
+  moveAtRef.current = moveAt;
+
+  const cancelPending = useCallback(() => {
+    if (frameRef.current) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
+    }
+    pendingRef.current = null;
+  }, []);
+
   const layerRef = useCallback(
     (i) => (el) => {
       layerEls.current[i] = el;
@@ -48,19 +71,39 @@ export function useParallax(depths, enabled = true) {
   );
 
   useEffect(() => {
-    if (!enabled) moveTo({ x: 0.5, y: 0.5 });
-  }, [enabled, moveTo]);
+    if (!enabled) {
+      cancelPending();
+      moveTo({ x: 0.5, y: 0.5 });
+    }
+  }, [enabled, cancelPending, moveTo]);
 
+  useEffect(() => cancelPending, [cancelPending]);
+
+  // Move right away on the first event of a frame, then batch any further events until the animation frame.
   const onPointerMove = useCallback(
     (e) => {
       if (!enabled || prefersReducedMotion()) return;
-      const rect = stageRef.current.getBoundingClientRect();
-      moveTo({ x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height });
+      if (frameRef.current) {
+        pendingRef.current = { clientX: e.clientX, clientY: e.clientY };
+        return;
+      }
+      moveAt(e.clientX, e.clientY);
+      frameRef.current = requestAnimationFrame(() => {
+        frameRef.current = 0;
+        const pending = pendingRef.current;
+        if (pending) {
+          pendingRef.current = null;
+          moveAtRef.current(pending.clientX, pending.clientY);
+        }
+      });
     },
-    [enabled, moveTo]
+    [enabled, moveAt]
   );
 
-  const onPointerLeave = useCallback(() => moveTo({ x: 0.5, y: 0.5 }), [moveTo]);
+  const onPointerLeave = useCallback(() => {
+    cancelPending();
+    moveTo({ x: 0.5, y: 0.5 });
+  }, [cancelPending, moveTo]);
 
   return { stageRef, layerRef, handlers: { onPointerMove, onPointerLeave } };
 }
