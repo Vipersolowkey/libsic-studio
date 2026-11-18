@@ -281,7 +281,7 @@ export default function RoomScreen({ code }) {
   }
 
   const hologram = !decorating && (
-    <Hologram scene={scene} open={playerOpen} place={playerPlace}>
+    <Hologram scene={scene} items={items} open={playerOpen} place={playerPlace}>
       <HoloPlayer player={player} />
     </Hologram>
   );
