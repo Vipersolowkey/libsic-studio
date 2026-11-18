@@ -56,7 +56,11 @@ function installFakeRoomStore(Room, { duplicateFirst = 0 } = {}) {
   };
   Room.findOne = (filter) => {
     const found = store.get(filter.code) || null;
-    return { select: () => Promise.resolve(found), then: (ok, fail) => Promise.resolve(found).then(ok, fail) };
+    return {
+      select: () => Promise.resolve(found),
+      lean: () => Promise.resolve(found),
+      then: (ok, fail) => Promise.resolve(found).then(ok, fail),
+    };
   };
   Room.deleteOne = async (filter) => ({ deletedCount: store.delete(filter.code) ? 1 : 0 });
 

@@ -88,7 +88,7 @@ function roomsRouter({ Room, Scene }) {
 
   // Anyone with the code can open a room.
   router.get('/:code', async (req, res) => {
-    const room = await Room.findOne({ code: req.params.code });
+    const room = await Room.findOne({ code: req.params.code }).lean();
     if (!room) return res.status(404).json({ error: 'Room not found' });
     res.json(publicRoom(room));
   });
