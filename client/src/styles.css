@@ -125,24 +125,6 @@ body {
 .side-foot { display: flex; flex-direction: column; gap: 8px; padding: 12px var(--pad) var(--pad); border-top: 1px solid var(--line); }
 .side-foot .my-rooms { margin-top: 0; }
 .side-foot .my-rooms-panel { max-height: 30vh; overflow-y: auto; }
-/* "More settings": a quiet line that unfolds the rarely used settings */
-.side-more {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 2px 0;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-.side-more:hover { color: var(--text); }
-.side-more:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
-.side-more-body { padding-top: 12px; }
-.side-more-body .side-title:not(:first-child) { margin-top: 14px; }
 .chip-row + .chip-row { margin-top: 8px; }
 
 /* After a few quiet seconds the side bar fades away, so the room can run on a second screen without clutter. */
@@ -168,7 +150,7 @@ body {
 .brand:hover .brand-disc { animation: disc-spin 3s linear infinite; }
 @keyframes disc-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .brand:hover .brand-disc { animation: none; } }
-.brand:focus-visible, .side-hide:focus-visible, .side-open:focus-visible, .room-card:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.brand:focus-visible, .side-hide:focus-visible, .side-open:focus-visible, .polaroid:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 
 .side-hide, .side-open {
   flex: none;
@@ -207,44 +189,11 @@ body {
 
 /* While decorating with the bar open, the picture moves over next to the bar, so every object can be reached. */
 .room.decorating.side-on {
-  --side: 292px;
+  --side: calc(292px * var(--ui, 1));
   --fit: min(calc(100vw - var(--side)), calc(100vh * 16 / 9));
 }
 .room.decorating.side-on .stage { left: calc(50% + var(--side) / 2); }
 @media (max-width: 700px) { .room.decorating.side-on { --side: 0px; } }
-
-/* The rooms, each a small picture with its name on it */
-.room-list { display: flex; flex-direction: column; gap: 8px; }
-.room-card {
-  position: relative;
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 4.4;
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid #34343f;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #1b2030, #0d0f17);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s;
-}
-.room-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.72; transition: opacity 0.2s, transform 0.4s; }
-.room-card span {
-  position: absolute;
-  inset: auto 0 0 0;
-  padding: 18px 11px 8px;
-  background: linear-gradient(180deg, transparent, rgba(5, 6, 10, 0.86));
-  font-size: 14px;
-  font-weight: 550;
-  text-align: left;
-}
-.room-card:hover { border-color: var(--accent); }
-.room-card:hover img { opacity: 1; transform: scale(1.04); }
-.room-card[aria-pressed='true'] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(232, 184, 106, 0.22); }
-.room-card[aria-pressed='true'] img { opacity: 1; }
-.room-card[aria-pressed='true'] span { color: var(--accent); }
 
 .zoom { display: flex; gap: 6px; }
 .zoom .chip { flex: 1; padding: 6px 8px; text-align: center; }
@@ -364,7 +313,7 @@ a.chip { text-decoration: none; display: inline-block; }
   left: 50%;
   top: 50%;
   width: 30em;
-  font-size: clamp(9px, 1.45vw, 26px);
+  font-size: clamp(9px, 1.45vw, 40px);
   transform: translate(-50%, -50%);
 }
 .holo-at-top {

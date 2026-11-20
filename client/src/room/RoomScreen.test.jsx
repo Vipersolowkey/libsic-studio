@@ -13,7 +13,7 @@ vi.mock('../music/ExternalMusic.jsx', () => ({ default: () => null, EMPTY_ONLINE
 
 // The rooms and the effects are groups of buttons in the side bar: pick one by the name of its group and its own name.
 const inGroup = (group, item) => within(screen.getByRole('group', { name: group })).getByRole('button', { name: item });
-const more = () => userEvent.click(screen.getByRole('button', { name: /more settings/i })); // unfolds the zoom buttons and the player place
+const more = () => userEvent.click(screen.getByRole('button', { name: 'View settings' })); // opens the note with the zoom buttons and the player place
 async function pick(group, item) {
   await userEvent.click(inGroup(group, item));
 }
@@ -146,7 +146,7 @@ describe('a new room (/new)', () => {
     await pick('Effects', 'Snow'); // pressing the effect that is on turns it off
     expect(container.querySelector('[data-effect]')).toBeNull();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Light on' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Night' }));
     expect(screen.getByTestId('stage')).toHaveClass('lights-off');
   });
 });
@@ -161,7 +161,7 @@ describe('the side bar', () => {
     expect(inGroup('Switch room', 'Test Room')).toHaveAttribute('aria-pressed', 'true');
     expect(inGroup('Switch room', 'Other Room')).toHaveAttribute('aria-pressed', 'false');
     await more();
-    for (const name of ['Light on', 'Save room', 'Zoom in', /my rooms/i]) expect(bar.getByRole('button', { name })).toBeInTheDocument();
+    for (const name of ['Night', 'Save room', 'Zoom in', /my rooms/i]) expect(bar.getByRole('button', { name })).toBeInTheDocument();
     expect(bar.getByLabelText('Room name')).toBeInTheDocument();
   });
 
@@ -284,7 +284,7 @@ describe('saving a new room', () => {
 
     await userEvent.type(screen.getByLabelText('Room name'), 'My room');
     await pick('Switch room', 'Other Room');
-    await userEvent.click(screen.getByRole('button', { name: 'Light on' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Night' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save room' }));
 
     expect(api.createRoom).toHaveBeenCalledWith({ name: 'My room', sceneSlug: 'other', cdCode: null, musicSource: DEFAULT_MUSIC_SOURCE, settings: { effect: 'stars', lightOn: false, curtainsClosed: false }, items: null });
@@ -404,7 +404,7 @@ describe('editing your own room', () => {
     renderAt(`/r/${savedRoom.code}`);
     await screen.findByTestId('stage');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Light off' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Day' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Wrong edit key');
@@ -487,7 +487,7 @@ describe('decorating the room', () => {
   async function decorate(path = '/new') {
     const view = renderAt(path);
     await screen.findByTestId('stage');
-    await userEvent.click(screen.getByRole('button', { name: 'Decorate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decorate this room' }));
     return view;
   }
   it('hides the hologram player while decorating', async () => {
@@ -521,10 +521,10 @@ describe('decorating the room', () => {
   it('offers Decorate only in a room whose scene has objects to move', async () => {
     renderAt('/new');
     await screen.findByTestId('stage');
-    expect(screen.getByRole('button', { name: 'Decorate' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Decorate this room' })).toBeInTheDocument();
 
     await pick('Switch room', 'Test Room');
-    expect(screen.queryByRole('button', { name: 'Decorate' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Decorate this room' })).toBeNull();
   });
 
   it('swaps the usual buttons for Undo, Reset room and Done, and lists the objects to add', async () => {
@@ -618,7 +618,7 @@ describe('decorating the room', () => {
       await done();
       expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
 
-      await userEvent.click(screen.getByRole('button', { name: 'Decorate' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Decorate this room' }));
       await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
       await done();
       expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
@@ -640,7 +640,7 @@ describe('decorating the room', () => {
       renderAt(`/r/${savedRoom.code}`);
       await screen.findByTestId('stage');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Decorate' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Decorate this room' }));
       await userEvent.click(screen.getByRole('button', { name: 'Reset room' }));
       await done();
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
@@ -684,7 +684,7 @@ describe('decorating the room', () => {
       const { container } = renderAt('/new');
       await screen.findByTestId('stage');
       await userEvent.keyboard('+++');
-      await userEvent.click(screen.getByRole('button', { name: 'Decorate' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Decorate this room' }));
       lookLeft();
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(panX(container)).toBe('0px');

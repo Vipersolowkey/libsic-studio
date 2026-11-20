@@ -15,9 +15,18 @@ export const EMPTY_ONLINE_PLAYER = {
 // The provider's own player stays visible. It also drives the room's hologram.
 export default function ExternalMusic({ source, onPlayer, onClose }) {
   const [attempt, setAttempt] = useState(0);
+  // The provider's own player is only needed to read, to sign in or to see the video, so SoundCloud starts folded
+  // (its title bar shows, the player keeps running). A person can unfold it with the button.
+  const [folded, setFolded] = useState(source.provider === 'soundcloud');
   return (
-    <aside className="online-player" aria-label="Online music player">
-      <header><span>{PROVIDER_NAMES[source.provider]}</span><button className="chip" type="button" onClick={onClose} aria-label="Eject online music">Eject</button></header>
+    <aside className={`online-player${folded ? ' folded' : ''}`} aria-label="Online music player">
+      <header>
+        <span>{PROVIDER_NAMES[source.provider]}</span>
+        <span>
+          <button className="chip" type="button" aria-expanded={!folded} onClick={() => setFolded(!folded)}>{folded ? 'Show' : 'Hide'}</button>
+          <button className="chip" type="button" onClick={onClose} aria-label="Eject online music">Eject</button>
+        </span>
+      </header>
       {source.provider === 'audio' ? <DirectAudio key={source.url} source={source} onPlayer={onPlayer} /> : <EmbeddedMusic key={`${source.url}:${attempt}`} source={source} onPlayer={onPlayer} onRetry={() => setAttempt((n) => n + 1)} />}
       <a href={source.url} target="_blank" rel="noreferrer">Open original source ↗</a>
     </aside>
@@ -55,7 +64,16 @@ function EmbeddedMusic({ source, onPlayer, onRetry }) {
     let active = true;
     let dispose = noop;
     let timer;
-    const patch = (changes) => { if (active) setState((old) => ({ ...old, ...changes })); };
+    // The providers report the play time several times a second, and every report redraws the whole room page (the
+    // hologram shows whole seconds only). A report that only moves the time by less than a second is ignored.
+    const patch = (changes) => {
+      if (!active) return;
+      setState((old) => {
+        const onlyTime = Object.keys(changes).length === 1 && 'time' in changes;
+        if (onlyTime && changes.time >= old.time && changes.time - old.time < 1) return old;
+        return { ...old, ...changes };
+      });
+    };
     const ready = () => { clearTimeout(timer); patch({ ready: true, error: '' }); };
     const fail = (message) => { clearTimeout(timer); patch({ playing: false, error: message }); };
     const setup = async () => {
