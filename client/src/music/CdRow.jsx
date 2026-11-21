@@ -7,6 +7,7 @@ import { forgetLink, getMyLinks, linkTitle, providerName, rememberLink } from '.
 import { parseMusicSource } from './musicSource.js';
 import { cdLook, lookVars } from './cdLook.js';
 import { formatTime } from '../room/HoloPlayer.jsx';
+import { uiScaleFor } from '../room/useUiScale.js';
 
 // The way into all the music: a wooden CD tower standing in the bottom-right corner of the room. The CDs lie in it one
 // above the other with their spines to the front, like on the shelf at home. The tower rests below the edge of the
@@ -24,13 +25,23 @@ import { formatTime } from '../room/HoloPlayer.jsx';
 const SOURCE_MARK = { studio: 'LS', soundcloud: 'SC', mine: 'ME', link: 'LK' };
 const isLink = (text) => /^(https?:\/\/|spotify:)/i.test(text);
 
+// The front of a pulled-out CD is 118 px square with a small label under it (about 142 px in all, measured in the tower's own pixels).
+const PULL_FRONT = 118;
+const PULL_TOTAL = 142;
+const SLOT = 52; // the width one CD takes on the wide shelf
+// How many CDs fit on one plank of the wide shelf in a window this wide.
+function slotsPerRow() {
+  const ui = uiScaleFor(window.innerWidth, window.innerHeight);
+  return Math.max(4, Math.floor((Math.min(1180, window.innerWidth / ui - 64) - 76) / SLOT));
+}
+
 // Sends a copy of the disc flying from the CD that was picked to the music object in the room, so the choice is seen.
 // Only decoration: it does nothing when the browser cannot animate or the visitor asked for less motion.
 function flyDisc(fromElement, face) {
   if (!fromElement?.animate || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
   let start = fromElement.getBoundingClientRect();
   if (!start.width) return;
-  if (start.width > 140) start = { left: start.left + start.width / 2 - 28, top: start.top + start.height / 2 - 28, width: 56, height: 56 }; // a whole case: fly from its middle
+  if (start.width > 140 || start.height > start.width * 2) start = { left: start.left + start.width / 2 - 28, top: start.top + start.height / 2 - 28, width: 56, height: 56 }; // a whole case or a standing spine: fly from its middle
   const target = document.querySelector('.hotspot[data-action="nextTrack"]')?.getBoundingClientRect();
   const endX = target ? target.left + target.width / 2 : window.innerWidth / 2;
   const endY = target ? target.top + target.height / 2 : window.innerHeight / 2;
@@ -67,6 +78,9 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
   const [busy, setBusy] = useState(false);
   const [tracksOpen, setTracksOpen] = useState(false);
   const [slip, setSlip] = useState(false); // the paper slip for adding music is shown
+  const [wall, setWall] = useState('closed'); // the wide shelf: 'closed', 'open', or 'closing' while it slides away
+  const [aim, setAim] = useState(null); // the CD pointed at on the wide shelf
+  const [perRow, setPerRow] = useState(slotsPerRow);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,16 +91,39 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
 
   // Escape closes the slip or the list of tracks. It is caught before the room sees it, because the room uses Escape to close the hologram.
   useEffect(() => {
-    if (!slip && !tracksOpen) return undefined;
+    if (!slip && !tracksOpen && wall !== 'open') return undefined;
     const onKey = (event) => {
       if (event.key !== 'Escape') return;
       event.stopPropagation();
       setSlip(false);
       setTracksOpen(false);
+      if (wall === 'open') closeWall();
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [slip, tracksOpen]);
+  }, [slip, tracksOpen, wall]);
+
+  // The wide shelf is as wide as the window allows, so the planks are filled again when the window changes size.
+  useEffect(() => {
+    const onResize = () => setPerRow(slotsPerRow());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  function openWall() {
+    setHovered(null);
+    setSlip(false);
+    setTracksOpen(false);
+    setAim(null);
+    setWall('open');
+  }
+  // It slides away first and is removed when that is done.
+  function closeWall(quick) {
+    setAim(null);
+    if (quick || !window.matchMedia || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setWall('closed'); return; }
+    setWall('closing');
+    setTimeout(() => setWall((now) => (now === 'closing' ? 'closed' : now)), 260);
+  }
 
   // Every CD in one list: ours, then the online playlists, then the ones this browser made. The number on a spine is its place.
   const [mine, setMine] = useState(getMyCds);
@@ -120,6 +157,7 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
     else if (item.kind === 'link') onChooseSource({ provider: item.provider, url: item.key });
     else onChooseCd(item.key);
     setHovered(null);
+    if (wall !== 'closed') closeWall(true);
   }
 
   async function submit(event) {
@@ -151,10 +189,19 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
   const nowFace = current ? current.look.face : source || cdCode ? cdLook(source ? source.url : cdCode).face : null;
 
   // Pointing at a case slides it out and shows its front next to the tower. The front sits level with the case.
+  // The tower is drawn bigger on big screens (CSS zoom), so the distances on the screen are divided by that zoom to get the
+  // tower's own pixels. The front is kept inside the window: for a CD low in the tower it moves up instead of being cut off.
   function point(item, button) {
-    const wrap = wrapRef.current?.getBoundingClientRect();
+    const body = wrapRef.current;
+    if (!body) { setHovered({ item, top: 0 }); return; }
+    const wrap = body.getBoundingClientRect();
     const box = button.getBoundingClientRect();
-    setHovered({ item, top: wrap ? box.top - wrap.top + box.height / 2 : 0 });
+    const zoom = body.offsetWidth && wrap.width ? wrap.width / body.offsetWidth : 1;
+    const edge = 10;
+    const wanted = box.top + box.height / 2 - (PULL_FRONT / 2) * zoom;
+    const lowest = Math.max(edge, window.innerHeight - edge - PULL_TOTAL * zoom);
+    const screenTop = Math.min(Math.max(wanted, edge), lowest);
+    setHovered({ item, top: (screenTop - wrap.top) / zoom });
   }
 
   const caseFor = (item) => {
@@ -184,7 +231,14 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
     );
   };
 
+  const shown = aim || current;
+  const slots = [...items, { add: true, key: 'add', number: items.length + 1 }];
+  const columns = Math.min(Math.max(slots.length, 6), perRow);
+  const rows = [];
+  for (let i = 0; i < slots.length; i += columns) rows.push(slots.slice(i, i + columns));
+
   return (
+    <>
     <section className={`cdc side-fade${pinned || slip || tracksOpen || loading || error || failure ? ' lifted' : ''}${player?.playing ? ' cdc-playing' : ''}`} aria-label="CD shelf">
       {loading && <p className="cdc-note" role="status">Loading the CD…</p>}
       {error && (
@@ -215,6 +269,7 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
             <span className="cdc-mini" style={nowFace ? { '--face': nowFace } : undefined} aria-hidden="true" />
             <span className="cdc-now" onClick={() => setPinned(!pinned)}><small>In the player</small><b key={nowTitle}>{nowTitle}</b></span>
             <span className="cdc-eq" aria-hidden="true"><i /><i /><i /></span>
+            <button type="button" className="cdc-brass cdc-all" aria-label="Open the wide shelf with all CDs" onClick={openWall}>All CDs</button>
             {tracks.length > 0 && <button type="button" className="cdc-brass" aria-pressed={tracksOpen} onClick={() => { setTracksOpen(!tracksOpen); setSlip(false); }}>Tracks</button>}
             {current?.saved && <button type="button" className="cdc-brass" aria-label="Forget this link" onClick={() => setLinks(forgetLink(current.key))}>Forget</button>}
             {(source || cdCode) && <button type="button" className="cdc-brass" aria-label="Take the CD out of the player" onClick={onEject}>Eject</button>}
@@ -241,6 +296,61 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
         </div>
       )}
     </section>
+    {wall !== 'closed' && (
+      <div className={`cdw${wall === 'closing' ? ' cdw-out' : ''}`} role="dialog" aria-modal="true" aria-label="All CDs" onMouseDown={(event) => { if (event.target === event.currentTarget) closeWall(); }}>
+        <div className="cdw-panel" style={{ '--cols': columns }}>
+          <header className="cdw-head">
+            <b>The CD shelf</b>
+            <small>{items.length} {items.length === 1 ? 'CD' : 'CDs'}</small>
+            <button type="button" className="cdc-brass" onClick={() => closeWall()} autoFocus>Close</button>
+          </header>
+          <div className="cdw-rows">
+            {rows.map((row, r) => (
+              <div className="cdw-row" key={r}>
+                {row.map((item) => (item.add ? (
+                  <button type="button" key="add" className="cdw-cd cdw-add" style={{ '--n': item.number, '--w': '30px' }} aria-label="Add your own music" onClick={() => { closeWall(true); setSlip(true); setTracksOpen(false); }}>
+                    <span className="cdw-body"><span className="cdw-flip"><span className="cdc-spine"><span className="cdc-paper"><span className="cdc-ttl">+ Add music</span></span></span></span></span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    key={`${item.kind}:${item.key}`}
+                    className={`cdw-cd cdc-kind-${item.kind}${isPlaying(item) ? ' cdc-empty' : ''}`}
+                    style={{ ...lookVars(item.look), '--n': item.number }}
+                    aria-label={`${item.title}, ${item.sub}`}
+                    disabled={isPlaying(item)}
+                    onMouseEnter={() => setAim(item)}
+                    onFocus={() => setAim(item)}
+                    onMouseLeave={() => setAim(null)}
+                    onBlur={() => setAim(null)}
+                    onClick={(event) => pick(item, event.currentTarget)}
+                  >
+                    <span className="cdw-body">
+                      <span className="cdw-flip">
+                        <span className="cdc-spine">
+                          <span className="cdc-paper">
+                            <span className="cdc-ttl">{item.title}</span>
+                            <b className="cdc-num">{SOURCE_MARK[item.kind]} {String(item.number).padStart(2, '0')}</b>
+                          </span>
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+                )))}
+              </div>
+            ))}
+          </div>
+          <p className="cdw-label" style={shown ? lookVars(shown.look) : undefined} aria-live="polite">
+            <span className="cdc-disc cdw-disc" aria-hidden="true" />
+            <span className="cdw-name" key={shown ? shown.key : 'none'}>
+              <b>{shown ? shown.title : loaded ? 'Online music' : 'Pick a CD'}</b>
+              <small>{aim ? aim.sub : shown ? `In the player · ${shown.sub}` : 'Point at a CD, click to play it'}</small>
+            </span>
+          </p>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

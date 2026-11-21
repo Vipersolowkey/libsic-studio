@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import CdRow from './CdRow.jsx';
@@ -137,6 +137,98 @@ describe('the row of CDs', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Eject CD' }));
     expect(onRetry).toHaveBeenCalled();
     expect(onEject).toHaveBeenCalled();
+  });
+});
+
+describe('the wide shelf', () => {
+  const openWall = async () => {
+    await userEvent.click(screen.getByRole('button', { name: 'Open the wide shelf with all CDs' }));
+    return screen.getByRole('dialog', { name: 'All CDs' });
+  };
+
+  it('opens from the tower and stands every CD upright, with the add slot last', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    rememberCd({ code: 'mine-1', title: 'Exam Week', editKey: 'k' });
+    show();
+    await screen.findByRole('listitem', { name: /Quiet Pages/ });
+    const wall = await openWall();
+    const titles = within(wall).getAllByRole('button').map((button) => button.getAttribute('aria-label'));
+    expect(titles).toContain('Quiet Pages, Studio · 4 tracks');
+    expect(titles).toContain('Exam Week, My CD');
+    expect(titles.at(-1)).toBe('Add your own music');
+    expect(wall.querySelectorAll('.cdw-cd')).toHaveLength(2 + DISCOVERY_PLAYLISTS.length + 1 + 1);
+  });
+
+  it('names the CD that is pointed at and says what is in the player when none is', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    show({ cdCode: 'clam-cove' });
+    await screen.findByRole('listitem', { name: /Quiet Pages/ });
+    const wall = await openWall();
+    expect(within(wall).getByText('Below the Tide', { selector: 'b' })).toBeInTheDocument();
+    expect(within(wall).getByText(/In the player/)).toBeInTheDocument();
+    await userEvent.hover(within(wall).getByRole('button', { name: /Quiet Pages/ }));
+    expect(within(wall).getByText('Quiet Pages', { selector: '.cdw-name b' })).toBeInTheDocument();
+    expect(within(wall).getByText('Studio · 4 tracks')).toBeInTheDocument();
+  });
+
+  it('plays a CD that is clicked and closes', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    const { onChooseCd } = show();
+    await screen.findByRole('listitem', { name: /Quiet Pages/ });
+    const wall = await openWall();
+    await userEvent.click(within(wall).getByRole('button', { name: /Below the Tide/ }));
+    expect(onChooseCd).toHaveBeenCalledWith('clam-cove');
+    expect(screen.queryByRole('dialog', { name: 'All CDs' })).toBeNull();
+  });
+
+  it('leaves the place of the CD in the player empty', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    show({ cdCode: 'clam-cove' });
+    await screen.findByRole('listitem', { name: /Quiet Pages/ });
+    const wall = await openWall();
+    expect(within(wall).getByRole('button', { name: /Below the Tide/ })).toBeDisabled();
+  });
+
+  it('closes with Close, on Escape and on the dark backdrop', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    show();
+    await screen.findByRole('listitem', { name: /Quiet Pages/ });
+    await openWall();
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'All CDs' })).toBeNull());
+    await openWall();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'All CDs' })).toBeNull());
+    const wall = await openWall();
+    await userEvent.pointer({ keys: '[MouseLeft]', target: wall });
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'All CDs' })).toBeNull());
+  });
+
+  it('opens the slip for adding music from its add slot', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue([]);
+    show();
+    const wall = await openWall();
+    await userEvent.click(within(wall).getByRole('button', { name: 'Add your own music' }));
+    expect(screen.queryByRole('dialog', { name: 'All CDs' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Make a CD' })).toBeInTheDocument();
+  });
+});
+
+describe('the pulled-out front', () => {
+  it('stays inside the window for a CD low in the tower', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    show();
+    const item = await screen.findByRole('listitem', { name: /Quiet Pages/ });
+    const body = document.querySelector('.cdc-body');
+    Object.defineProperty(body, 'offsetWidth', { value: 268 });
+    body.getBoundingClientRect = () => ({ top: 400, left: 700, width: 268 * 1.5, height: 300, bottom: 700, right: 1100 });
+    item.getBoundingClientRect = () => ({ top: 640, height: 40, width: 400, left: 720, bottom: 680, right: 1120 });
+    Object.defineProperty(window, 'innerHeight', { value: 700, configurable: true });
+    await userEvent.hover(item);
+    const top = parseFloat(document.querySelector('.cdc-pull').style.top);
+    // on the screen the front starts at wrap.top + top * zoom and must end (142 tall in the tower's pixels) above the window's bottom edge
+    expect(400 + top * 1.5 + 142 * 1.5).toBeLessThanOrEqual(700 - 10 + 0.01);
+    expect(400 + top * 1.5).toBeGreaterThanOrEqual(10);
   });
 });
 
