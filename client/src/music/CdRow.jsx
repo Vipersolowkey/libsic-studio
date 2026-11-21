@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getCds, resolveMusicLink } from '../api.js';
 import { DISCOVERY_PLAYLISTS } from './discovery.js';
 import { getMyCds } from './myCds.js';
+import { forgetLink, getMyLinks, linkTitle, providerName, rememberLink } from './myLinks.js';
 import { parseMusicSource } from './musicSource.js';
 import { cdLook, lookVars } from './cdLook.js';
 import { formatTime } from '../room/HoloPlayer.jsx';
@@ -20,7 +21,7 @@ import { formatTime } from '../room/HoloPlayer.jsx';
 //   onChooseCd        a CD of ours was chosen by its code
 //   onEject           take whatever is playing out of the player
 //   onRetry           try loading the same CD again
-const SOURCE_MARK = { studio: 'LS', soundcloud: 'SC', mine: 'ME' };
+const SOURCE_MARK = { studio: 'LS', soundcloud: 'SC', mine: 'ME', link: 'LK' };
 const isLink = (text) => /^(https?:\/\/|spotify:)/i.test(text);
 
 // Sends a copy of the disc flying from the CD that was picked to the music object in the room, so the choice is seen.
@@ -54,6 +55,7 @@ function flyDisc(fromElement, face) {
 }
 
 export default function CdRow({ source, cdCode, player, loading, error, onChooseSource, onChooseCd, onEject, onRetry }) {
+  const [links, setLinks] = useState(getMyLinks); // links pasted earlier, kept in this browser
   const [pinned, setPinned] = useState(false); // a tap on the tag keeps the tower lifted (for screens without a mouse)
   const [hovered, setHovered] = useState(null); // { item, top }: the CD that is pulled out, and where its front is shown
   const wrapRef = useRef(null);
@@ -93,15 +95,29 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
     const own = (studio || []).map((cd) => ({ kind: 'studio', key: cd.code, title: cd.title, sub: `Studio · ${cd.tracks?.length ?? 0} tracks` }));
     const online = DISCOVERY_PLAYLISTS.map((p) => ({ kind: 'soundcloud', key: p.url, title: p.title, sub: 'SoundCloud playlist' }));
     const made = mine.map((cd) => ({ kind: 'mine', key: cd.code, title: cd.title, sub: 'My CD' }));
-    return [...own, ...online, ...made].map((item, index) => ({ ...item, number: index + 1, look: cdLook(item.key, item.title) }));
-  }, [studio, mine]);
-  const current = items.find((item) => (item.kind === 'soundcloud' ? source?.url === item.key : !source && cdCode === item.key));
-  const isPlaying = (item) => (item.kind === 'soundcloud' ? source?.url === item.key : !source && cdCode === item.key);
+    const known = new Set(online.map((item) => item.key));
+    // pasted links stay on the shelf; a link that is playing but not saved yet (a shared room) is shown too
+    const saved = links.filter((link) => !known.has(link.url)).map((link) => ({ kind: 'link', key: link.url, provider: link.provider, title: linkTitle(link), sub: `${providerName(link.provider)} link`, saved: true }));
+    const playing = source && !known.has(source.url) && !saved.some((item) => item.key === source.url)
+      ? [{ kind: 'link', key: source.url, provider: source.provider, title: linkTitle(source), sub: `${providerName(source.provider)} link`, saved: false }]
+      : [];
+    return [...own, ...online, ...made, ...saved, ...playing].map((item, index) => ({ ...item, number: index + 1, look: cdLook(item.key, item.title) }));
+  }, [studio, mine, links, source]);
+  // A link that arrives another way (a shared room) is kept as well. Only a change of the link counts, so "Forget" sticks.
+  const sourceUrl = source?.url;
+  const sourceProvider = source?.provider;
+  useEffect(() => {
+    if (sourceUrl && !DISCOVERY_PLAYLISTS.some((p) => p.url === sourceUrl)) setLinks(rememberLink({ provider: sourceProvider, url: sourceUrl }));
+  }, [sourceUrl, sourceProvider]);
+
+  const current = items.find((item) => (item.kind === 'soundcloud' || item.kind === 'link' ? source?.url === item.key : !source && cdCode === item.key));
+  const isPlaying = (item) => (item.kind === 'soundcloud' || item.kind === 'link' ? source?.url === item.key : !source && cdCode === item.key);
   const loaded = Boolean(source || cdCode);
 
   function pick(item, discElement) {
     flyDisc(discElement, item.look.face);
     if (item.kind === 'soundcloud') onChooseSource({ provider: 'soundcloud', url: item.key });
+    else if (item.kind === 'link') onChooseSource({ provider: item.provider, url: item.key });
     else onChooseCd(item.key);
     setHovered(null);
   }
@@ -116,7 +132,9 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
       if (!isLink(text)) onChooseCd(text); // not a link: it is the code of a CD
       else {
         const host = (() => { try { return new URL(text).hostname; } catch { return ''; } })();
-        onChooseSource(['on.soundcloud.com', 'spotify.link'].includes(host) ? await resolveMusicLink(text) : parseMusicSource(text));
+        const chosen = ['on.soundcloud.com', 'spotify.link'].includes(host) ? await resolveMusicLink(text) : parseMusicSource(text);
+        setLinks(rememberLink(chosen)); // the link stays on the shelf, so it can be played again later
+        onChooseSource(chosen);
       }
       setLink('');
       setSlip(false);
@@ -167,7 +185,7 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
   };
 
   return (
-    <section className={`cdc side-fade${pinned || slip || tracksOpen || loading || error || failure ? ' lifted' : ''}`} aria-label="CD shelf">
+    <section className={`cdc side-fade${pinned || slip || tracksOpen || loading || error || failure ? ' lifted' : ''}${player?.playing ? ' cdc-playing' : ''}`} aria-label="CD shelf">
       {loading && <p className="cdc-note" role="status">Loading the CD…</p>}
       {error && (
         <p className="cdc-note cdc-error" role="alert">
@@ -195,8 +213,10 @@ export default function CdRow({ source, cdCode, player, loading, error, onChoose
         <div className="cdc-body" ref={wrapRef}>
           <div className="cdc-tag">
             <span className="cdc-mini" style={nowFace ? { '--face': nowFace } : undefined} aria-hidden="true" />
-            <span className="cdc-now" onClick={() => setPinned(!pinned)}><small>In the player</small><b>{nowTitle}</b></span>
+            <span className="cdc-now" onClick={() => setPinned(!pinned)}><small>In the player</small><b key={nowTitle}>{nowTitle}</b></span>
+            <span className="cdc-eq" aria-hidden="true"><i /><i /><i /></span>
             {tracks.length > 0 && <button type="button" className="cdc-brass" aria-pressed={tracksOpen} onClick={() => { setTracksOpen(!tracksOpen); setSlip(false); }}>Tracks</button>}
+            {current?.saved && <button type="button" className="cdc-brass" aria-label="Forget this link" onClick={() => setLinks(forgetLink(current.key))}>Forget</button>}
             {(source || cdCode) && <button type="button" className="cdc-brass" aria-label="Take the CD out of the player" onClick={onEject}>Eject</button>}
           </div>
           <div className="cdc-tower">

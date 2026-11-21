@@ -175,6 +175,42 @@ describe('the paste box', () => {
   });
 });
 
+describe('links that were pasted', () => {
+  const SPOTIFY = 'https://open.spotify.com/playlist/0CFuMybe6s77w6QQrJjW7d';
+
+  it('stay on the shelf after they are loaded, and can be played again', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue([]);
+    const { onChooseSource } = show();
+    await openSlip();
+    await userEvent.type(screen.getByLabelText('Paste a music link or CD code'), `${SPOTIFY}?si=abc`);
+    await userEvent.click(screen.getByRole('button', { name: 'Load' }));
+    const saved = await screen.findByRole('listitem', { name: 'Spotify playlist, Spotify link' });
+    expect(saved).toHaveTextContent('LK');
+    expect(JSON.parse(localStorage.getItem('libsic.links'))).toEqual([{ provider: 'spotify', url: SPOTIFY }]);
+    await userEvent.click(saved);
+    expect(onChooseSource).toHaveBeenLastCalledWith({ provider: 'spotify', url: SPOTIFY });
+  });
+
+  it('are still there next time, and Forget takes the playing one off the shelf', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue([]);
+    localStorage.setItem('libsic.links', JSON.stringify([{ provider: 'soundcloud', url: 'https://soundcloud.com/some-artist/sets/rainy-day-mix' }]));
+    show({ source: { provider: 'soundcloud', url: 'https://soundcloud.com/some-artist/sets/rainy-day-mix' } });
+    const saved = await screen.findByRole('listitem', { name: 'Rainy Day Mix, SoundCloud link' });
+    expect(saved).toBeDisabled(); // it is in the player, so its place on the shelf is empty
+    await userEvent.click(screen.getByRole('button', { name: 'Forget this link' }));
+    expect(JSON.parse(localStorage.getItem('libsic.links'))).toEqual([]);
+    expect(screen.queryByRole('button', { name: 'Forget this link' })).toBeNull();
+    expect(screen.getByRole('listitem', { name: 'Rainy Day Mix, SoundCloud link' })).toBeInTheDocument(); // still shown while it plays
+  });
+
+  it('keeps a link that came with a shared room', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue([]);
+    show({ source: { provider: 'youtube', url: 'https://www.youtube.com/watch?v=abc&list=PL1' } });
+    await screen.findByRole('listitem', { name: 'YouTube playlist, YouTube link' });
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('libsic.links'))).toHaveLength(1));
+  });
+});
+
 describe('the tracks of a playlist', () => {
   const player = {
     index: 0,
