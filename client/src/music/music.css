@@ -96,6 +96,7 @@
 .cdc-now small { display: block; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--soft); }
 .cdc-now b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Caveat', cursive; font-weight: 700; font-size: 20px; }
 .cdc-brass { flex: none; padding: 3px 9px; border: 1px solid var(--brass2); border-radius: 99px; background: linear-gradient(var(--brass), var(--brass2)); color: var(--brass-ink); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 3px #0004, inset 0 1px 0 #fff7; }
+.cdc-all { padding-inline: 8px; }
 .cdc-brass:disabled { opacity: .5; cursor: default; }
 .cdc-brass[aria-pressed=true] { filter: brightness(.92); }
 
@@ -110,8 +111,6 @@
 
 /* a CD in its jewel case: it lies in the tower with the spine to the front */
 .cdc-cd { position: relative; flex: none; display: block; width: 100%; height: calc(var(--w, 28px) - 4px); margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform .22s cubic-bezier(.3, .7, .3, 1); }
-.cdc-cd:nth-child(3n+2) { transform: translateX(-3px); }
-.cdc-cd:nth-child(4n) { transform: translateX(2px); }
 .cdc-cd:hover:not(:disabled), .cdc-cd:focus-visible { transform: translateX(11px); z-index: 6; }
 .cdc-cd:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* clear plastic: bright top edge, hinge ridges on the left, a faint shadow under the case */
@@ -125,12 +124,12 @@
 .cdc-num { position: relative; z-index: 1; flex: none; font: 700 8px 'Space Mono', ui-monospace, monospace; letter-spacing: .04em; color: var(--ink2, #fff); opacity: .85; }
 
 /* pointed at: the front of the CD shows to the left of the tower, level with the case, with its disc peeking out */
-.cdc-pull { position: absolute; z-index: 9; right: calc(100% + 6px); width: 118px; margin-top: -59px; pointer-events: none; transform: rotate(-4deg); animation: cdc-pull-in .2s ease-out; }
+.cdc-pull { position: absolute; z-index: 9; right: calc(100% + 6px); width: 118px; pointer-events: none; transform: rotate(-4deg); animation: cdc-pull-in .2s ease-out; transition: top .24s cubic-bezier(.3, .7, .3, 1); }
 @keyframes cdc-pull-in { from { opacity: 0; transform: translateX(14px) rotate(-4deg) scale(.92); } }
 .cdc-front { display: block; position: relative; width: 118px; height: 118px; border-radius: 3px; background: var(--art, #222); box-shadow: 0 10px 22px #000b, inset 0 0 0 3px #ffffff25; }
 .cdc-front::after { content: ''; position: absolute; inset: 0; border-radius: 3px; background: linear-gradient(115deg, #ffffff55, #ffffff10 24%, transparent 40%); pointer-events: none; }
 .cdc-front .cdc-face { position: absolute; z-index: -1; width: 86%; left: -26%; top: 7%; }
-.cdc-name { position: absolute; left: 8px; right: 8px; bottom: 7px; font-size: 12px; font-weight: 600; line-height: 1.15; color: var(--ink2, #fff); text-shadow: 0 1px 6px #0009; }
+.cdc-name { position: absolute; left: 8px; right: 8px; bottom: 7px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; font-size: 12px; font-weight: 600; line-height: 1.15; color: var(--ink2, #fff); text-shadow: 0 1px 6px #0009; }
 .cdc-psub { display: block; margin-top: 5px; width: max-content; max-width: 150px; padding: 2px 7px; border-radius: 6px; background: #000c; color: #fff; font-size: 10px; }
 .cdc-disc { display: block; border-radius: 50%; aspect-ratio: 1; background: radial-gradient(circle, #0b0d14 0 7%, #d9dbe3 7% 15%, transparent 16%), var(--face); box-shadow: 0 2px 8px #000a, inset 0 0 0 1px #ffffff30; }
 .cdc-fly { position: fixed; z-index: 50; pointer-events: none; margin: 0; }
@@ -194,8 +193,57 @@
 .cdc-eq i:nth-child(3) { animation-duration: 1.25s; animation-delay: -.6s; }
 @keyframes cdc-eq { from { transform: scaleY(.25); } to { transform: scaleY(1); } }
 
-@media (prefers-reduced-motion: reduce) { .cdc, .cdc-cd { transition: none; } .cdc, .cdc *, .cdc *::before { animation: none !important; } .cdc-pull, .cdc-mini { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .cdc, .cdc-cd, .cdc-pull { transition: none; } .cdc, .cdc *, .cdc *::before { animation: none !important; } .cdc-pull, .cdc-mini { animation: none; } }
 
 /* The SoundCloud and YouTube players do the playing but is kept out of sight. It shows again only when it has something to say (an error). */
 .online-player.folded { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; overflow: hidden; opacity: 0; pointer-events: none; box-shadow: none; }
 .online-player.folded:has([role='alert']) { width: min(340px, calc(100vw - 32px)); height: auto; padding: 12px; border: 1px solid var(--edge, var(--line)); overflow-y: auto; opacity: 1; pointer-events: auto; box-shadow: 0 10px 30px #0006; }
+
+/* ---- the wide shelf ----
+   Opened with "All CDs" on the tower's tag. Every CD stands upright with its spine to the front on a wooden plank, like books in a
+   case. Pointing at one lifts it and names it on the brass plate below. It is drawn from the same pieces as the tower (the room's
+   wood, paper and brass), and each spine is the tower's lying spine turned upright. */
+.cdw { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 16px; background: #000a; font-family: 'DM Sans', system-ui, sans-serif; animation: cdw-fade .3s ease-out both; }
+.cdw-out { animation: cdw-fade .26s ease-in reverse both; }
+@keyframes cdw-fade { from { opacity: 0; } }
+.cdw-panel { zoom: var(--ui, 1); position: relative; display: flex; flex-direction: column; width: calc(var(--cols, 8) * 52px + 76px); max-width: calc(100vw / var(--ui, 1) - 32px); max-height: calc(100vh / var(--ui, 1) - 32px); border: 12px solid var(--w2, #7a5a3a); border-radius: 12px; background-color: var(--back, #3a2a1c); background-image: var(--grain); box-shadow: inset 0 0 0 2px var(--w1, #a07848), inset 0 10px 24px #000a, 0 24px 60px #000c; overflow: hidden; animation: cdw-rise .6s cubic-bezier(.2, .9, .25, 1.08) both; }
+.cdw-out .cdw-panel { animation: cdw-rise .26s ease-in reverse both; }
+@keyframes cdw-rise { from { opacity: 0; transform: translateY(60px) scale(.96); } }
+.cdw-head { display: flex; align-items: center; gap: 10px; padding: 8px 14px; margin: -2px -2px 0; background-color: var(--paper); background-image: var(--grain); color: var(--ink); border-bottom: 2px solid var(--edge); box-shadow: 0 6px 12px #0006; position: relative; z-index: 2; }
+.cdw-head b { flex: 1; font-family: 'Caveat', cursive; font-weight: 700; font-size: 26px; line-height: 1; }
+.cdw-head small { color: var(--soft); font-size: 12px; }
+.cdw-rows { overflow-y: auto; padding: 22px 18px 6px; scrollbar-width: thin; }
+.cdw-row { position: relative; display: flex; align-items: flex-end; height: 262px; margin-bottom: 26px; padding: 0 2px; }
+/* the plank under a row of CDs */
+.cdw-row::after { content: ''; position: absolute; z-index: 3; left: -18px; right: -18px; bottom: -14px; height: 14px; background: linear-gradient(var(--w1), var(--w2)); box-shadow: inset 0 1px 0 #ffffff55, 0 7px 10px #000a; pointer-events: none; }
+.cdw-row::before { content: ''; position: absolute; left: -18px; right: -18px; top: 0; bottom: 0; background: linear-gradient(#0000 55%, #0006); pointer-events: none; }
+
+.cdw-cd { position: relative; z-index: 2; flex: none; display: flex; align-items: flex-end; justify-content: center; width: 52px; height: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; transform-origin: 50% 100%; transition: transform .38s cubic-bezier(.2, .9, .25, 1.3); }
+.cdw-cd:hover:not(:disabled), .cdw-cd:focus-visible { transform: translateY(-20px) rotate(-1.2deg); z-index: 4; }
+.cdw-cd:focus-visible { outline: none; }
+.cdw-cd:focus-visible .cdc-spine { box-shadow: inset 0 0 0 1px #ffffff55, 0 0 0 2px var(--accent), 0 2px 4px #000b; }
+.cdw-cd:disabled { cursor: default; }
+/* each spine rises onto the plank after the one before it */
+.cdw-body { --t: calc(var(--w, 30px) * 1.3); position: relative; display: block; width: var(--t); height: 246px; animation: cdw-up .65s cubic-bezier(.2, .9, .3, 1.15) both; animation-delay: calc(var(--n, 1) * 38ms + 180ms); }
+@keyframes cdw-up { from { opacity: 0; transform: translateY(80px); } }
+/* the lying spine of the tower, turned upright: its length becomes the height */
+.cdw-flip { position: absolute; left: 0; top: 0; width: 246px; height: var(--t); transform-origin: 0 0; transform: translateX(var(--t)) rotate(90deg); }
+.cdw .cdc-ttl { font-size: calc(var(--fs, 11px) * 1.2); }
+.cdw .cdc-num { font-size: 10px; }
+.cdw .cdc-spine { box-shadow: inset 0 0 0 1px #ffffff55, 0 0 6px #0008; }
+.cdw-cd:hover:not(:disabled) .cdc-paper::before { animation: cdc-shine .8s ease-out both; }
+.cdw-cd.cdc-empty { pointer-events: none; }
+.cdw-add .cdc-spine { background: #ffffff0c; box-shadow: inset 0 0 0 1.5px #ffffff50; }
+.cdw-add .cdc-spine::before, .cdw-add .cdc-spine::after, .cdw-add .cdc-paper::after { display: none; }
+.cdw-add .cdc-paper { left: 4px; right: 4px; background: none; box-shadow: none; justify-content: center; }
+.cdw-add .cdc-ttl { flex: none; color: #fff; opacity: .85; font: 500 13px 'DM Sans', system-ui, sans-serif; text-shadow: none; }
+
+/* the brass plate that names the CD pointed at */
+.cdw-label { position: relative; z-index: 2; align-self: center; display: flex; align-items: center; gap: 12px; min-width: 260px; max-width: calc(100% - 32px); margin: 4px 0 16px; padding: 7px 22px 7px 12px; border: 1px solid var(--brass2); border-radius: 99px; background: linear-gradient(var(--brass), var(--brass2)); color: var(--brass-ink); box-shadow: 0 4px 8px #0006, inset 0 1px 0 #fff8; }
+.cdw-label { --face: conic-gradient(#55525a, #b9b5c0, #55525a); }
+.cdw-disc { flex: none; width: 34px; animation: cdc-spin 7s linear infinite; }
+.cdw-name { min-width: 0; line-height: 1.1; animation: cdc-swap .3s cubic-bezier(.2, .9, .3, 1) both; }
+.cdw-name b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Caveat', cursive; font-weight: 700; font-size: 24px; }
+.cdw-name small { display: block; font-size: 11px; opacity: .8; }
+
+@media (prefers-reduced-motion: reduce) { .cdw, .cdw *, .cdw *::before { animation: none !important; transition: none !important; } }
