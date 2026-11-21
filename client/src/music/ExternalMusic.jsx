@@ -17,9 +17,10 @@ export default function ExternalMusic({ source, onPlayer, onClose }) {
   const [attempt, setAttempt] = useState(0);
   // The provider's own player is only needed to read, to sign in or to see the video, so SoundCloud starts folded
   // (its title bar shows, the player keeps running). A person can unfold it with the button.
-  const [folded, setFolded] = useState(source.provider === 'soundcloud');
+  // YouTube's rules say its player must stay visible and at least 200 x 200, so it is never hidden: folded, it is a small tile.
+  const [folded, setFolded] = useState(source.provider === 'soundcloud' || source.provider === 'youtube');
   return (
-    <aside className={`online-player${folded ? ' folded' : ''}`} aria-label="Online music player">
+    <aside className={`online-player online-${source.provider}${folded ? ' folded' : ''}`} aria-label="Online music player">
       <header>
         <span>{PROVIDER_NAMES[source.provider]}</span>
         <span>

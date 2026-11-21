@@ -77,9 +77,11 @@
 .cdc { position: absolute; z-index: 7; right: max(18px, env(safe-area-inset-right, 0px)); bottom: 14px; width: 268px; font-family: 'DM Sans', system-ui, sans-serif;
   /* resting: lowered below the edge of the window, only the paper tag shows. Pointing at it lifts the whole tower. */
   transform: translateY(calc(100% - 50px));
-  transition: transform .4s cubic-bezier(.3, .7, .3, 1) .25s; }
+}
+/* pointing at it pulls the tower up from the bottom edge (the side-fade rule in styles.css would otherwise replace this transition) */
+.cdc.side-fade { transition: transform .8s cubic-bezier(.2, .9, .25, 1.06) .3s, opacity .7s ease; }
 .cdc::before { content: ''; position: absolute; inset: -22px -22px 0 -22px; } /* a wider area to point at */
-.cdc:hover, .cdc:has(:focus-visible), .cdc.lifted { transform: none; transition-delay: 0s; }
+.cdc.side-fade:hover, .cdc.side-fade:has(:focus-visible), .cdc.side-fade.lifted { transform: none; transition-delay: 0s, 0s; }
 .cdc-note { position: absolute; right: 0; bottom: 100%; margin: 0 0 8px; max-width: 100%; padding: 6px 12px; border: 1px solid var(--edge); border-radius: 10px; background: var(--paper); color: var(--ink); font-size: 12px; z-index: 8; }
 .cdc-error { color: #a33a22; }
 .cdc-note .cdc-chip { margin-left: 8px; }
@@ -103,14 +105,14 @@
 .cdc-tower::after { content: ''; position: absolute; z-index: 5; left: 0; top: 0; bottom: 0; width: 26px; border-radius: 4px 0 0 4px; background-image: var(--grain), repeating-linear-gradient(0deg, transparent 0 9px, #00000014 9px 10px); pointer-events: none; }
 .cdc-cap { position: relative; z-index: 3; height: 14px; margin-left: -4px; border-radius: 3px 3px 0 0; background: repeating-linear-gradient(90deg, var(--w1) 0 7px, var(--w2) 7px 9px); box-shadow: inset 0 1px 0 #ffffff55, 0 3px 5px #0006; }
 .cdc-foot { position: relative; z-index: 3; height: 10px; margin-left: -4px; border-radius: 0 0 3px 3px; background: linear-gradient(var(--w1), var(--w2)); box-shadow: inset 0 1px 0 #ffffff40; }
-.cdc-stack { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 6px 4px 6px 6px; max-height: calc(100vh - 230px); overflow-y: auto; scrollbar-width: none; background-color: var(--back); background-image: var(--grain); box-shadow: inset 6px 0 10px #0009, inset 0 6px 8px #0007; }
+.cdc-stack { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 6px 16px 6px 6px; max-height: max(96px, calc(100vh / var(--ui, 1) - 130px)); overflow-y: auto; scrollbar-width: none; background-color: var(--back); background-image: var(--grain); box-shadow: inset 6px 0 10px #0009, inset 0 6px 8px #0007; }
 .cdc-stack::-webkit-scrollbar { display: none; }
 
 /* a CD in its jewel case: it lies in the tower with the spine to the front */
 .cdc-cd { position: relative; flex: none; display: block; width: 100%; height: calc(var(--w, 28px) - 4px); margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform .22s cubic-bezier(.3, .7, .3, 1); }
 .cdc-cd:nth-child(3n+2) { transform: translateX(-3px); }
 .cdc-cd:nth-child(4n) { transform: translateX(2px); }
-.cdc-cd:hover:not(:disabled), .cdc-cd:focus-visible { transform: translateX(12px); z-index: 6; }
+.cdc-cd:hover:not(:disabled), .cdc-cd:focus-visible { transform: translateX(11px); z-index: 6; }
 .cdc-cd:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* clear plastic: bright top edge, hinge ridges on the left, a faint shadow under the case */
 .cdc-spine { position: absolute; inset: 0; border-radius: 2px; background: linear-gradient(#ffffff80, #ffffff22 22%, #ffffff0a 60%, #ffffff30), #dfe6ec38; box-shadow: inset 0 0 0 1px #ffffff55, 0 2px 4px #000b; overflow: hidden; }
@@ -163,8 +165,37 @@
 .cdc-tracks .online-track-list button { color: var(--ink); border-bottom-color: var(--edge); }
 .cdc-tracks .online-track-list button[aria-pressed=true] { color: var(--accent); font-weight: 600; }
 
-@media (prefers-reduced-motion: reduce) { .cdc, .cdc-cd { transition: none; } .cdc-pull, .cdc-mini { animation: none; } }
 
-/* The SoundCloud player does the playing but is kept out of sight. It shows again only when it has something to say (an error). */
+/* ---- a little life ---- */
+/* resting, the tag bobs now and then, so the tower can be noticed without taking room */
+.cdc:not(:hover):not(.lifted) .cdc-tag { animation: cdc-bob 6s ease-in-out 2s infinite; }
+@keyframes cdc-bob { 0%, 82%, 100% { transform: translateY(0); } 88% { transform: translateY(-5px); } 94% { transform: translateY(0); } 97% { transform: translateY(-2px); } }
+/* lifting: the cases slide in from the right one after the other, and a shine runs over each */
+.cdc:hover .cdc-spine, .cdc.lifted .cdc-spine, .cdc:has(:focus-visible) .cdc-spine { animation: cdc-in .5s cubic-bezier(.2, .9, .3, 1.15) both; animation-delay: calc(var(--n, 1) * 45ms + 120ms); }
+@keyframes cdc-in { from { opacity: 0; transform: translateY(90px); } }
+.cdc-paper::before { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(105deg, transparent 38%, #ffffff70 50%, transparent 62%) 160% 0 / 260% 100% no-repeat; }
+.cdc:hover .cdc-paper::before, .cdc.lifted .cdc-paper::before { animation: cdc-shine .9s ease-out both; animation-delay: calc(var(--n, 1) * 45ms + 300ms); }
+@keyframes cdc-shine { to { background-position: -60% 0; } }
+/* pointing at a case: it slides out with a soft spring, and its disc rolls out from behind the cover */
+.cdc-cd { transition: transform .35s cubic-bezier(.2, .9, .25, 1.2); }
+.cdc-front .cdc-face { animation: cdc-disc-out .6s cubic-bezier(.2, .9, .3, 1.1) .08s both; }
+@keyframes cdc-disc-out { from { transform: translateX(70%) rotate(-120deg); opacity: 0; } 60% { opacity: 1; } }
+/* the CD in the player: its empty slot glows softly, the little disc on the tag turns while the music plays, and bars dance */
+.cdc-empty .cdc-spine { animation: cdc-breathe 3.2s ease-in-out infinite; }
+@keyframes cdc-breathe { 50% { box-shadow: inset 0 0 0 1.5px var(--brass), 0 0 10px #ffffff22; } }
+.cdc-mini { animation-play-state: paused; }
+.cdc-playing .cdc-mini { animation-play-state: running; }
+.cdc-now b { animation: cdc-swap .4s cubic-bezier(.2, .9, .3, 1) both; }
+@keyframes cdc-swap { from { opacity: 0; transform: translateY(7px); } }
+.cdc-eq { display: none; flex: none; align-items: flex-end; gap: 2px; height: 16px; }
+.cdc-playing .cdc-eq { display: flex; }
+.cdc-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--accent); transform-origin: bottom; animation: cdc-eq 1s ease-in-out infinite alternate; }
+.cdc-eq i:nth-child(2) { animation-duration: .7s; animation-delay: -.3s; }
+.cdc-eq i:nth-child(3) { animation-duration: 1.25s; animation-delay: -.6s; }
+@keyframes cdc-eq { from { transform: scaleY(.25); } to { transform: scaleY(1); } }
+
+@media (prefers-reduced-motion: reduce) { .cdc, .cdc-cd { transition: none; } .cdc, .cdc *, .cdc *::before { animation: none !important; } .cdc-pull, .cdc-mini { animation: none; } }
+
+/* The SoundCloud and YouTube players do the playing but is kept out of sight. It shows again only when it has something to say (an error). */
 .online-player.folded { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; overflow: hidden; opacity: 0; pointer-events: none; box-shadow: none; }
 .online-player.folded:has([role='alert']) { width: min(340px, calc(100vw - 32px)); height: auto; padding: 12px; border: 1px solid var(--edge, var(--line)); overflow-y: auto; opacity: 1; pointer-events: auto; box-shadow: 0 10px 30px #0006; }
