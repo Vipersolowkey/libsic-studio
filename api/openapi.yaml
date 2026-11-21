@@ -28,7 +28,10 @@ tags:
     description: The layered scenes a room can use. Read only (scenes are loaded by a seed script).
   - name: Rooms
     description: Saved rooms. Anyone can open one, only the holder of the edit key can change or delete it.
-  # Tracks and CDs are added here by the music side of the team.
+  - name: Tracks
+    description: Original CC0 music library.
+  - name: CDs
+    description: Official collections and editable custom mixes.
 
 paths:
   # ---------------------------------------------------------------- Health
@@ -197,13 +200,283 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /api/tracks:
+    get:
+      tags:
+        - Tracks
+      summary: List the original music library
+      operationId: listTracks
+      responses:
+        "200":
+          description: All tracks sorted by title.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+        "500": &a1
+          $ref: "#/components/responses/ServerError"
+  /api/tracks/{id}:
+    get:
+      tags:
+        - Tracks
+      summary: Get one track
+      operationId: getTrack
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The track.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+        "404":
+          description: Track not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500": *a1
+  /api/cds:
+    get:
+      tags:
+        - CDs
+      summary: List official CDs
+      description: Custom CDs are accessible by code and are not listed on the public shelf.
+      operationId: listCds
+      responses:
+        "200":
+          description: Official CDs sorted by title.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cd"
+        "500": *a1
+    post:
+      tags:
+        - CDs
+      summary: Create a custom CD
+      description: Select 1 to 30 distinct known track ids in playback order. The secret edit key is returned only
+        on creation. Extra fields are ignored.
+      operationId: createCd
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CdInput"
+      responses:
+        "201":
+          description: Created. Keep the edit key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedCd"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500": *a1
+  /api/cds/{code}:
+    get:
+      tags:
+        - CDs
+      summary: Open a shared CD
+      operationId: getCd
+      parameters:
+        - &a2
+          name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CD with tracks in playback order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cd"
+        "404":
+          description: CD not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500": *a1
+    put:
+      tags:
+        - CDs
+      summary: Change a custom CD
+      operationId: updateCd
+      description: Send title and/or trackIds. Official CDs cannot be changed.
+      parameters:
+        - *a2
+      security:
+        - EditKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CdUpdate"
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cd"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing edit key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Wrong edit key or official CD.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: CD not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500": *a1
+    delete:
+      tags:
+        - CDs
+      summary: Delete a custom CD
+      operationId: deleteCd
+      description: Official CDs cannot be deleted. A room referencing a deleted CD still opens and lets its visitor
+        choose another CD.
+      parameters:
+        - *a2
+      security:
+        - EditKey: []
+      responses:
+        "204":
+          description: Deleted.
+        "401":
+          description: Missing edit key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Wrong edit key or official CD.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: CD not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500": *a1
+
+  /api/music/soundcloud/metadata:
+    post:
+      tags: [CDs]
+      summary: Complete SoundCloud playlist track names
+      operationId: getSoundcloudMetadata
+      description: >-
+        Resolves up to 50 numeric SoundCloud track ids through the provider's public oEmbed endpoint.
+        At most four metadata lookups run concurrently; successful results are cached. Unavailable
+        ids are omitted. The response contains text metadata only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    type: string
+                    pattern: '^\d{1,20}$'
+      responses:
+        '200':
+          description: Available track names and artist credits.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, title, artist]
+                  properties:
+                    id:
+                      type: string
+                    title:
+                      type: string
+                    artist:
+                      type: string
+        '400':
+          description: Invalid ids or invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/music/resolve:
+    post:
+      tags: [CDs]
+      summary: Recognize a supported music link
+      operationId: resolveMusicLink
+      description: >-
+        Returns a canonical source for SoundCloud, Spotify, YouTube or a direct HTTPS audio file.
+        Provider short links on on.soundcloud.com and spotify.link are resolved with bounded redirects
+        and timeouts. Arbitrary websites and final provider pages are never fetched by this endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  maxLength: 2048
+      responses:
+        '200':
+          description: Supported music source.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicSource'
+        '400':
+          description: Unsupported URL, failed resolution, or invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   securitySchemes:
     EditKey:
       type: apiKey
       in: header
       name: x-edit-key
-      description: The secret edit key that was returned when the room was created.
+      description: The secret edit key returned when the room or custom CD was created.
 
   parameters:
     SceneSlug:
@@ -276,6 +549,94 @@ components:
             error: Something went wrong on the server
 
   schemas:
+    Track:
+      type: object
+      required:
+        - id
+        - title
+        - artist
+        - src
+        - duration
+        - license
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        artist:
+          type: string
+        src:
+          type: string
+          description: Audio path relative to the client origin. Audio is served by the client host.
+        duration:
+          type: number
+          minimum: 1
+          description: Duration in seconds.
+        license:
+          type: string
+          example: CC0-1.0
+    CdInput:
+      type: object
+      required:
+        - title
+        - trackIds
+      properties:
+        title: &a1
+          type: string
+          minLength: 1
+          maxLength: 60
+          description: Trimmed; must contain a non-space character.
+        trackIds: &a2
+          type: array
+          minItems: 1
+          maxItems: 30
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+    CdUpdate:
+      type: object
+      properties:
+        title: *a1
+        trackIds: *a2
+    Cd:
+      type: object
+      required:
+        - code
+        - title
+        - official
+        - trackIds
+        - tracks
+        - createdAt
+        - updatedAt
+      properties:
+        code:
+          type: string
+        title: *a1
+        official:
+          type: boolean
+        trackIds: *a2
+        tracks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Track"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreatedCd:
+      type: object
+      required:
+        - cd
+        - editKey
+      properties:
+        cd:
+          $ref: "#/components/schemas/Cd"
+        editKey:
+          type: string
+          description: Secret. Store only in the creator browser; never include it in share links.
     Error:
       type: object
       required: [error]
@@ -644,6 +1005,23 @@ components:
           maximum: 1
           default: 0.7
 
+    MusicSource:
+      type: object
+      nullable: true
+      required: [provider, url]
+      additionalProperties: false
+      description: >-
+        An online music source. Only canonical public provider URLs or direct HTTPS audio links
+        are stored. A non-null source replaces cdCode. Provider playback restrictions still apply.
+      properties:
+        provider:
+          type: string
+          enum: [soundcloud, spotify, youtube, audio]
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+
     Room:
       type: object
       required: [code, name, sceneSlug, cdCode, settings, items, createdAt, updatedAt]
@@ -663,6 +1041,8 @@ components:
           type: string
           nullable: true
           description: The CD loaded in the CD player, if any.
+        musicSource:
+          $ref: '#/components/schemas/MusicSource'
         settings:
           $ref: '#/components/schemas/RoomSettings'
         items:
@@ -730,6 +1110,8 @@ components:
         cdCode:
           type: string
           nullable: true
+        musicSource:
+          $ref: '#/components/schemas/MusicSource'
         settings:
           $ref: '#/components/schemas/RoomSettings'
         items:
