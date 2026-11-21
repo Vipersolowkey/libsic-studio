@@ -58,6 +58,16 @@ describe('the hologram player', () => {
     expect(holo(container)).not.toHaveClass('holo-open');
   });
 
+  it('stays open when something else on the page is clicked; only the music object (or Escape) closes it', async () => {
+    const { container } = renderAt('/new');
+    await screen.findByTestId('stage');
+    await userEvent.click(screen.getByRole('button', { name: 'Radio' }));
+    expect(holo(container)).toHaveClass('holo-open');
+
+    await userEvent.click(screen.getByTestId('stage'));
+    expect(holo(container)).toHaveClass('holo-open');
+  });
+
   it('closes on Escape and remembers in the browser that it was open', async () => {
     const { container } = renderAt('/new');
     await screen.findByTestId('stage');

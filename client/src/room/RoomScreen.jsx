@@ -109,7 +109,7 @@ export default function RoomScreen({ code }) {
       // not remembered, that is fine
     }
   }, [playerOpen]);
-  usePlayerShortcuts(player, playerOpen, setPlayerOpen);
+  usePlayerShortcuts(player, setPlayerOpen);
   useRainSound(settings.effect === 'rain', player.volume, player.playing); // the rain also sounds, softly, under the music
   // Where the hologram floats is a preference of the person looking, like the zoom: it stays in their browser.
   const [playerPlace, setPlayerPlace] = useState(readPlayerPlace);
@@ -486,9 +486,9 @@ function readPlayerOpen() {
 // Keyboard and mouse shortcuts of the player:
 //   Space          play or pause
 //   Left, Right    previous or next track
-//   Escape, or a click on an empty part of the picture   closes the hologram
+//   Escape         closes the hologram (clicking the music object again does too; nothing else does)
 // Keys are left alone while the visitor types in a field or has a button or slider selected, because those use the same keys.
-function usePlayerShortcuts(player, open, setOpen) {
+function usePlayerShortcuts(player, setOpen) {
   const { toggle, next, prev } = player;
   useEffect(() => {
     const onKey = (e) => {
@@ -504,17 +504,6 @@ function usePlayerShortcuts(player, open, setOpen) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [toggle, next, prev, setOpen]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const onDown = (e) => {
-      // the hologram itself, the clickable objects, the side bar and the row of CDs do not close it
-      if (e.target.closest?.('.holo, .hotspot, .sidebar, .side-open, .cdc')) return;
-      setOpen(false);
-    };
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
-  }, [open, setOpen]);
 }
 
 // The message shown right after a room was saved (the page was opened with this note from the save button).
