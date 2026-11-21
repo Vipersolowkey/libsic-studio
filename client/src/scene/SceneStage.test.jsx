@@ -122,6 +122,19 @@ describe('SceneStage', () => {
       expect(leaf).toHaveStyle({ transformOrigin: '50% 90%' });
     });
 
+    it('shows the chosen CD on the player disc, but not on a record that is not a flat disc picture', () => {
+      const withDisc = { ...extra, layers: extra.layers.map((l) => (l.name === 'record' ? { ...l, image: '/scenes/test-room/cdplayer_disc_flat.webp' } : l)) };
+      const { container, rerender } = render(<SceneStage scene={withDisc} settings={settings} onSettingsChange={noop} />);
+      expect(container.querySelector('.cd-print')).toBeNull();
+      rerender(<SceneStage scene={withDisc} settings={settings} onSettingsChange={noop} disc="conic-gradient(red, blue)" />);
+      const print = container.querySelector('.anim-spin .spin .cd-print');
+      expect(print).not.toBeNull();
+      expect(print.style.getPropertyValue('--face')).toBe('conic-gradient(red, blue)');
+      // the pearl or any other spinning picture keeps its own picture
+      rerender(<SceneStage scene={extra} settings={settings} onSettingsChange={noop} disc="conic-gradient(red, blue)" />);
+      expect(container.querySelector('.cd-print')).toBeNull();
+    });
+
     it('passes distance and amplitude on to the calm movements', () => {
       const calm = {
         ...scene,

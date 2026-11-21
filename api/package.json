@@ -9,6 +9,8 @@
     "dev": "node --watch src/server.js",
     "test": "jest",
     "seed:scenes": "node src/seed/seedScenes.js",
+    "seed:music": "node src/seed/seedMusic.js",
+    "try:music": "node scripts/tryMusic.js",
     "try:rooms": "node scripts/tryRooms.js"
   },
   "dependencies": {

@@ -31,6 +31,25 @@ describe('scene seed data', () => {
     expect(scene.effectLayer).toBeGreaterThanOrEqual(0);
     expect(scene.effectLayer).toBeLessThan(scene.layers.length);
   });
+
+  it.each(scenes.map((s) => [s.slug, s]))('%s keeps clickable hotspots off day-only and night-only layers', (slug, scene) => {
+    scene.objects.forEach((object) => {
+      const layer = scene.layers[object.layer];
+      expect(layer.light).toBeFalsy();
+      expect(layer.night).toBeFalsy();
+    });
+  });
+
+  it.each(scenes.map((s) => [s.slug, s]))('%s has no duplicate (name, image) layers', (slug, scene) => {
+    const seen = new Set();
+    const duplicates = [];
+    for (const layer of scene.layers) {
+      const key = `${layer.name}::${layer.image ?? ''}`;
+      if (seen.has(key)) duplicates.push(key);
+      seen.add(key);
+    }
+    expect(duplicates).toEqual([]);
+  });
 });
 
 describe.each(scenes.map((s) => [s.slug, s]))('%s catalog', (slug, scene) => {

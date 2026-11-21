@@ -1,8 +1,11 @@
+import { entryOf, placeBox, surfaceOf } from '../scene/placement.js';
+
 // Lets the music player appear as a small hologram that floats above the player object in the scene.
 // It sits inside the stage and is placed with percentages, so it moves and scales with the picture.
 //   scene     the scene from the API. Where the beam starts (the top of the player, in percent of the picture) and its colour
 //             come from SPOTS below; a scene that is not listed starts the beam at the top of its music object.
 //             Each listed room also gets its own colours (the .holo-<slug> rules in styles.css). Other rooms get plain cyan.
+//   items     the objects the visitor placed (null for the scene's default arrangement), so the beam follows a moved player
 //   open      false: the hologram is switched off (clicking the music object switches it on and off)
 //   place     where it floats: 'object' above the music object (with the light beam), or 'center' / 'top' of the window.
 //             In the middle or at the top it is not part of the picture: it is bigger and stays put while the picture is zoomed.
@@ -16,12 +19,29 @@ const SPOTS = {
   'underwater-nook': { x: 22, y: 61, hue: 176 }, // above the giant clam
 };
 
-export function hologramSpot(scene) {
+function baseSpot(scene, music) {
   if (SPOTS[scene.slug]) return SPOTS[scene.slug];
-  const music = scene.objects?.find((o) => o.action?.type === 'nextTrack');
   const box = music ? scene.layers?.[music.layer]?.box : null;
   if (!box) return { x: 72, y: 64, hue: DEFAULT_HUE };
   return { x: box.x + box.width / 2, y: box.y, hue: DEFAULT_HUE };
+}
+
+export function hologramSpot(scene, items = null) {
+  const music = scene.objects?.find((o) => o.action?.type === 'nextTrack');
+  const base = baseSpot(scene, music);
+  if (items !== null) {
+    const itemKey = music && scene.layers?.[music.layer]?.item;
+    if (itemKey) {
+      const entry = entryOf(scene, itemKey);
+      const surface = entry && surfaceOf(scene, entry);
+      const placed = items.find((it) => it.key === itemKey);
+      if (placed && entry && surface) {
+        const moved = placeBox({ x: base.x, y: base.y, width: 0, height: 0 }, placed, entry, surface);
+        return { x: moved.x, y: moved.y, hue: base.hue };
+      }
+    }
+  }
+  return base;
 }
 
 // The places a visitor can choose from, in the order of the menu (see Controls.jsx).
@@ -31,8 +51,8 @@ export const HOLO_PLACES = [
   { key: 'object', label: 'Above the player', short: 'On player' },
 ];
 
-export default function Hologram({ scene, open = true, place = 'object', children }) {
-  const { x, y, hue } = hologramSpot(scene);
+export default function Hologram({ scene, items = null, open = true, place = 'object', children }) {
+  const { x, y, hue } = hologramSpot(scene, items);
   const skin = SPOTS[scene.slug] ? ` holo-${scene.slug}` : '';
   const onObject = place === 'object';
   return (

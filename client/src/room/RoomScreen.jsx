@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { createRoom, deleteRoom, getRoom, getScene, getScenes, updateRoom } from '../api.js';
+import { createRoom, deleteRoom, getRoom, getScene, getScenes, getCd, updateRoom } from '../api.js';
+import CdRow from '../music/CdRow.jsx';
+import ExternalMusic, { EMPTY_ONLINE_PLAYER } from '../music/ExternalMusic.jsx';
+import { DEFAULT_MUSIC_SOURCE } from '../music/discovery.js';
 import {
   clearLastRoomCode,
   getMyRooms,
@@ -20,10 +23,13 @@ import DecorateHud from './DecorateHud.jsx';
 import DecorateOverlay from './DecorateOverlay.jsx';
 import MyRooms from './MyRooms.jsx';
 import SaveBar, { RoomNameField } from './SaveBar.jsx';
-import Sidebar, { More, Section } from './Sidebar.jsx';
+import './kit.css';
+import Sidebar, { Section } from './Sidebar.jsx';
+import { skinOf } from './skins.js';
+import { cdLook } from '../music/cdLook.js';
 import { useIdle } from './useIdle.js';
+import { useUiScale } from './useUiScale.js';
 import { useItemsEditor } from './useItemsEditor.js';
-import { TEST_CD } from './testCd.js';
 import { usePlayer } from './usePlayer.js';
 import { useRainSound } from './useRainSound.js';
 import { useDrawnZoom, useRoomView } from './useRoomView.js';
@@ -34,6 +40,7 @@ const IDLE_MS = 4000;
 
 // Stands in for the scene while the scenes are still loading, so the hooks below always have one.
 const NO_SCENE = { slug: '', layers: [], catalog: [], surfaces: [] };
+const NO_CD = { title: 'No CD', tracks: [] };
 
 // The API's list of scenes is only a menu (slug, name, description). The layers of a scene are fetched when that
 // scene is opened, and then kept in the list, so going back to a room that was already shown asks nothing.
@@ -60,7 +67,41 @@ export default function RoomScreen({ code }) {
   // The browser remembers whether it was left open.
   const [playerOpen, setPlayerOpen] = useState(readPlayerOpen);
   const togglePlayer = useCallback(() => setPlayerOpen((open) => !open), []);
-  const player = usePlayer(TEST_CD); // the real CDs will come from the API (the music side); until then a small test CD
+  const [cdCode, setCdCode] = useState(null);
+  const [cd, setCd] = useState(NO_CD);
+  const [musicSource, setMusicSource] = useState(() => code || new URLSearchParams(location.search).has('cd') ? null : DEFAULT_MUSIC_SOURCE);
+  const [onlinePlayer, setOnlinePlayer] = useState(EMPTY_ONLINE_PLAYER);
+  const [musicError, setMusicError] = useState('');
+  const [musicLoading, setMusicLoading] = useState(false);
+  const [musicAttempt, setMusicAttempt] = useState(0);
+  const cdPlayer = usePlayer(cd);
+  const player = musicSource ? onlinePlayer : cdPlayer;
+  const chooseSource = (source) => {
+    if (source && musicSource?.url === source.url) { setPlayerOpen(true); return; }
+    cdPlayer.pause();
+    setCdCode(null);
+    setOnlinePlayer(EMPTY_ONLINE_PLAYER);
+    setMusicSource(source);
+    if (source) setPlayerOpen(true);
+  };
+  const chooseCd = (nextCode) => {
+    setMusicSource(null);
+    setCdCode(nextCode);
+    setMusicAttempt((n) => n + 1);
+    if (nextCode) setPlayerOpen(true);
+  };
+  useEffect(() => {
+    let cancelled = false;
+    setCd(NO_CD);
+    setMusicError('');
+    setMusicLoading(Boolean(cdCode));
+    if (cdCode) getCd(cdCode).then((value) => {
+      if (!cancelled) { setCd(value); setMusicLoading(false); }
+    }).catch((err) => {
+      if (!cancelled) { setMusicLoading(false); setMusicError(err.status === 404 ? 'This CD was deleted or its code is wrong. Choose another CD.' : err.message); }
+    });
+    return () => { cancelled = true; };
+  }, [cdCode, musicAttempt]);
   useEffect(() => {
     try {
       localStorage.setItem(PLAYER_OPEN_KEY, playerOpen ? '1' : '');
@@ -68,7 +109,7 @@ export default function RoomScreen({ code }) {
       // not remembered, that is fine
     }
   }, [playerOpen]);
-  usePlayerShortcuts(player, playerOpen, setPlayerOpen);
+  usePlayerShortcuts(player, setPlayerOpen);
   useRainSound(settings.effect === 'rain', player.volume, player.playing); // the rain also sounds, softly, under the music
   // Where the hologram floats is a preference of the person looking, like the zoom: it stays in their browser.
   const [playerPlace, setPlayerPlace] = useState(readPlayerPlace);
@@ -96,6 +137,15 @@ export default function RoomScreen({ code }) {
 
   // The side bar can be tucked away to see the whole picture. The browser remembers it; a phone starts with it closed.
   const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
+  // Keep YouTube video visible whenever it is playing. The phone's open menu covers the player.
+  useEffect(() => {
+    const pauseCoveredVideo = () => {
+      if (musicSource?.provider === 'youtube' && sidebarOpen && window.innerWidth < 700 && player.playing) player.pause();
+    };
+    pauseCoveredVideo();
+    window.addEventListener('resize', pauseCoveredVideo);
+    return () => window.removeEventListener('resize', pauseCoveredVideo);
+  }, [musicSource, sidebarOpen, player.playing, player.pause]);
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
     try {
@@ -109,6 +159,7 @@ export default function RoomScreen({ code }) {
   const editor = useItemsEditor(scene, items, setItems);
   const canDecorate = Boolean(scene.catalog?.length); // older scenes have no catalog
 
+  const ui = useUiScale();
   const idle = useIdle(IDLE_MS); // the buttons fade away when nobody is using the room
   const view = useRoomView({ panning: !decorating }); // zoom level and panning of the picture
   const drawnZoom = useDrawnZoom(view.zoom, scene.slug);
@@ -140,12 +191,17 @@ export default function RoomScreen({ code }) {
           setSlug(scene?.slug ?? '');
           setSettings({ effect: room.settings.effect, lightOn: room.settings.lightOn, curtainsClosed: Boolean(room.settings.curtainsClosed) });
           setName(room.name);
+          setCdCode(room.cdCode ?? null);
+          setOnlinePlayer(EMPTY_ONLINE_PLAYER);
+          setMusicSource(room.musicSource ?? null);
           setItems(room.items ?? null);
           setLastRoomCode(room.code);
         } else if (list.length > 0) {
           const start = list.find((s) => s.slug === wanted) || list[0];
           setSlug(start.slug);
           setSettings(defaultSettings(start));
+          setCdCode(new URLSearchParams(location.search).get('cd'));
+          setMusicSource(new URLSearchParams(location.search).has('cd') ? null : DEFAULT_MUSIC_SOURCE);
         }
       })
       .catch((err) => {
@@ -202,13 +258,15 @@ export default function RoomScreen({ code }) {
     saved !== null &&
     (name !== saved.name ||
       slug !== saved.sceneSlug ||
+      cdCode !== (saved.cdCode ?? null) ||
+      JSON.stringify(musicSource) !== JSON.stringify(saved.musicSource ?? null) ||
       settings.effect !== saved.settings.effect ||
       settings.lightOn !== saved.settings.lightOn ||
       settings.curtainsClosed !== Boolean(saved.settings.curtainsClosed) ||
       !itemsEqual(items, saved.items));
   const link = saved ? `${window.location.origin}/r/${saved.code}` : '';
 
-  const payload = () => ({ name: name.trim() || 'Untitled room', sceneSlug: scene.slug, settings, items });
+  const payload = () => ({ name: name.trim() || 'Untitled room', sceneSlug: scene.slug, cdCode, musicSource, settings, items });
 
   // Runs a save/delete action: blocks the buttons meanwhile and shows any error from the API.
   async function run(action) {
@@ -281,17 +339,21 @@ export default function RoomScreen({ code }) {
   }
 
   const hologram = !decorating && (
-    <Hologram scene={scene} open={playerOpen} place={playerPlace}>
+    <Hologram scene={scene} items={items} open={playerOpen} place={playerPlace}>
       <HoloPlayer player={player} />
     </Hologram>
   );
+
+  // The disc that turns on the player is the printed face of the chosen CD (the same paint as its case on the shelf).
+  const discKey = musicSource ? musicSource.url : cdCode;
+  const discFace = discKey ? cdLook(discKey).face : null;
 
   const zoomButtons = <ZoomControls zoom={view.zoom} onZoomIn={view.zoomIn} onZoomOut={view.zoomOut} onFit={view.fit} />;
 
   // The room fills the whole window. Every control is in the side bar at the left.
   return (
-    <div ref={view.roomRef} className={`room${idle ? ' idle' : ''}${decorating ? ' decorating' : ''}${sidebarOpen ? ' side-on' : ''}`} style={{ '--zoom': view.zoom, '--drawn-zoom': drawnZoom }} onWheel={view.onWheel}>
-      <SceneStage scene={scene} settings={settings} onSettingsChange={setSettings} items={items} frozen={decorating} onNextTrack={togglePlayer} playing={player.playing} still={view.zoom < MOVE_MIN_ZOOM} calm={lowPower && !decorating}>
+    <div ref={view.roomRef} className={`room${idle ? ' idle' : ''}${decorating ? ' decorating' : ''}${sidebarOpen ? ' side-on' : ''}`} style={{ ...skinOf(scene.slug).vars, '--ui': ui, '--zoom': view.zoom, '--drawn-zoom': drawnZoom }} onWheel={view.onWheel}>
+      <SceneStage scene={scene} settings={settings} onSettingsChange={setSettings} items={items} frozen={decorating} onNextTrack={togglePlayer} playing={player.playing} still={view.zoom < MOVE_MIN_ZOOM} calm={lowPower && !decorating} disc={discFace}>
         {playerPlace === 'object' && hologram /* above the music object: part of the picture, it zooms with it */}
         {decorating && (
           <DecorateOverlay scene={scene} items={editor.items} selectedId={editor.selectedId} onSelect={editor.select} onMove={editor.move} />
@@ -301,6 +363,28 @@ export default function RoomScreen({ code }) {
       <Sidebar
         open={sidebarOpen}
         onToggle={toggleSidebar}
+        settings={
+          !decorating && (
+            <>
+              <h2 className="side-title">Player position</h2>
+              <div className="chip-row" role="group" aria-label="Player place">
+                {HOLO_PLACES.map((place) => (
+                  <button key={place.key} type="button" className="chip" title={place.label} aria-label={place.label} aria-pressed={place.key === playerPlace} onClick={() => choosePlayerPlace(place.key)}>
+                    {place.short}
+                  </button>
+                ))}
+              </div>
+              <h2 className="side-title">Zoom</h2>
+              {zoomButtons}
+              <h2 className="side-title">Power</h2>
+              <div className="chip-row">
+                <button type="button" className="chip" aria-pressed={lowPower} title="Stops every movement of the picture, so a weak laptop stays cool. The music keeps playing." onClick={toggleLowPower}>
+                  Low power {lowPower ? 'on' : 'off'}
+                </button>
+              </div>
+            </>
+          )
+        }
         footer={
           !decorating && (
             <>
@@ -338,27 +422,23 @@ export default function RoomScreen({ code }) {
               onSettingsChange={setSettings}
               onDecorate={canDecorate ? () => setDecorating(true) : undefined}
             />
-            <More label="More settings">
-              <h2 className="side-title">Music player position</h2>
-              <div className="chip-row" role="group" aria-label="Player place">
-                {HOLO_PLACES.map((place) => (
-                  <button key={place.key} type="button" className="chip" title={place.label} aria-label={place.label} aria-pressed={place.key === playerPlace} onClick={() => choosePlayerPlace(place.key)}>
-                    {place.short}
-                  </button>
-                ))}
-              </div>
-              <h2 className="side-title">Zoom</h2>
-              {zoomButtons}
-              <h2 className="side-title">Power</h2>
-              <div className="chip-row">
-                <button type="button" className="chip" aria-pressed={lowPower} title="Stops every movement of the picture, so a weak laptop stays cool. The music keeps playing." onClick={toggleLowPower}>
-                  Low power {lowPower ? 'on' : 'off'}
-                </button>
-              </div>
-            </More>
           </>
         )}
       </Sidebar>
+      {!decorating && (
+        <CdRow
+          source={musicSource}
+          cdCode={cdCode}
+          player={player}
+          loading={musicLoading}
+          error={musicError}
+          onChooseSource={chooseSource}
+          onChooseCd={chooseCd}
+          onEject={() => chooseSource(null)}
+          onRetry={() => chooseCd(cdCode)}
+        />
+      )}
+      {musicSource && <ExternalMusic key={`${musicSource.provider}:${musicSource.url}`} source={musicSource} onPlayer={setOnlinePlayer} onClose={() => chooseSource(null)} />}
     </div>
   );
 }
@@ -406,9 +486,9 @@ function readPlayerOpen() {
 // Keyboard and mouse shortcuts of the player:
 //   Space          play or pause
 //   Left, Right    previous or next track
-//   Escape, or a click on an empty part of the picture   closes the hologram
+//   Escape         closes the hologram (clicking the music object again does too; nothing else does)
 // Keys are left alone while the visitor types in a field or has a button or slider selected, because those use the same keys.
-function usePlayerShortcuts(player, open, setOpen) {
+function usePlayerShortcuts(player, setOpen) {
   const { toggle, next, prev } = player;
   useEffect(() => {
     const onKey = (e) => {
@@ -424,17 +504,6 @@ function usePlayerShortcuts(player, open, setOpen) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [toggle, next, prev, setOpen]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const onDown = (e) => {
-      // the hologram itself, the clickable objects and the side bar do not close it
-      if (e.target.closest?.('.holo, .hotspot, .sidebar, .side-open')) return;
-      setOpen(false);
-    };
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
-  }, [open, setOpen]);
 }
 
 // The message shown right after a room was saved (the page was opened with this note from the save button).

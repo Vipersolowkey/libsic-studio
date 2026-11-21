@@ -13,6 +13,40 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('usePlayer', () => {
+  it('keeps an empty shelf paused and its index finite', () => {
+    const { result } = renderHook(() => usePlayer({ title: 'Empty', tracks: [] }));
+    act(() => { result.current.next(); result.current.prev(); result.current.toggle(); });
+    expect(result.current).toMatchObject({ index: 0, track: null, playing: false });
+  });
+
+  it('restarts at track one without autoplay when a shorter CD is inserted', () => {
+    const { result, rerender } = renderHook(({ value }) => usePlayer(value), { initialProps: { value: cd } });
+    act(() => { result.current.next(); result.current.next(); result.current.toggle(); result.current.setVolume(0.2); });
+    HTMLMediaElement.prototype.play.mockClear();
+    const solo = { title: 'Solo', tracks: [cd.tracks[0]] };
+    rerender({ value: solo });
+    expect(result.current).toMatchObject({ index: 0, count: 1, track: solo.tracks[0], playing: false, volume: 0.2 });
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+  });
+
+  it('replays a one-track CD on ended and reports media errors', () => {
+    const audio = document.createElement('audio');
+    const AudioMock = vi.fn(function () { return audio; });
+    vi.stubGlobal('Audio', AudioMock);
+    const solo = { title: 'Solo', tracks: [cd.tracks[0]] };
+    const { result, unmount } = renderHook(() => usePlayer(solo));
+    act(() => result.current.toggle());
+    const calls = HTMLMediaElement.prototype.play.mock.calls.length;
+    act(() => audio.dispatchEvent(new Event('ended')));
+    expect(HTMLMediaElement.prototype.play.mock.calls.length).toBeGreaterThan(calls);
+    expect(result.current.index).toBe(0);
+    act(() => audio.dispatchEvent(new Event('error')));
+    expect(result.current.playing).toBe(false);
+    expect(result.current.error).toMatch(/could not be loaded/i);
+    expect(AudioMock).toHaveBeenCalledTimes(1);
+    unmount();
+    vi.unstubAllGlobals();
+  });
   it('starts paused on the first track', () => {
     const { result } = renderHook(() => usePlayer(cd));
     expect(result.current).toMatchObject({ index: 0, count: 3, playing: false, track: cd.tracks[0] });
