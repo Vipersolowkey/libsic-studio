@@ -135,3 +135,18 @@
 
 /* On a big screen the side bar and the CD tower are drawn bigger (see useUiScale.js). */
 .room .sidebar, .room .side-open, .cdc { zoom: var(--ui, 1); }
+
+/* A low window (a small screen, or the browser zoomed in a lot): the side bar gets tighter so the rooms, the mood and
+   the save buttons are all still reachable. The middle of the bar scrolls. */
+@media (max-height: 600px) {
+  .room .brand-tag { display: none; }
+  .room .side-head { padding-top: 10px; }
+  .room-list .here { width: 150px; }
+  .room-list .others { margin-top: 8px; gap: 8px; }
+  .room-list .polaroid span { font-size: 15px; }
+  .room-list .others .polaroid span { font-size: 13px; }
+  .room .side-foot { padding: 8px 16px 10px; gap: 5px; }
+  .room .sidebar .room-name { font-size: 20px; }
+  .daynight button { padding: 4px; }
+  .stamp { padding: 3px 2px; }
+}
