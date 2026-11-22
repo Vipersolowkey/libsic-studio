@@ -2,7 +2,9 @@ const KEY = 'libsic:myCds';
 export function getMyCds() {
   try {
     const entries = JSON.parse(localStorage.getItem(KEY));
-    return Array.isArray(entries) ? entries.filter((e) => e && typeof e.code === 'string' && typeof e.editKey === 'string') : [];
+    return Array.isArray(entries)
+      ? entries.filter((e) => e && typeof e.code === 'string' && /^[A-Za-z0-9_-]{1,32}$/.test(e.code) && typeof e.editKey === 'string' && (e.title === undefined || typeof e.title === 'string'))
+      : [];
   } catch { return []; }
 }
 export function rememberCd(entry) {

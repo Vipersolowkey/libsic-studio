@@ -28,7 +28,7 @@ const roomSchema = new Schema(
     // Scenes and CDs are referenced by their stable text codes (not database ids),
     // so re-running the seed scripts never breaks a saved room.
     sceneSlug: { type: String, required: true },
-    cdCode: { type: String, default: null },
+    cdCode: { type: String, default: null, trim: true, maxlength: 64, match: [/^[A-Za-z0-9_-]+$/, 'Invalid CD code'] },
     musicSource: {
       type: new Schema({
         provider: { type: String, enum: ['soundcloud', 'spotify', 'youtube', 'audio'], required: true },

@@ -7,7 +7,7 @@ const PROVIDER = { soundcloud: 'SoundCloud', spotify: 'Spotify', youtube: 'YouTu
 export function getMyLinks() {
   try {
     const list = JSON.parse(localStorage.getItem(KEY) || '[]');
-    return Array.isArray(list) ? list.filter((l) => l && typeof l.url === 'string' && typeof l.provider === 'string') : [];
+    return Array.isArray(list) ? list.filter((l) => l && typeof l.url === 'string' && /^https:\/\//i.test(l.url) && typeof l.provider === 'string') : [];
   } catch {
     return [];
   }

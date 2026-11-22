@@ -63,6 +63,14 @@ describe('My rooms storage', () => {
     expect(getMyRooms()).toEqual([]);
     localStorage.setItem('libsic:myRooms', '[null, 5, {"code":"ok"}]');
     expect(getMyRooms()).toEqual([{ code: 'ok' }]);
+    localStorage.setItem('libsic:myRooms', JSON.stringify([
+      { code: 'bad/path', name: 'x' },
+      { code: 'objname', name: { bad: 1 } },
+      { code: 'objslug', sceneSlug: ['x'] },
+      { code: 'objkey', editKey: 123 },
+      { code: 'clean_01', name: 'Safe', sceneSlug: 'night-study', editKey: 'k' },
+    ]));
+    expect(getMyRooms()).toEqual([{ code: 'clean_01', name: 'Safe', sceneSlug: 'night-study', editKey: 'k' }]);
   });
 
   it('does not crash when the browser blocks storage, and says the save failed', () => {
