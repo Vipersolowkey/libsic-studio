@@ -35,7 +35,7 @@ export default function SceneStage({ scene, settings, onSettingsChange, onNextTr
   const drawList = useMemo(() => buildDrawList(scene, items ?? defaultItems(scene)), [scene, items]);
   const depths = useMemo(() => drawList.map(({ layer }) => layer.depth), [drawList]);
   const { stageRef, layerRef, handlers } = useParallax(depths, !frozen && !still);
-  useFramePace(stageRef); // the slow movements are redrawn 30 times per second instead of 60, which halves the drawing work
+  useFramePace(stageRef, undefined, !calm); // the slow movements are redrawn 30 times per second instead of 60 (and stopped in low power mode)
   const arrived = usePicturesArrived(stageRef, scene.slug);
 
   // The layers are only worked out again when the scene, the objects or the settings change. Zooming, typing the

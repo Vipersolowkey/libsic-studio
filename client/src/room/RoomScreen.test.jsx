@@ -699,5 +699,20 @@ describe('decorating the room', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(panX(container)).toBe('0px');
     });
+
+    it('ignores touch drags and pointer movement inside the side bar or hologram', async () => {
+      const { container } = renderAt('/new');
+      await screen.findByTestId('stage');
+      await userEvent.keyboard('+++');
+
+      fireEvent.pointerMove(window, { clientX: 0, clientY: 300, pointerType: 'touch' });
+      const sidebar = container.querySelector('.sidebar');
+      fireEvent.pointerMove(sidebar, { clientX: 0, clientY: 300, pointerType: 'mouse' });
+      const holo = container.querySelector('.holo');
+      fireEvent.pointerMove(holo, { clientX: 0, clientY: 300, pointerType: 'mouse' });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(panX(container)).toBe('0px');
+    });
   });
 });

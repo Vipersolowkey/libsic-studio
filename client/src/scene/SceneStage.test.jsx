@@ -256,6 +256,32 @@ describe('SceneStage', () => {
       rerender(<SceneStage scene={extra} settings={settings} onSettingsChange={noop} playing={false} />);
       expect(stage).toHaveClass('paused');
     });
+
+    it('stops scheduling animation-pace frames when calm (low power) is true', () => {
+      const origGetAnimations = Element.prototype.getAnimations;
+      const origCSSAnimation = globalThis.CSSAnimation;
+      class FakeCSSAnimation {
+        constructor() { this.playState = 'running'; this.playbackRate = 1; this.currentTime = 0; }
+      }
+      Element.prototype.getAnimations = () => [new FakeCSSAnimation()];
+      globalThis.CSSAnimation = FakeCSSAnimation;
+      const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 42);
+      const cancelSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+      try {
+        const { rerender } = render(<SceneStage scene={extra} settings={settings} onSettingsChange={noop} calm={false} />);
+        const callsWhileActive = rafSpy.mock.calls.length;
+        expect(callsWhileActive).toBeGreaterThanOrEqual(1);
+
+        rerender(<SceneStage scene={extra} settings={settings} onSettingsChange={noop} calm />);
+        expect(cancelSpy).toHaveBeenCalledWith(42);
+        expect(rafSpy.mock.calls.length).toBe(callsWhileActive);
+      } finally {
+        Element.prototype.getAnimations = origGetAnimations;
+        globalThis.CSSAnimation = origCSSAnimation;
+        rafSpy.mockRestore();
+        cancelSpy.mockRestore();
+      }
+    });
   });
 
   describe('placed objects', () => {
