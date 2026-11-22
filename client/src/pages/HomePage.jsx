@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { clearLastRoomCode, getLastRoomCode, getMyRooms, removeMyRoom } from '../myRooms.js';
 
-// The three rooms of the intro. The pictures are stills of the real rooms: /scenes/<slug>/intro.webp.
+// The five rooms of the intro. The pictures are stills of the real rooms: /scenes/<slug>/intro.webp.
 // The intro does not need the API: "Enter" only opens /new?scene=<slug>, and the room loads itself.
 const INTRO_ROOMS = [
   { slug: 'night-study', name: 'Rainy Night Study' },
   { slug: 'golden-loft', name: 'Golden Hour Loft' },
   { slug: 'underwater-nook', name: 'Clam Cove' },
+  { slug: 'clover-meadow', name: 'Clover Hill Meadow' },
+  { slug: 'aurora-observatory', name: 'Aurora Observatory' },
 ];
 const LEAVE_MS = 900; // how long the "dive into the room" lasts before the room opens
 const DUST = Array.from({ length: 18 }, (_, i) => ({

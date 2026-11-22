@@ -36,6 +36,12 @@ describe('the start page (/)', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Golden Hour Loft' }));
     expect(screen.getByRole('link', { name: 'Enter' })).toHaveAttribute('href', '/new?scene=golden-loft');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clover Hill Meadow' }));
+    expect(screen.getByRole('link', { name: 'Enter' })).toHaveAttribute('href', '/new?scene=clover-meadow');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Aurora Observatory' }));
+    expect(screen.getByRole('link', { name: 'Enter' })).toHaveAttribute('href', '/new?scene=aurora-observatory');
   });
 
   it('opens the room after the dive when Enter is clicked', async () => {

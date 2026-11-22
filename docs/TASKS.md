@@ -13,11 +13,11 @@ Tasks **3a, 5a, 8, 9a, 10a** and the music parts of **11/13** are implemented on
 
 ## Week 1: the API (20 to 26 Oct)
 
-- [ ] **Task 1: Accounts and repository** (together). MongoDB Atlas cluster, Node.js installed, `.env` ignored by git. Done when both members can connect to the database.
-- [ ] **Task 2: Express server and health check** (together). `api/src/app.js`, `server.js`, `db.js`. Done when `GET /api/health` returns `{ status: "ok" }` and its test passes.
+- [x] **Task 1: Accounts and repository** (together). MongoDB Atlas cluster, Node.js installed, `.env` ignored by git. Done when both members can connect to the database.
+- [x] **Task 2: Express server and health check** (together). `api/src/app.js`, `server.js`, `db.js`. Done when `GET /api/health` returns `{ status: "ok" }` and its test passes.
 - [ ] **Task 3a: Track and CD models + seed data** (Lane A). 12 tracks and 3 official CDs in `api/src/seed/tracks.js`.
-- [ ] **Task 3b: Scene and Room models + seed data** (Lane B). 3 scenes in `api/src/seed/scenes.js`.
-- [ ] **Task 4: Scene art** (Lane B). 3 scenes with 4 transparent SVG layers each, plus positions of the clickable objects.
+- [x] **Task 3b: Scene and Room models + seed data** (Lane B). 5 scenes in `api/src/seed/scenes.js` (expanded from the initial 3).
+- [x] **Task 4: Scene art** (Lane B). 5 multi-layer WebP scenes (Rainy Night Study, Golden Hour Loft, Clam Cove, Clover Hill Meadow, Aurora Observatory), plus positions of the clickable objects.
 - [ ] **Task 5a: Tracks and CDs read endpoints** (Lane A). `GET /api/tracks`, `/api/tracks/:id`, `/api/cds`, `/api/cds/:code`.
 - [x] **Task 5b: Scenes read endpoints** (Lane B). `GET /api/scenes`, `/api/scenes/:id`.
 

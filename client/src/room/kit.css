@@ -91,14 +91,14 @@
   border-top: 1.5px dashed var(--stitch);
 }
 
-/* the rooms: the one you are in is a big polaroid, the others are two small ones to pick */
+/* the rooms: the one you are in is a big polaroid, the others sit in a two-column grid of small polaroids to pick */
 .room-list .polaroid { position: relative; padding: 6px 6px 5px; border: 0; background: #fffdf6; color: #3a2a1a; text-align: center; box-shadow: 0 3px 8px #0004; cursor: pointer; font: inherit; }
 .room-list .polaroid img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--paper2); }
 .room-list .polaroid span { display: block; padding-top: 3px; font-family: 'Caveat', cursive; font-weight: 700; font-size: 19px; line-height: 1.1; }
 .room-list .tape { position: absolute; left: 50%; top: -9px; width: 56px; height: 16px; margin-left: -28px; background: color-mix(in srgb, var(--accent) 55%, #fff6); opacity: 0.85; transform: rotate(-3deg); }
 .room-list .here { display: block; width: 206px; margin: 0 auto; transform: rotate(-1.2deg); }
-.room-list .others { display: flex; gap: 12px; margin-top: 12px; }
-.room-list .others .polaroid { flex: 1; min-width: 0; transition: transform 0.15s; }
+.room-list .others { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.room-list .others .polaroid { display: flex; flex-direction: column; min-width: 0; transition: transform 0.15s; }
 .room-list .others .polaroid:nth-child(odd) { transform: rotate(1.6deg); }
 .room-list .others .polaroid:nth-child(even) { transform: rotate(-1.4deg); }
 .room-list .others .polaroid:hover { transform: rotate(0) translateY(-3px); }
@@ -142,7 +142,8 @@
   .room .brand-tag { display: none; }
   .room .side-head { padding-top: 10px; }
   .room-list .here { width: 150px; }
-  .room-list .others { margin-top: 8px; gap: 8px; }
+  .room-list .others { margin-top: 8px; gap: 6px; }
+  .room-list .polaroid { padding: 4px 4px 3px; }
   .room-list .polaroid span { font-size: 15px; }
   .room-list .others .polaroid span { font-size: 13px; }
   .room .side-foot { padding: 8px 16px 10px; gap: 5px; }

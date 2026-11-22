@@ -1,17 +1,24 @@
 # Libsic Studio
 
-An ambient music room for the web. Pick a layered scene (Rainy Night Study, Golden Hour Loft, Clam Cove), load a CD into a retro CD player, click objects in the room to change the mood, then leave the page open while you study, work or relax. Rooms and CDs can be saved and shared with a short link.
+An ambient music room for the web. Enter through a cinematic intro at `/`, pick one of five layered scenes (**Rainy Night Study**, **Golden Hour Loft**, **Clam Cove**, **Clover Hill Meadow**, **Aurora Observatory**), pull a disc from the wooden CD tower into the room's hologram player, click objects in the room to change the mood, then leave the page open while you study, work or relax. Rooms and CDs can be saved and shared with a short link.
 
 Course project for **Web Application Development**.
 
 ## Features
 
-- Layered 2D scenes with mouse-parallax depth and animated effects (rain, dust, bubbles, plankton and more)
-- Clickable objects in the room (window, lamp or neon sign, music object)
-- Full-screen room with floating controls that fade when idle, plus zoom in, zoom out and fit
-- Decorate mode: drag objects anywhere on the desk or the window glass, resize, flip, remove and add more from a tray, with undo and reset (see below)
-- Retro CD player: CD shelf, spinning disc, LCD track display, play, pause, next, previous, volume
-- Official CDs and custom CDs made from our royalty-free tracks
+- Five layered scenes with mouse-parallax depth, day/night lighting, and animated effects (rain, snow, fireflies, stars, dust, bubbles, plankton):
+  - **Rainy Night Study** — 3D lo-fi desk above the city at night with a vinyl turntable, warm desk lamp, live clock and rain on the glass
+  - **Golden Hour Loft** — sunlit loft desk with a sleeping cat, rubber plant, retro CD player and drifting dust motes
+  - **Clam Cove** — coral-reef nook with a giant pearl-clam music player, swaying kelp, sun glimmer and rising bubbles
+  - **Clover Hill Meadow** — hand-inked lily pond with a cabin dock, rocking boat, two old oaks, porch radio and fireflies
+  - **Aurora Observatory** — 3D alpine cabin above snowy peaks with velvet curtains, a sleeping arctic fox, retro CD player and northern lights
+- Cinematic `/` landing intro with drifting scene stills, room tabs, and one-click entry into a new or saved room
+- Clickable objects in the room (window or lily pond, curtains, lamp/sconce/lantern/sun glimmer, and the music object)
+- Full-screen room with a scene-skinned **room-kit paper sidebar** (polaroid room switcher, day/night and weather stamps, view-settings note for zoom in/out/fit, player placement and low-power mode, plus room naming and saving) that can be tucked away to a single disc button and fades when idle
+- **Frameless hologram player** projected above the room's music object (tracking moved or resized players in Decorate mode) or pinned to the top or middle of the screen, with a live clock, track title, progress bar, transport controls and volume
+- **Wooden CD tower and wide CD shelf**: bottom-right corner rack that lifts on hover or tap so cases slide out and send their printed disc flying to the player, plus an **All CDs** wide plank shelf and paper slip for pasting music links or CD codes
+- Decorate mode: drag objects onto scene surfaces, resize with perspective, flip, remove and add more from the sidebar tray, with undo and reset (see below)
+- Official studio CDs, custom CDs made from our 12 royalty-free tracks, and online playlists/links (SoundCloud, Spotify, YouTube, direct HTTPS audio)
 - Save a room to get a share link; "My rooms" is remembered in the browser (no login)
 - A secret edit key lets only the creator change or delete a room or CD
 
@@ -31,16 +38,16 @@ Course project for **Web Application Development**.
 libsic-studio/
   api/      Express REST API (Node.js)
   client/   React front end
-  docs/     Task allocation and project notes
+  docs/     Task allocation, security check report, art tools and project notes
 ```
 
 ## Course requirements
 
 | Requirement | Status |
 | --- | --- |
-| Database (MySQL or MongoDB) | MongoDB models and seed scripts for scenes, rooms, 12 tracks and 3 official CDs |
-| RESTful API server (Node.js + Express) | Scenes, rooms, tracks and CDs implemented |
-| Front end (React) | Room scene, Decorate mode, saving/sharing, CD shelf, player and custom CD maker implemented |
+| Database (MySQL or MongoDB) | MongoDB models and seed scripts for 5 scenes (Rainy Night Study, Golden Hour Loft, Clam Cove, Clover Hill Meadow, Aurora Observatory), rooms, 12 tracks and 3 official CDs |
+| RESTful API server (Node.js + Express) | Scenes, rooms, tracks, CDs and online music link resolution/metadata implemented |
+| Front end (React) | Cinematic `/` intro, 5 layered rooms, room-kit paper sidebar, Decorate mode, saving/sharing, wooden CD tower & wide CD shelf, frameless hologram player and custom CD maker implemented |
 | Source code for API and client on GitHub | This repository |
 | Online API documentation | `/api-docs` on the API server (all endpoints) |
 | Public API base URL | Not deployed yet |
@@ -49,7 +56,7 @@ libsic-studio/
 
 ## Decorating a room
 
-Open a room and press **Decorate**. The tray at the top adds objects, and you can then drag, resize, flip or remove any of them. Objects stay on their surface (the desk, or the glass of the window), things lower on the desk look closer, and every object brings its own shadow and reflection. The lamp and the fairy lights stay fixed. **Save room** stores the arrangement, so the share link shows the same room.
+Open a room and press **Decorate this room** in the paper sidebar. Choose objects from **Add objects** in the sidebar tray, then drag, resize, flip or remove any of them directly on the scene. Objects stay on their surface (such as a desk, cabin dock, lily pond or window glass), things lower on a surface look closer, and every object brings its own shadow and reflection. Fixed lights stay in place. **Save room** stores the arrangement, so the share link shows the same room.
 
 How it works:
 
@@ -105,13 +112,13 @@ Both members work on the front end and the back end. See [`docs/TASKS.md`](docs/
 
 ## Music and custom CDs
 
-New rooms automatically load the full track list of a featured SoundCloud playlist. **Discover music** switches playlists and searches their songs. **Or paste a music link** supports SoundCloud, Spotify, YouTube and direct HTTPS audio files. Provider embeds remain visible, and saving a room remembers the selected source. Spotify may provide previews and uses its own controls for track selection/volume. See [`docs/ONLINE_MUSIC.md`](docs/ONLINE_MUSIC.md) for supported links and limitations.
+New rooms automatically load the full track list of a featured SoundCloud playlist. Point at or tap the **wooden CD tower** in the bottom-right corner (or press **All CDs** to open the wide CD shelf) to switch between official studio CDs, featured SoundCloud playlists (**Tracks** searches songs inside the active playlist), your custom CDs and remembered links. **+ Add your own music** opens a paper slip where you can paste a SoundCloud, Spotify, YouTube or direct HTTPS audio link, or a shared CD code. Provider embeds remain visible, and saving a room remembers the selected source or CD code; a deleted CD leaves the room usable with a message to choose another disc. Spotify may provide previews and uses its own controls for track selection/volume. See [`docs/ONLINE_MUSIC.md`](docs/ONLINE_MUSIC.md) for supported links and limitations.
 
-Open a room and use **CD shelf** to load an official CD or enter a shared CD code. Click the music object in the room to show the player. Playback starts after pressing Play. A saved room remembers its CD code; a deleted CD leaves the room usable with a message to choose another disc.
+Clicking the music object in the room toggles the **frameless hologram player** (which can float above the player object or stay pinned to the middle or top of the screen via **View settings** in the paper sidebar). Playback starts after pressing Play.
 
-**Make a CD / My CDs** opens `/music`: name a mix, choose tracks and arrange their order. `/cd/:code` plays and shares a CD, links to a room with it loaded, and lets its creator edit/delete it. The creator's key is kept in that browser; share links never contain it. Official CDs are read only. Keep a separate copy of your edit key before clearing browser data; an entered key can restore editing on the CD page.
+From the paper slip (**make a CD**) or `/music`, you can name a mix, choose tracks and arrange their order. `/cd/:code` plays and shares a CD, links to a room with it loaded, and lets its creator edit/delete it. The creator's key is kept in that browser; share links never contain it. Official CDs are read only. Keep a separate copy of your edit key before clearing browser data; an entered key can restore editing on the CD page.
 
-Audio is served from `client/public/audio/music/`, so the API and client can be hosted separately. All twelve short pieces are synthesized for the project; the credits and generator are included. See [`docs/LANE_A_VINH.md`](docs/LANE_A_VINH.md) for review and deployment instructions.
+Audio is served from `client/public/audio/music/`, so the API and client can be hosted separately. All twelve short pieces are synthesized for the project; the credits and generator are included. See [`docs/LANE_A_VINH.md`](docs/LANE_A_VINH.md) for review and deployment instructions, and [`docs/SECURITY_CHECK.md`](docs/SECURITY_CHECK.md) for the security audit report.
 
 ## Working agreements
 
