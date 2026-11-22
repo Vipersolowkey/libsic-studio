@@ -31,12 +31,15 @@ describe('hologramSpot', () => {
     expect(hologramSpot(scene())).toEqual({ x: 50, y: 60, hue: 188 });
   });
 
-  it('has its own spot for each of the three rooms', () => {
-    ['night-study', 'golden-loft', 'underwater-nook'].forEach((slug) => {
+  it('has its own spot for each of the five rooms', () => {
+    ['night-study', 'golden-loft', 'underwater-nook', 'clover-meadow', 'aurora-observatory'].forEach((slug) => {
       const spot = hologramSpot(scene({ slug }));
       expect(spot.x).toBeGreaterThan(0);
       expect(spot.y).toBeGreaterThan(0);
+      expect(spot.hue).not.toBe(188);
     });
+    expect(hologramSpot(scene({ slug: 'clover-meadow' }))).toEqual({ x: 31.2, y: 46.6, hue: 98 });
+    expect(hologramSpot(scene({ slug: 'aurora-observatory' }))).toEqual({ x: 70.3, y: 66, hue: 164 });
   });
 
   it('falls back to a safe place when the room has no music object', () => {

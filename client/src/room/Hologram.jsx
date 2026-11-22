@@ -17,6 +17,8 @@ const SPOTS = {
   'night-study': { x: 62.9, y: 63, hue: 32 }, // above the turntable
   'golden-loft': { x: 73.4, y: 66, hue: 40 }, // above the CD player, a sunlit golden card
   'underwater-nook': { x: 22, y: 61, hue: 176 }, // above the giant clam
+  'clover-meadow': { x: 31.2, y: 46.6, hue: 98 }, // above the porch radio
+  'aurora-observatory': { x: 70.3, y: 66, hue: 164 }, // above the retro CD player
 };
 
 function baseSpot(scene, music) {

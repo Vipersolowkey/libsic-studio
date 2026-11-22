@@ -21,6 +21,14 @@ export const SKINS = {
     vars: { '--paper': '#e2f1ec', '--paper2': '#cfe5de', '--ink': '#0f3d47', '--soft': '#4a7a82', '--accent': '#ef7d63', '--on-accent': '#fff5ef', '--edge': '#8fc3bd', '--stitch': '#6fb0a8', '--w1': '#c9b99c', '--w2': '#b3a283', '--brass': '#f0b9a4', '--brass2': '#cf8a72', '--brass-ink': '#4a1f12', '--back': '#6d6049' },
     light: ['Day', 'Night'],
   },
+  'clover-meadow': {
+    vars: { '--paper': '#f7f1de', '--paper2': '#ebe1c5', '--ink': '#3a2b1c', '--soft': '#6d5b43', '--accent': '#5d9451', '--on-accent': '#fbf9f0', '--edge': '#b8c49a', '--stitch': '#8fa673', '--w1': '#c89b62', '--w2': '#ad7f49', '--brass': '#e3b862', '--brass2': '#b98b39', '--brass-ink': '#38240e', '--back': '#593e22' },
+    light: ['Sunny', 'Starlight'],
+  },
+  'aurora-observatory': {
+    vars: { '--paper': '#1b2035', '--paper2': '#141829', '--ink': '#efe7d6', '--soft': '#9aa3bd', '--accent': '#4ec9b0', '--on-accent': '#09221e', '--edge': '#384366', '--stitch': '#536494', '--w1': '#633c32', '--w2': '#4b2b24', '--brass': '#dfb66c', '--brass2': '#a87f3a', '--brass-ink': '#291a07', '--back': '#1e1110' },
+    light: ['Hearth', 'Aurora'],
+  },
 };
 
 // A room that has no skin of its own (a new one added later) gets the warm one.
