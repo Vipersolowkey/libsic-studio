@@ -22,11 +22,22 @@ function write(key, value) {
   }
 }
 
+const isOptionalString = (v) => v === undefined || typeof v === 'string';
+const validRoomEntry = (r) =>
+  Boolean(
+    r &&
+    typeof r.code === 'string' &&
+    /^[A-Za-z0-9_-]{1,32}$/.test(r.code) &&
+    isOptionalString(r.editKey) &&
+    isOptionalString(r.name) &&
+    isOptionalString(r.sceneSlug)
+  );
+
 // The saved rooms, newest first: [{ code, editKey, name, sceneSlug }]
 export function getMyRooms() {
   try {
     const list = JSON.parse(read(ROOMS_KEY));
-    return Array.isArray(list) ? list.filter((r) => r && typeof r.code === 'string') : [];
+    return Array.isArray(list) ? list.filter(validRoomEntry) : [];
   } catch {
     return [];
   }

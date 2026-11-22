@@ -29,13 +29,16 @@ function publicRoom(room) {
   };
 }
 
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+
 // Picks only the fields a visitor may set. The code and the edit key hash are never among them.
 function editableFields(body) {
+  if (!isPlainObject(body)) return {};
   const fields = {};
   for (const key of ['name', 'sceneSlug', 'cdCode', 'musicSource', 'items']) {
     if (body[key] !== undefined) fields[key] = body[key];
   }
-  if (body.settings && typeof body.settings === 'object') {
+  if (isPlainObject(body.settings)) {
     for (const key of ['effect', 'lightOn', 'curtainsClosed', 'volume']) {
       if (body.settings[key] !== undefined) fields[`settings.${key}`] = body.settings[key];
     }
@@ -70,6 +73,7 @@ function roomsRouter({ Room, Scene }) {
 
   // Save a new room. The reply contains the edit key, and this is the only time it is shown.
   router.post('/', async (req, res) => {
+    if (req.body !== undefined && !isPlainObject(req.body)) return invalid(res, { body: 'The request body must be a JSON object' });
     const fields = editableFields(req.body ?? {});
     const musicError = validateMusicFields(fields);
     if (musicError) return invalid(res, { musicSource: musicError });
@@ -99,13 +103,14 @@ function roomsRouter({ Room, Scene }) {
 
   // Change a room. Send only the fields you want to change.
   router.put('/:code', requireEditKey(Room), async (req, res) => {
+    if (req.body !== undefined && !isPlainObject(req.body)) return invalid(res, { body: 'The request body must be a JSON object' });
     const fields = editableFields(req.body ?? {});
     const musicError = validateMusicFields(fields);
     if (musicError) return invalid(res, { musicSource: musicError });
     if (fields.cdCode && fields.musicSource === undefined) fields.musicSource = null;
     const sceneSlug = fields.sceneSlug === undefined ? req.doc.sceneSlug : fields.sceneSlug;
     if (sceneSlug !== req.doc.sceneSlug && fields.items === undefined) fields.items = null; // the old items belong to the old scene
-    if (fields.sceneSlug !== undefined || fields.items) {
+    if (fields.sceneSlug !== undefined || fields.items !== undefined) {
       if (!(await sceneAndItemsAreValid({ sceneSlug, items: fields.items }, res))) return;
     }
 
