@@ -67,6 +67,7 @@ export function useRoomView({ panning = true } = {}) {
     // The mouse is watched at every zoom, also while the picture does not follow it yet. Otherwise the first zoom
     // step that makes it follow would use an old mouse position, and the picture would jump on the next move.
     const onMove = (e) => {
+      if (e.pointerType === 'touch' || e.target?.closest?.('.sidebar, .side-note, .cdc, .holo')) return;
       lastPointer.current = { x: e.clientX / size.width, y: e.clientY / size.height };
       if (!follows) return;
       cancelAnimationFrame(frame);

@@ -10,8 +10,9 @@ export const SCENE_FPS = 30;
 // held still (speed 0) and moved forward by hand, SCENE_FPS times per second. Between two steps nothing changes on
 // screen, so the browser has nothing to redraw. Animations that CSS has paused (the record when the music stops)
 // stay paused, and fades between day and night (transitions) are not touched: they stay perfectly smooth.
-export function useFramePace(stageRef, fps = SCENE_FPS) {
+export function useFramePace(stageRef, fps = SCENE_FPS, enabled = true) {
   useEffect(() => {
+    if (!enabled) return undefined;
     const stage = stageRef.current;
     if (!stage?.getAnimations || typeof CSSAnimation === 'undefined') return undefined; // an old browser: leave everything as it is
     const step = 1000 / fps;
@@ -46,5 +47,5 @@ export function useFramePace(stageRef, fps = SCENE_FPS) {
         if (animation instanceof CSSAnimation && animation.playbackRate === 0) animation.playbackRate = 1;
       }
     };
-  }, [stageRef, fps]);
+  }, [stageRef, fps, enabled]);
 }
