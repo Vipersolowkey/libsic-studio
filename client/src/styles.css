@@ -532,6 +532,20 @@ a.chip { text-decoration: none; display: inline-block; }
   --holo-glow: hsl(176 100% 58% / 0.6);
   --holo-shade: hsl(205 80% 10% / 0.5);
 }
+/* Room 4, the clover hill meadow: warm cream writing and leaf-gold buttons, on a dark olive-sepia shade so it reads on a sunny sky. */
+.holo-clover-meadow {
+  --holo-text: #fffef6;
+  --holo-accent: hsl(88 68% 62%);
+  --holo-glow: hsl(46 95% 66% / 0.5);
+  --holo-shade: hsl(95 38% 10% / 0.82);
+}
+/* Room 5, the aurora observatory: mint-ice writing with an aurora emerald glow against deep midnight sky. */
+.holo-aurora-observatory {
+  --holo-text: hsl(166 100% 94%);
+  --holo-accent: hsl(162 88% 68%);
+  --holo-glow: hsl(166 95% 56% / 0.58);
+  --holo-shade: hsl(230 60% 7% / 0.8);
+}
 @keyframes holo-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -0.35em; } }
 @keyframes holo-beam { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
 @keyframes holo-on { 0% { opacity: 0; } 18% { opacity: 0.7; } 30% { opacity: 0.15; } 46% { opacity: 0.9; } 58% { opacity: 0.4; } 72%, 100% { opacity: 1; } }
@@ -643,7 +657,7 @@ a.chip { text-decoration: none; display: inline-block; }
 .intro-slide.on { opacity: 1; }
 .intro-slide img {
   width: 100%; height: 100%; object-fit: cover; will-change: transform;
-  transform-origin: calc(30% + var(--kb) * 25%) 60%;
+  transform-origin: calc(24% + var(--kb) * 13%) 60%;
   animation: intro-drift 22s ease-in-out infinite alternate;
 }
 @keyframes intro-drift { from { transform: scale(1.03); } to { transform: scale(1.16); } }
@@ -696,8 +710,8 @@ a.chip { text-decoration: none; display: inline-block; }
 
 .intro-rooms {
   position: absolute; inset: auto 0 0 0;
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
-  max-width: 1040px; margin: 0 auto; padding: 0 20px max(26px, env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px;
+  max-width: 1220px; margin: 0 auto; padding: 0 20px max(26px, env(safe-area-inset-bottom, 0px));
   transition: opacity 0.4s; animation: intro-in 1.4s 2.1s ease both;
 }
 .intro-tab { position: relative; padding: 16px 4px 10px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; opacity: 0.55; transition: opacity 0.3s; }
@@ -732,16 +746,23 @@ a.chip { text-decoration: none; display: inline-block; }
   .intro-rooms { padding-bottom: 10px; }
 }
 @media (max-height: 330px) { .intro-disc { display: none; } }
-@media (max-width: 700px) {
-  .intro-center { bottom: 130px; }
-  .intro-rooms { grid-template-columns: 1fr; gap: 0; }
-  .intro-tab { padding: 8px 4px; }
-    .intro-tab-bar { inset: auto 0 0 0; }
+@media (max-width: 820px) {
+  .intro-center { bottom: 150px; }
+  .intro-rooms { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; padding-bottom: max(18px, env(safe-area-inset-bottom, 0px)); }
+  .intro-tab { padding: 9px 4px 7px; }
+  .intro-tab-bar { inset: auto 0 0 0; }
 }
-@media (max-width: 700px) and (max-height: 520px) {
-  .intro-center { bottom: 66px; }
-  .intro-rooms { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .intro-tab { padding: 12px 4px 6px; }
+@media (max-width: 700px) {
+  .intro-center { bottom: 150px; }
+  .intro-rooms { padding-inline: 16px; gap: 2px 12px; }
+  .intro-tab { padding: 8px 2px 6px; }
+  .intro-tab-name { font-size: 13.5px; }
+}
+@media (max-width: 820px) and (max-height: 520px) {
+  .intro-center { bottom: 72px; }
+  .intro-rooms { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding-bottom: 10px; }
+  .intro-tab { padding: 8px 2px 4px; }
+  .intro-tab-name { font-size: 12px; }
   .intro-tab-bar { inset: 0 0 auto 0; }
 }
 
