@@ -41,4 +41,27 @@ describe('protection and speed of the API', () => {
     const app = appWith({ requestsPerMinute: 1 });
     for (let i = 0; i < 3; i++) expect((await request(app).get('/api/health')).status).toBe(200);
   });
+
+  it('rejects request bodies larger than 32kb with 413 instead of 500', async () => {
+    const oversized = { sceneSlug: 'big-room', pad: 'x'.repeat(40 * 1024) };
+    const res = await request(appWith()).post('/api/rooms').send(oversized);
+
+    expect(res.status).toBe(413);
+    expect(res.body).toEqual({ error: 'The request body is too large' });
+  });
+
+  it('applies rate limiting before parsing large JSON bodies', async () => {
+    const app = appWith({ requestsPerMinute: 1 });
+    expect((await request(app).get('/api/scenes')).status).toBe(200);
+
+    const oversized = { sceneSlug: 'big-room', pad: 'x'.repeat(40 * 1024) };
+    const res = await request(app).post('/api/rooms').send(oversized);
+    expect(res.status).toBe(429);
+  });
+
+  it('answers 400 instead of 500 for malformed percent-encoded URLs', async () => {
+    const res = await request(appWith()).get('/api/rooms/%E0%A4%A');
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: 'Invalid URL' });
+  });
 });

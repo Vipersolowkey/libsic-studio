@@ -31,11 +31,11 @@ import './scene.css';
 //   kind    "clock" draws the live clock instead of a picture
 //   tile    repeats a small picture over the layer (film grain)
 //   item    the layer belongs to an object a visitor can move: it is drawn once for each copy of that object
-export default function SceneStage({ scene, settings, onSettingsChange, onNextTrack, playing = true, items = null, frozen = false, still = false, calm = false, children }) {
+export default function SceneStage({ scene, settings, onSettingsChange, onNextTrack, playing = true, items = null, frozen = false, still = false, calm = false, disc = null, children }) {
   const drawList = useMemo(() => buildDrawList(scene, items ?? defaultItems(scene)), [scene, items]);
   const depths = useMemo(() => drawList.map(({ layer }) => layer.depth), [drawList]);
   const { stageRef, layerRef, handlers } = useParallax(depths, !frozen && !still);
-  useFramePace(stageRef); // the slow movements are redrawn 30 times per second instead of 60, which halves the drawing work
+  useFramePace(stageRef, undefined, !calm); // the slow movements are redrawn 30 times per second instead of 60 (and stopped in low power mode)
   const arrived = usePicturesArrived(stageRef, scene.slug);
 
   // The layers are only worked out again when the scene, the objects or the settings change. Zooming, typing the
@@ -54,10 +54,10 @@ export default function SceneStage({ scene, settings, onSettingsChange, onNextTr
     const content = (layer, flip) =>
       flip ? (
         <div className="flip" style={{ transform: 'scaleX(-1)' }}>
-          <LayerContent layer={layer} />
+          <LayerContent layer={layer} disc={disc} />
         </div>
       ) : (
-        <LayerContent layer={layer} />
+        <LayerContent layer={layer} disc={disc} />
       );
 
     const hotspots = (templateIndex) =>
@@ -75,6 +75,7 @@ export default function SceneStage({ scene, settings, onSettingsChange, onNextTr
               height: `${object.height}%`,
             }}
             aria-label={object.label}
+            data-action={object.action.type}
             disabled={frozen}
             onClick={() => handleClick(object)}
           >
@@ -111,7 +112,7 @@ export default function SceneStage({ scene, settings, onSettingsChange, onNextTr
         )}
       </div>
     ));
-  }, [scene, drawList, settings, frozen, layerRef, onNextTrack, onSettingsChange]);
+  }, [scene, drawList, settings, frozen, layerRef, onNextTrack, onSettingsChange, disc]);
 
   const hasLights = drawList.some(({ layer }) => layer.light || layer.night);
 
@@ -180,7 +181,11 @@ function glideStyle({ from, to, duration, delay }) {
   return { '--fx': `${from.x}%`, '--fy': `${from.y}%`, '--tx': `${to.x}%`, '--ty': `${to.y}%`, '--dur': `${duration}s`, '--delay': `${delay ?? 0}s` };
 }
 
-const LayerContent = memo(function LayerContent({ layer }) {
+// The record of a player is a flat picture of a disc (disc_flat or vinyl_flat). When a CD is chosen, its own printed
+// face is drawn there instead, so the disc that turns is the CD the visitor picked. The pearl of the clam stays a pearl.
+const PLAYER_DISC = /(disc|vinyl)_flat\.webp$/;
+
+const LayerContent = memo(function LayerContent({ layer, disc = null }) {
   if (layer.kind === 'clock') {
     // The clock face in the picture is turned a little, so the digits are tilted to match.
     const skew = layer.anim?.skew ? { transform: `skewY(${layer.anim.skew}deg)`, transformOrigin: '0 0' } : undefined;
@@ -194,7 +199,8 @@ const LayerContent = memo(function LayerContent({ layer }) {
     const style = { backgroundImage: `url(${layer.image})`, backgroundSize: `${layer.tile}% auto` };
     return <div className="tiled" style={style} />;
   }
-  const picture = <LayerPicture src={layer.image} />;
+  const printed = disc && layer.anim?.name === 'spin' && PLAYER_DISC.test(layer.image);
+  const picture = printed ? <div className="cd-print" style={{ '--face': disc }} /> : <LayerPicture src={layer.image} />;
   const anim = layer.anim;
   if (!anim?.name) return picture;
   const style = { '--dur': `${anim.duration ?? 6}s`, '--delay': `${anim.delay ?? 0}s` };

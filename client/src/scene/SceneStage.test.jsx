@@ -122,6 +122,19 @@ describe('SceneStage', () => {
       expect(leaf).toHaveStyle({ transformOrigin: '50% 90%' });
     });
 
+    it('shows the chosen CD on the player disc, but not on a record that is not a flat disc picture', () => {
+      const withDisc = { ...extra, layers: extra.layers.map((l) => (l.name === 'record' ? { ...l, image: '/scenes/test-room/cdplayer_disc_flat.webp' } : l)) };
+      const { container, rerender } = render(<SceneStage scene={withDisc} settings={settings} onSettingsChange={noop} />);
+      expect(container.querySelector('.cd-print')).toBeNull();
+      rerender(<SceneStage scene={withDisc} settings={settings} onSettingsChange={noop} disc="conic-gradient(red, blue)" />);
+      const print = container.querySelector('.anim-spin .spin .cd-print');
+      expect(print).not.toBeNull();
+      expect(print.style.getPropertyValue('--face')).toBe('conic-gradient(red, blue)');
+      // the pearl or any other spinning picture keeps its own picture
+      rerender(<SceneStage scene={extra} settings={settings} onSettingsChange={noop} disc="conic-gradient(red, blue)" />);
+      expect(container.querySelector('.cd-print')).toBeNull();
+    });
+
     it('passes distance and amplitude on to the calm movements', () => {
       const calm = {
         ...scene,
@@ -242,6 +255,32 @@ describe('SceneStage', () => {
       expect(stage).not.toHaveClass('paused');
       rerender(<SceneStage scene={extra} settings={settings} onSettingsChange={noop} playing={false} />);
       expect(stage).toHaveClass('paused');
+    });
+
+    it('stops scheduling animation-pace frames when calm (low power) is true', () => {
+      const origGetAnimations = Element.prototype.getAnimations;
+      const origCSSAnimation = globalThis.CSSAnimation;
+      class FakeCSSAnimation {
+        constructor() { this.playState = 'running'; this.playbackRate = 1; this.currentTime = 0; }
+      }
+      Element.prototype.getAnimations = () => [new FakeCSSAnimation()];
+      globalThis.CSSAnimation = FakeCSSAnimation;
+      const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 42);
+      const cancelSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+      try {
+        const { rerender } = render(<SceneStage scene={extra} settings={settings} onSettingsChange={noop} calm={false} />);
+        const callsWhileActive = rafSpy.mock.calls.length;
+        expect(callsWhileActive).toBeGreaterThanOrEqual(1);
+
+        rerender(<SceneStage scene={extra} settings={settings} onSettingsChange={noop} calm />);
+        expect(cancelSpy).toHaveBeenCalledWith(42);
+        expect(rafSpy.mock.calls.length).toBe(callsWhileActive);
+      } finally {
+        Element.prototype.getAnimations = origGetAnimations;
+        globalThis.CSSAnimation = origCSSAnimation;
+        rafSpy.mockRestore();
+        cancelSpy.mockRestore();
+      }
     });
   });
 

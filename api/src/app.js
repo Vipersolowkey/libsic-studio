@@ -9,6 +9,9 @@ const swaggerUi = require('swagger-ui-express');
 const YAML = require('yaml');
 const scenesRouter = require('./routes/scenes');
 const roomsRouter = require('./routes/rooms');
+const { tracksRouter } = require('./routes/tracks');
+const cdsRouter = require('./routes/cds');
+const { musicRouter } = require('./routes/music');
 
 // The written description of the API (see openapi.yaml). It is read once when the app starts.
 const apiSpec = YAML.parse(fs.readFileSync(path.join(__dirname, '..', 'openapi.yaml'), 'utf8'));
@@ -20,6 +23,8 @@ const apiSpec = YAML.parse(fs.readFileSync(path.join(__dirname, '..', 'openapi.y
 function createApp(models = {}, { requestsPerMinute = Number(process.env.REQUESTS_PER_MINUTE) || 300 } = {}) {
   const Scene = models.Scene || require('./models/Scene');
   const Room = models.Room || require('./models/Room');
+  const Track = models.Track || require('./models/Track');
+  const Cd = models.Cd || require('./models/Cd');
   const app = express();
 
   // On a host such as Render the API sits behind the host's own front door (a proxy). This tells Express to look
@@ -32,7 +37,6 @@ function createApp(models = {}, { requestsPerMinute = Number(process.env.REQUEST
   app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(cors()); // lets the React site (a different address) call this API
   app.use(compression()); // sends answers zipped (gzip): a scene is a long text and becomes several times smaller
-  app.use(express.json()); // lets the API read JSON sent in request bodies
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
@@ -55,8 +59,14 @@ function createApp(models = {}, { requestsPerMinute = Number(process.env.REQUEST
     })
   );
 
+  // Read JSON bodies after rate limiting, capped at 32 KB (a decorated room is only a few kilobytes).
+  app.use(express.json({ limit: '32kb' }));
+
   app.use('/api/scenes', scenesRouter(Scene));
   app.use('/api/rooms', roomsRouter({ Room, Scene }));
+  app.use('/api/tracks', tracksRouter(Track));
+  app.use('/api/cds', cdsRouter({ Cd, Track }));
+  app.use('/api/music', musicRouter());
 
   // Any other /api address does not exist.
   app.use('/api', (req, res) => {
@@ -65,8 +75,14 @@ function createApp(models = {}, { requestsPerMinute = Number(process.env.REQUEST
 
   // Last stop for errors: reply with JSON and hide the technical details.
   app.use((err, req, res, next) => {
+    if (err.type === 'entity.too.large') {
+      return res.status(413).json({ error: 'The request body is too large' });
+    }
     if (err.type === 'entity.parse.failed') {
       return res.status(400).json({ error: 'The request body is not valid JSON' });
+    }
+    if (err instanceof URIError) {
+      return res.status(400).json({ error: 'Invalid URL' });
     }
     if (err.name === 'ValidationError') {
       const details = Object.fromEntries(Object.entries(err.errors).map(([path, e]) => [path, e.message]));

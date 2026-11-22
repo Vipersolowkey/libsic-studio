@@ -1,0 +1,153 @@
+/* The room kit: the side bar as a page of paper pinned over the picture. The colours come from the room's skin (see skins.js),
+   which sets CSS variables on .room. Everything here is scoped to .sidebar / .side-open, so the rest of the page is untouched. */
+
+.room .sidebar {
+  --pad: 18px;
+  --text: var(--ink);
+  --muted: var(--soft);
+  --line: var(--edge);
+  width: min(272px, calc(100vw - 24px));
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image: var(--grain);
+  box-shadow: 0 12px 30px #0007, inset 0 0 0 1px #ffffff30;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+/* the dashed stitching inside the edge of the paper */
+.room .sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1.5px dashed var(--stitch);
+  border-radius: 7px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.room { --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .3  0 0 0 0 .2  0 0 0 0 .1  0 0 0 .13 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+
+.room .side-head { border-bottom: 0; padding: 16px 18px 6px; position: relative; z-index: 2; }
+.room .brand { color: var(--ink); gap: 10px; min-width: 0; }
+.room .side-head { gap: 6px; }
+.room .brand-name { font-family: 'Caveat', cursive; font-weight: 700; font-size: 22px; line-height: 1; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.room .brand-tag { color: var(--soft); font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; }
+.room .brand-disc,
+.room .side-open .brand-disc {
+  width: 32px;
+  height: 32px;
+  background: radial-gradient(circle, var(--paper) 0 9%, var(--accent) 10% 22%, transparent 23%), conic-gradient(#6b5640, #e9dcc0, #8f7a5c, #e9dcc0, #6b5640);
+  box-shadow: 0 2px 5px #0005;
+}
+.side-tools { display: flex; gap: 6px; }
+.room .side-icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--edge);
+  border-radius: 50%;
+  background: var(--paper2);
+  color: var(--ink);
+  cursor: pointer;
+}
+.room .side-icon:hover, .room .side-icon[aria-expanded='true'] { border-color: var(--accent); }
+.room .side-icon svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.room .side-open {
+  width: 50px;
+  height: 50px;
+  border: 1.5px solid var(--edge);
+  background-color: var(--paper);
+  box-shadow: 0 6px 16px #0006;
+}
+
+/* the settings note next to the bar */
+.room .side-note {
+  position: absolute;
+  z-index: 6;
+  left: calc(100% + 10px);
+  top: 6px;
+  width: 230px;
+  padding: 14px 16px;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background-color: var(--paper);
+  background-image: var(--grain);
+  box-shadow: 0 12px 30px #0008;
+}
+.room .side-note .side-title:not(:first-child) { margin-top: 12px; }
+
+.room .side-body { position: relative; z-index: 1; padding: 6px 20px 0; scrollbar-color: var(--edge) transparent; }
+.room .side-section { padding: 0 0 12px; border-bottom: 0; }
+.room .side-section:last-child { padding-bottom: 6px; }
+.room .side-title { margin: 0 0 7px; color: var(--soft); font-size: 12px; font-weight: 600; letter-spacing: 0.12em; }
+.room .side-foot {
+  position: relative;
+  z-index: 1;
+  gap: 7px;
+  padding: 10px 20px 14px;
+  border-top: 1.5px dashed var(--stitch);
+}
+
+/* the rooms: the one you are in is a big polaroid, the others sit in a two-column grid of small polaroids to pick */
+.room-list .polaroid { position: relative; padding: 6px 6px 5px; border: 0; background: #fffdf6; color: #3a2a1a; text-align: center; box-shadow: 0 3px 8px #0004; cursor: pointer; font: inherit; }
+.room-list .polaroid img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--paper2); }
+.room-list .polaroid span { display: block; padding-top: 3px; font-family: 'Caveat', cursive; font-weight: 700; font-size: 19px; line-height: 1.1; }
+.room-list .tape { position: absolute; left: 50%; top: -9px; width: 56px; height: 16px; margin-left: -28px; background: color-mix(in srgb, var(--accent) 55%, #fff6); opacity: 0.85; transform: rotate(-3deg); }
+.room-list .here { display: block; width: 206px; margin: 0 auto; transform: rotate(-1.2deg); }
+.room-list .others { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.room-list .others .polaroid { display: flex; flex-direction: column; min-width: 0; transition: transform 0.15s; }
+.room-list .others .polaroid:nth-child(odd) { transform: rotate(1.6deg); }
+.room-list .others .polaroid:nth-child(even) { transform: rotate(-1.4deg); }
+.room-list .others .polaroid:hover { transform: rotate(0) translateY(-3px); }
+.room-list .others .polaroid span { font-size: 15px; }
+
+/* mood: light as a two-way switch, weather as round stamps */
+.daynight { display: flex; padding: 3px; border: 1.5px solid var(--edge); border-radius: 99px; background: var(--paper2); }
+.daynight button { flex: 1; padding: 6px 4px; border: 0; border-radius: 99px; background: none; color: var(--soft); font: inherit; font-size: 13px; cursor: pointer; }
+.daynight button[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.stamps { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.stamp { flex: 1 1 0; min-width: 56px; display: grid; justify-items: center; gap: 2px; padding: 5px 2px 4px; border: 1.5px dashed var(--stitch); border-radius: 12px; background: transparent; color: var(--ink); font: inherit; font-size: 12px; cursor: pointer; }
+.stamp svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.stamp[aria-pressed='true'] { border-style: solid; border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.make { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 9px; border: 1.5px solid var(--ink); border-radius: 10px; background: transparent; color: var(--ink); font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; }
+.make svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.make:hover { background: var(--ink); color: var(--paper); }
+
+/* chips and fields on paper (settings note, save bar, my rooms) */
+.room .sidebar .chip, .room .side-note .chip { border: 1.5px solid var(--stitch); background: transparent; color: var(--ink); font-size: 13px; }
+.room .sidebar .chip:hover, .room .side-note .chip:hover { border-color: var(--accent); }
+.room .sidebar .chip[aria-pressed='true'], .room .side-note .chip[aria-pressed='true'] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.room .sidebar .chip.primary { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.room .sidebar .chip.danger.solid { color: #fff; }
+.room .sidebar .room-name { padding: 0 2px 2px; border: 0; border-bottom: 2px solid var(--stitch); border-radius: 0; background: transparent; color: var(--ink); font-family: 'Caveat', cursive; font-weight: 700; font-size: 24px; }
+.room .sidebar .room-name::placeholder { color: var(--soft); opacity: 0.7; }
+.room .sidebar .link-field input, .room .sidebar .my-rooms-panel { border-color: var(--stitch); background: var(--paper2); color: var(--ink); }
+.room .sidebar .confirm { border-color: #c4553c; background: #c4553c14; }
+.room .sidebar .link-button { color: var(--soft); }
+.room .sidebar .muted { color: var(--soft); }
+.room .sidebar a:focus-visible, .room .sidebar button:focus-visible, .room .side-note button:focus-visible, .room .sidebar input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* the note about what just happened keeps the same paper */
+.room .status { border-color: var(--edge); background-color: var(--paper); color: var(--ink); }
+
+/* On a big screen the side bar and the CD tower are drawn bigger (see useUiScale.js). */
+.room .sidebar, .room .side-open, .cdc { zoom: var(--ui, 1); }
+
+/* A low window (a small screen, or the browser zoomed in a lot): the side bar gets tighter so the rooms, the mood and
+   the save buttons are all still reachable. The middle of the bar scrolls. */
+@media (max-height: 600px) {
+  .room .brand-tag { display: none; }
+  .room .side-head { padding-top: 10px; }
+  .room-list .here { width: 150px; }
+  .room-list .others { margin-top: 8px; gap: 6px; }
+  .room-list .polaroid { padding: 4px 4px 3px; }
+  .room-list .polaroid span { font-size: 15px; }
+  .room-list .others .polaroid span { font-size: 13px; }
+  .room .side-foot { padding: 8px 16px 10px; gap: 5px; }
+  .room .sidebar .room-name { font-size: 20px; }
+  .daynight button { padding: 4px; }
+  .stamp { padding: 3px 2px; }
+}

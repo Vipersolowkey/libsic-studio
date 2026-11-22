@@ -6,10 +6,14 @@ import App from '../App.jsx';
 import * as api from '../api.js';
 import { getLastRoomCode, getMyRooms, saveMyRoom, setLastRoomCode } from '../myRooms.js';
 import { decorScene, otherScene, savedRoom, scene } from '../test/fixtures.js';
+import { DEFAULT_MUSIC_SOURCE } from '../music/discovery.js';
+
+// Provider integration has its own SDK tests; room regression tests avoid external scripts.
+vi.mock('../music/ExternalMusic.jsx', () => ({ default: () => null, EMPTY_ONLINE_PLAYER: { cd: { title: 'Online music', tracks: [] }, track: null, playing: false, volume: 0.7, toggle() {}, next() {}, prev() {}, pause() {} } }));
 
 // The rooms and the effects are groups of buttons in the side bar: pick one by the name of its group and its own name.
 const inGroup = (group, item) => within(screen.getByRole('group', { name: group })).getByRole('button', { name: item });
-const more = () => userEvent.click(screen.getByRole('button', { name: /more settings/i })); // unfolds the zoom buttons and the player place
+const more = () => userEvent.click(screen.getByRole('button', { name: 'View settings' })); // opens the note with the zoom buttons and the player place
 async function pick(group, item) {
   await userEvent.click(inGroup(group, item));
 }
@@ -29,6 +33,8 @@ const ownRoom = () => saveMyRoom({ code: savedRoom.code, editKey: 'secret-key', 
 
 beforeEach(() => {
   localStorage.clear();
+  vi.spyOn(api, 'getCds').mockResolvedValue([]);
+  vi.spyOn(api, 'getCd').mockResolvedValue({ code: 'night-study', title: 'Quiet Pages', tracks: [{ id: 'lamp-light', title: 'Lamp Light', src: '/audio/music/lamp-light.mp3' }] });
   vi.spyOn(api, 'getScenes').mockResolvedValue([scene, otherScene]);
   vi.spyOn(api, 'getRoom').mockImplementation(async (code) => {
     if (code === savedRoom.code) return savedRoom;
@@ -52,6 +58,16 @@ describe('the hologram player', () => {
     expect(holo(container)).not.toHaveClass('holo-open');
   });
 
+  it('stays open when something else on the page is clicked; only the music object (or Escape) closes it', async () => {
+    const { container } = renderAt('/new');
+    await screen.findByTestId('stage');
+    await userEvent.click(screen.getByRole('button', { name: 'Radio' }));
+    expect(holo(container)).toHaveClass('holo-open');
+
+    await userEvent.click(screen.getByTestId('stage'));
+    expect(holo(container)).toHaveClass('holo-open');
+  });
+
   it('closes on Escape and remembers in the browser that it was open', async () => {
     const { container } = renderAt('/new');
     await screen.findByTestId('stage');
@@ -66,8 +82,9 @@ describe('the hologram player', () => {
   it('plays and pauses with the space bar: the record stops while paused', async () => {
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
-    renderAt('/new');
+    renderAt('/new?cd=night-study');
     const stage = await screen.findByTestId('stage');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Play', hidden: true })).toBeEnabled());
     expect(stage).toHaveClass('paused');
 
     await userEvent.keyboard(' ');
@@ -78,6 +95,24 @@ describe('the hologram player', () => {
 });
 
 describe('a new room (/new)', () => {
+  it('loads a selected CD from the API and includes it when saving a room', async () => {
+    vi.spyOn(api, 'createRoom').mockRejectedValue(new Error('stop after checking payload'));
+    renderAt('/new?cd=night-study');
+    await screen.findByTestId('stage');
+    await waitFor(() => expect(api.getCd).toHaveBeenCalledWith('night-study'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save room' }));
+    expect(api.createRoom).toHaveBeenCalledWith(expect.objectContaining({ cdCode: 'night-study' }));
+  });
+
+  it('opens the saved room even if its CD was deleted, and lets the visitor eject it', async () => {
+    api.getRoom.mockResolvedValue({ ...savedRoom, cdCode: 'gone' });
+    api.getCd.mockRejectedValue(new api.ApiError('CD not found', 404));
+    renderAt(`/r/${savedRoom.code}`);
+    await screen.findByTestId('stage');
+    expect(await screen.findByRole('alert')).toHaveTextContent('This CD was deleted');
+    await userEvent.click(screen.getByRole('button', { name: 'Eject CD' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
   it('shows a loading message, then the first scene with its default effect', async () => {
     const { container } = renderAt('/new');
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
@@ -121,7 +156,7 @@ describe('a new room (/new)', () => {
     await pick('Effects', 'Snow'); // pressing the effect that is on turns it off
     expect(container.querySelector('[data-effect]')).toBeNull();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Light on' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Night' }));
     expect(screen.getByTestId('stage')).toHaveClass('lights-off');
   });
 });
@@ -136,7 +171,7 @@ describe('the side bar', () => {
     expect(inGroup('Switch room', 'Test Room')).toHaveAttribute('aria-pressed', 'true');
     expect(inGroup('Switch room', 'Other Room')).toHaveAttribute('aria-pressed', 'false');
     await more();
-    for (const name of ['Light on', 'Save room', 'Zoom in', /my rooms/i]) expect(bar.getByRole('button', { name })).toBeInTheDocument();
+    for (const name of ['Night', 'Save room', 'Zoom in', /my rooms/i]) expect(bar.getByRole('button', { name })).toBeInTheDocument();
     expect(bar.getByLabelText('Room name')).toBeInTheDocument();
   });
 
@@ -259,16 +294,16 @@ describe('saving a new room', () => {
 
     await userEvent.type(screen.getByLabelText('Room name'), 'My room');
     await pick('Switch room', 'Other Room');
-    await userEvent.click(screen.getByRole('button', { name: 'Light on' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Night' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save room' }));
 
-    expect(api.createRoom).toHaveBeenCalledWith({ name: 'My room', sceneSlug: 'other', settings: { effect: 'stars', lightOn: false, curtainsClosed: false }, items: null });
+    expect(api.createRoom).toHaveBeenCalledWith({ name: 'My room', sceneSlug: 'other', cdCode: null, musicSource: DEFAULT_MUSIC_SOURCE, settings: { effect: 'stars', lightOn: false, curtainsClosed: false }, items: null });
     expect(getMyRooms()[0]).toMatchObject({ code: savedRoom.code, editKey: 'new-secret' });
     expect(getLastRoomCode()).toBe(savedRoom.code);
 
     // The page is now the saved room, and this browser can edit it.
     expect(await screen.findByRole('button', { name: 'Save changes' })).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent(/room saved/i);
+    expect(await screen.findByText(/Room saved! Copy the link/)).toBeInTheDocument();
     expect(screen.getByLabelText('Share link')).toHaveValue(`${window.location.origin}/r/${savedRoom.code}`);
   });
 
@@ -364,6 +399,8 @@ describe('editing your own room', () => {
     expect(api.updateRoom).toHaveBeenCalledWith(savedRoom.code, 'secret-key', {
       name: 'Study 2',
       sceneSlug: 'other',
+      cdCode: null,
+      musicSource: null,
       settings: { effect: 'stars', lightOn: false, curtainsClosed: false },
       items: null,
     });
@@ -377,7 +414,7 @@ describe('editing your own room', () => {
     renderAt(`/r/${savedRoom.code}`);
     await screen.findByTestId('stage');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Light off' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Day' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Wrong edit key');
@@ -460,7 +497,7 @@ describe('decorating the room', () => {
   async function decorate(path = '/new') {
     const view = renderAt(path);
     await screen.findByTestId('stage');
-    await userEvent.click(screen.getByRole('button', { name: 'Decorate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decorate this room' }));
     return view;
   }
   it('hides the hologram player while decorating', async () => {
@@ -494,10 +531,10 @@ describe('decorating the room', () => {
   it('offers Decorate only in a room whose scene has objects to move', async () => {
     renderAt('/new');
     await screen.findByTestId('stage');
-    expect(screen.getByRole('button', { name: 'Decorate' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Decorate this room' })).toBeInTheDocument();
 
     await pick('Switch room', 'Test Room');
-    expect(screen.queryByRole('button', { name: 'Decorate' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Decorate this room' })).toBeNull();
   });
 
   it('swaps the usual buttons for Undo, Reset room and Done, and lists the objects to add', async () => {
@@ -591,7 +628,7 @@ describe('decorating the room', () => {
       await done();
       expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
 
-      await userEvent.click(screen.getByRole('button', { name: 'Decorate' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Decorate this room' }));
       await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
       await done();
       expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
@@ -613,7 +650,7 @@ describe('decorating the room', () => {
       renderAt(`/r/${savedRoom.code}`);
       await screen.findByTestId('stage');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Decorate' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Decorate this room' }));
       await userEvent.click(screen.getByRole('button', { name: 'Reset room' }));
       await done();
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
@@ -657,8 +694,23 @@ describe('decorating the room', () => {
       const { container } = renderAt('/new');
       await screen.findByTestId('stage');
       await userEvent.keyboard('+++');
-      await userEvent.click(screen.getByRole('button', { name: 'Decorate' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Decorate this room' }));
       lookLeft();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(panX(container)).toBe('0px');
+    });
+
+    it('ignores touch drags and pointer movement inside the side bar or hologram', async () => {
+      const { container } = renderAt('/new');
+      await screen.findByTestId('stage');
+      await userEvent.keyboard('+++');
+
+      fireEvent.pointerMove(window, { clientX: 0, clientY: 300, pointerType: 'touch' });
+      const sidebar = container.querySelector('.sidebar');
+      fireEvent.pointerMove(sidebar, { clientX: 0, clientY: 300, pointerType: 'mouse' });
+      const holo = container.querySelector('.holo');
+      fireEvent.pointerMove(holo, { clientX: 0, clientY: 300, pointerType: 'mouse' });
+
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(panX(container)).toBe('0px');
     });

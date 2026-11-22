@@ -112,10 +112,33 @@ describe('POST /api/rooms', () => {
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: 'The request body is not valid JSON' });
   });
+
+  it('rejects non-object JSON bodies and invalid cdCode values with 400', async () => {
+    const arrayRes = await request(app).post('/api/rooms').send(['not', 'an', 'object']);
+    expect(arrayRes.status).toBe(400);
+    expect(arrayRes.body.details.body).toEqual(expect.any(String));
+
+    const badCd = await request(app).post('/api/rooms').send({ sceneSlug: 'rainy-cafe', cdCode: '<script>alert(1)</script>' });
+    expect(badCd.status).toBe(400);
+    expect(badCd.body.details.cdCode).toEqual(expect.any(String));
+
+    const hugeCd = await request(app).post('/api/rooms').send({ sceneSlug: 'rainy-cafe', cdCode: 'a'.repeat(100) });
+    expect(hugeCd.status).toBe(400);
+    expect(hugeCd.body.details.cdCode).toEqual(expect.any(String));
+  });
 });
 
 describe('room items', () => {
   const put = (code, editKey, body) => request(app).put(`/api/rooms/${code}`).set('x-edit-key', editKey).send(body);
+
+  it('rejects falsy non-null items values on PUT instead of skipping item validation', async () => {
+    const { room, editKey } = await createRoom({ sceneSlug: 'rainy-cafe', items: [mug()] });
+    for (const badItems of ['', false, 0]) {
+      const res = await put(room.code, editKey, { items: badItems });
+      expect(res.status).toBe(400);
+      expect(res.body.details.items).toEqual(expect.any(String));
+    }
+  });
 
   it('returns items: null for a room created without items', async () => {
     const { room } = await createRoom();
