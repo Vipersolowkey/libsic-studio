@@ -8,7 +8,7 @@
 import json, re, subprocess, numpy as np
 from PIL import Image
 ROOT = 'client/public'
-SEEDS = {'night-study': 'api/src/seed/nightStudy.js', 'golden-loft': 'api/src/seed/goldenLoft.js', 'underwater-nook': 'api/src/seed/underwaterNook.js'}
+SEEDS = {'night-study': 'api/src/seed/nightStudy.js', 'golden-loft': 'api/src/seed/goldenLoft.js', 'underwater-nook': 'api/src/seed/underwaterNook.js', 'clover-meadow': 'api/src/seed/cloverMeadow.js', 'aurora-observatory': 'api/src/seed/auroraObservatory.js'}
 T = 4 / 255
 scenes = json.loads(subprocess.check_output(['node', '-e', "console.log(JSON.stringify(require('./api/src/seed/scenes')))"]))
 total_before = total_after = 0
