@@ -1,5 +1,5 @@
 // Values shared by the scene and room models and the seed data.
-const EFFECTS = ['rain', 'snow', 'fireflies', 'stars', 'dust', 'bubbles', 'plankton'];
+const EFFECTS = ['rain', 'snow', 'fireflies', 'stars', 'dust', 'bubbles', 'plankton', 'glitter'];
 const ACTION_TYPES = ['toggleLight', 'toggleEffect', 'toggleCurtains', 'nextTrack'];
 
 // Optional extras of a scene layer (see the Scene model).
