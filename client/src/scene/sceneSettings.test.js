@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyObjectAction, defaultSettings } from './sceneSettings.js';
+import { activeEffect, applyObjectAction, defaultSettings } from './sceneSettings.js';
 import { scene } from '../test/fixtures.js';
 
 const [windowObject, lamp, radio] = scene.objects;
@@ -48,5 +48,17 @@ describe('applyObjectAction', () => {
   it('does not change the object it was given', () => {
     const frozen = Object.freeze({ ...start });
     expect(() => applyObjectAction(frozen, lamp)).not.toThrow();
+  });
+});
+
+describe('activeEffect', () => {
+  const aurora = { effects: ['glitter'], defaultEffect: 'glitter' };
+  it('keeps an effect the scene has, and none', () => {
+    expect(activeEffect(aurora, 'glitter')).toBe('glitter');
+    expect(activeEffect(aurora, 'none')).toBe('none');
+  });
+  it('ignores an effect the scene does not have and uses the default (or none)', () => {
+    expect(activeEffect(aurora, 'snow')).toBe('glitter');
+    expect(activeEffect({ effects: ['rain'] }, 'snow')).toBe('none');
   });
 });

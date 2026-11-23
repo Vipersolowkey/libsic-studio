@@ -4,7 +4,7 @@ import Effect from './Effects.jsx';
 import { useFramePace } from './framePace.js';
 import { useParallax } from './parallax.js';
 import { buildDrawList, defaultItems } from './placement.js';
-import { applyObjectAction } from './sceneSettings.js';
+import { activeEffect, applyObjectAction } from './sceneSettings.js';
 import './scene.css';
 
 // Draws one scene: its layers stacked on top of each other (moving with the mouse),
@@ -37,6 +37,8 @@ export default function SceneStage({ scene, settings, onSettingsChange, onNextTr
   const { stageRef, layerRef, handlers } = useParallax(depths, !frozen && !still);
   useFramePace(stageRef, undefined, !calm); // the slow movements are redrawn 30 times per second instead of 60 (and stopped in low power mode)
   const arrived = usePicturesArrived(stageRef, scene.slug);
+  const hasLights = drawList.some(({ layer }) => layer.light || layer.night);
+  useWarmUp(stageRef, arrived && hasLights, scene.slug);
 
   // The layers are only worked out again when the scene, the objects or the settings change. Zooming, typing the
   // room name or the buttons fading away redraw the room screen, but not the many layers of the picture.
@@ -106,15 +108,13 @@ export default function SceneStage({ scene, settings, onSettingsChange, onNextTr
         ) : (
           <>
             {content(layer, flip)}
-            {templateIndex === scene.effectLayer && <Effect name={settings.effect} />}
+            {templateIndex === scene.effectLayer && <Effect name={activeEffect(scene, settings.effect)} />}
             {hotspots(templateIndex)}
           </>
         )}
       </div>
     ));
   }, [scene, drawList, settings, frozen, layerRef, onNextTrack, onSettingsChange, disc]);
-
-  const hasLights = drawList.some(({ layer }) => layer.light || layer.night);
 
   return (
     <div
@@ -159,6 +159,23 @@ function usePicturesArrived(stageRef, slug) {
     };
   }, [stageRef, slug]);
   return arrivedSlug === slug;
+}
+
+// Once a room with day and night pictures has arrived, the pictures of the other time of day are drawn once, almost
+// see-through (the class `warming`, see scene.css), so that the first switch between day and night does not have to
+// prepare them all at that moment. The class is set on the element directly, so the many layers are not redrawn.
+const WARM_UP_MS = 700;
+function useWarmUp(stageRef, ready, slug) {
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!ready || !stage) return undefined;
+    stage.classList.add('warming');
+    const timer = setTimeout(() => stage.classList.remove('warming'), WARM_UP_MS);
+    return () => {
+      clearTimeout(timer);
+      stage.classList.remove('warming');
+    };
+  }, [stageRef, ready, slug]);
 }
 
 // Position of a layer that does not cover the whole stage. The picture scales a little around the

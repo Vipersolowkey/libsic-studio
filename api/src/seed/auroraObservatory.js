@@ -1,11 +1,11 @@
 // Scene: Aurora Observatory. A cosy alpine cabin rendered in 3D: a wood stove, velvet curtains, a wide window onto snowy peaks,
 // and a walnut desk with a sleeping arctic fox, a retro CD player, a telescope and cocoa. Clicking the sconce switches between
-// warm alpenglow and the northern lights; clicking the window brings snowfall outside the glass. Day and night are two lightings of the same 3D room.
+// warm alpenglow and the northern lights (clicking the window does the same); the stars twinkle and glitter outside the glass at night. Day and night are two lightings of the same 3D room.
 // The room is built and rendered by docs/art-tools/aurora_observatory_blender.py and cut into layers by make_aurora_observatory.py.
 module.exports = {
   slug: 'aurora-observatory',
   name: 'Aurora Observatory',
-  description: 'A cosy alpine cabin above snowy peaks: a sleeping arctic fox, a retro CD player, a telescope and cocoa. Click the sconce for the northern lights, or the window for snow.',
+  description: 'A cosy alpine cabin above snowy peaks: a sleeping arctic fox, a retro CD player, a telescope and cocoa. Click the window or the sconce for the northern lights, with glitter in the night air.',
   layers: [
     { name: 'alpenglow peaks', image: '/scenes/aurora-observatory/l1_peaks_day.webp', depth: 0.04 }, // 0
     { name: 'moonlit peaks', image: '/scenes/aurora-observatory/l1b_peaks_night.webp', depth: 0.05, box: { x: 10.94, y: 1.48, width: 74.48, height: 67.22 }, night: true }, // 1
@@ -63,7 +63,7 @@ module.exports = {
     { name: 'cd player hit', image: '/scenes/aurora-observatory/hit.webp', depth: 0.88, box: { x: 61.77, y: 69.81, width: 17.03, height: 12.31 } }, // 53
   ],
   objects: [
-    { key: 'sky', label: 'Observatory window', layer: 0, x: 28, y: 8, width: 40, height: 52, action: { type: 'toggleEffect', effect: 'snow' } },
+    { key: 'sky', label: 'Observatory window: day or night', layer: 0, x: 28, y: 8, width: 40, height: 52, action: { type: 'toggleLight' } },
     { key: 'curtains-left', label: 'Velvet curtains', layer: 50, x: 0, y: 0, width: 100, height: 100, action: { type: 'toggleCurtains' } },
     { key: 'curtains', label: 'Velvet curtains', layer: 51, x: 0, y: 0, width: 100, height: 100, action: { type: 'toggleCurtains' } },
     { key: 'sconce', label: 'Brass sconce: warm hearth or northern lights', layer: 52, x: 0, y: 0, width: 100, height: 100, action: { type: 'toggleLight' } },
@@ -82,6 +82,7 @@ module.exports = {
     { key: 'desk', area: { x: 10, y: 71.5, width: 80, height: 17 }, perspective: { farY: 71.5, nearY: 88.5, farScale: 0.8, nearScale: 1.0 }, drawAt: 31 },
   ],
   nightDim: 0,
-  effects: ['snow', 'stars'],
-  effectLayer: 5, // the alpine mist, just behind the cabin wall, so snow and stars stay outside the glass
+  effects: ['glitter'],
+  defaultEffect: 'glitter',
+  effectLayer: 5, // the alpine mist, just behind the cabin wall, so the glitter stays outside the glass (it only shows at night)
 };

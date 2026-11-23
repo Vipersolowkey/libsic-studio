@@ -16,7 +16,9 @@ describe('scene seed data', () => {
   it.each(scenes.map((s) => [s.slug, s]))('%s has layers and one object for each kind of click', (slug, scene) => {
     expect(scene.layers.length).toBeGreaterThanOrEqual(4);
     // a big object (the lamp) may be split into several click areas, so compare the kinds, not the count
-    expect([...new Set(scene.objects.map((o) => o.action.type))]).toEqual(expect.arrayContaining(['nextTrack', 'toggleEffect', 'toggleLight']));
+    // (an effect click is optional: the Aurora Observatory window switches day and night, its glitter has a button in the side bar)
+    const kinds = ['nextTrack', 'toggleLight'];
+    expect([...new Set(scene.objects.map((o) => o.action.type))]).toEqual(expect.arrayContaining(kinds));
   });
 
   it.each(scenes.map((s) => [s.slug, s]))('%s default effect (if it has one) is one of its own effects', (slug, scene) => {
