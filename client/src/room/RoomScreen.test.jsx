@@ -409,6 +409,34 @@ describe('editing your own room', () => {
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
   });
 
+  it('saves unsaved changes before copying the link, so the shared room has them (for example the CD)', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'updateRoom').mockResolvedValue({ ...savedRoom, name: 'Study 2' });
+    renderAt(`/r/${savedRoom.code}`);
+    await screen.findByTestId('stage');
+    await user.type(screen.getByLabelText('Room name'), ' 2');
+
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+
+    expect(api.updateRoom).toHaveBeenCalledWith(savedRoom.code, 'secret-key', expect.objectContaining({ name: 'Study 2' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Changes saved. Link copied.');
+    expect(await navigator.clipboard.readText()).toBe(`${window.location.origin}/r/${savedRoom.code}`);
+  });
+
+  it('does not copy the link when the changes could not be saved', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'updateRoom').mockRejectedValue(new Error('Server asleep'));
+    await navigator.clipboard.writeText('before');
+    renderAt(`/r/${savedRoom.code}`);
+    await screen.findByTestId('stage');
+    await user.type(screen.getByLabelText('Room name'), ' 2');
+
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Server asleep');
+    expect(await navigator.clipboard.readText()).toBe('before');
+  });
+
   it('shows the error when the API refuses the change', async () => {
     vi.spyOn(api, 'updateRoom').mockRejectedValue(new api.ApiError('Wrong edit key', 403));
     renderAt(`/r/${savedRoom.code}`);

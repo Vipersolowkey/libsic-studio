@@ -61,12 +61,12 @@ function hash(text) {
 }
 
 // Four ways to draw the front cover, four for the disc. The colours come from one hue, so a CD looks like one object.
-function cover(i, dark, mid, light) {
+function cover(i, dark, mid, light, faint) {
   const base = `linear-gradient(160deg, ${mid}, ${dark})`;
   return [
     `radial-gradient(circle at 70% 30%, ${light} 0 10%, transparent 11%), ${base}`,
     `repeating-radial-gradient(circle at 50% 50%, ${mid} 0 6px, ${dark} 6px 14px)`,
-    `linear-gradient(90deg, transparent 0 42%, ${light}33 42% 46%, transparent 46%), ${base}`,
+    `linear-gradient(90deg, transparent 0 42%, ${faint} 42% 46%, transparent 46%), ${base}`,
     `radial-gradient(circle at 50% 112%, ${light} 0 30%, transparent 31%), ${base}`,
   ][i % 4];
 }
@@ -79,22 +79,45 @@ function printedDisc(i, dark, mid, light) {
   ][i % 4];
 }
 
-// The look of one CD. `key` is what makes it unique (its code or link), `title` is not used for the look, so a CD looks the same on the shelf and in the player.
-export function cdLook(key, title) {
+// What a person can choose when they make or edit a CD (it is saved with the CD as { hue, cover, disc, font }).
+export const HUES = [8, 28, 42, 78, 140, 172, 200, 222, 262, 300, 330];
+export const COVER_NAMES = ['Sun', 'Ripples', 'Stripe', 'Horizon'];
+export const DISC_NAMES = ['Rainbow', 'Grooves', 'Rays', 'Target'];
+export const FONT_NAMES = ['Serif', 'Poster', 'Hand-written', 'Typewriter', 'Block'];
+
+const isChoice = (look) => look && typeof look === 'object' && [['hue', 359], ['cover', 3], ['disc', 3], ['font', 4]].every(([key, max]) => Number.isInteger(look[key]) && look[key] >= 0 && look[key] <= max);
+
+// The choice a CD gets when nobody painted it: worked out from its key, so it is the same one that is drawn on the shelf.
+// An editor starts from it, so editing an old CD does not change how it looks until a person picks something.
+export function defaultChoice(key) {
+  const h = hash(String(key));
+  return { hue: h % 360, cover: (h >>> 3) % 4, disc: (h >>> 5) % 4, font: (h >>> 9) % LETTERING.length };
+}
+
+// A random look for a new CD.
+export function randomChoice() {
+  return { hue: HUES[Math.floor(Math.random() * HUES.length)], cover: Math.floor(Math.random() * 4), disc: Math.floor(Math.random() * 4), font: Math.floor(Math.random() * LETTERING.length) };
+}
+
+// The look of one CD. `key` is what makes it unique (its code or link). `custom` is the choice a person made for a CD of
+// their own ({ hue, cover, disc, font }); without one, the look is worked out from the key, so a CD looks the same on the
+// shelf and in the player. `title` is not used for the look.
+export function cdLook(key, title, custom) {
   const hand = HANDMADE[key];
   if (hand) return { ink: '#fff', ...hand };
   const h = hash(String(key));
-  const hue = h % 360;
+  const choice = isChoice(custom) ? custom : defaultChoice(key);
+  const { hue } = choice;
   const dark = `hsl(${hue} 45% 14%)`;
   const mid = `hsl(${hue} 52% 42%)`;
   const light = `hsl(${(hue + 30) % 360} 75% 72%)`;
   return {
     spine: `linear-gradient(${mid}, ${dark})`,
-    art: cover(h >> 3, dark, mid, light),
-    face: printedDisc(h >> 5, dark, mid, light),
-    width: 28 + ((h >> 7) % 4) * 2,
+    art: cover(choice.cover, dark, mid, light, `hsl(${(hue + 30) % 360} 75% 72% / .25)`),
+    face: printedDisc(choice.disc, dark, mid, light),
+    width: 28 + ((h >>> 7) % 4) * 2,
     ink: '#fff',
-    lettering: LETTERING[(h >> 9) % LETTERING.length],
+    lettering: LETTERING[choice.font],
   };
 }
 
