@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { deleteCd, getCd, updateCd } from '../api.js';
 import CdEditor from '../music/CdEditor.jsx';
+import CdPreview from '../music/CdPreview.jsx';
+import { cdLook } from '../music/cdLook.js';
+import Desk from '../music/Desk.jsx';
+import { linkTitle, providerName } from '../music/myLinks.js';
 import { forgetCd, getMyCds, rememberCd } from '../music/myCds.js';
 import HoloPlayer, { formatTime } from '../room/HoloPlayer.jsx';
 import { usePlayer } from '../room/usePlayer.js';
@@ -18,7 +22,7 @@ function CdDetails({ code }) {
   const [notFound, setNotFound] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(() => new URLSearchParams(location.search).has('edit') && Boolean(location.state?.recoveryKey || getMyCds().find((e) => e.code === code)?.editKey)); // the shelf's Edit button opens the editor at once
   const [deleting, setDeleting] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [status, setStatus] = useState(location.state?.justCreated ? 'CD created. Your share link is ready.' : '');
@@ -36,7 +40,7 @@ function CdDetails({ code }) {
     setBusy(true); setError('');
     try {
       const updated = await updateCd(code, key, input);
-      setCd(updated); rememberCd({ code, title: updated.title, editKey: key }); setEditing(false); setStatus('CD changes saved.');
+      setCd(updated); rememberCd({ code, title: updated.title, editKey: key, look: updated.look ?? undefined }); setEditing(false); setStatus('CD changes saved.');
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   }
   async function remove() {
@@ -46,25 +50,64 @@ function CdDetails({ code }) {
   async function copy() {
     try { await navigator.clipboard.writeText(link); setStatus('CD link copied.'); } catch { setStatus('Select the share link and copy it by hand.'); }
   }
-  if (deleted) return <main className="message-page"><h1>CD deleted</h1><Link to="/music">Back to My CDs</Link></main>;
-  if (!cd) return <main className="message-page"><h1>{notFound ? 'CD not found' : 'Libsic Studio'}</h1><p>{error || 'Loading CD…'}</p>{error && !notFound && <button className="chip" onClick={() => setAttempt((n) => n + 1)}>Retry CD</button>}<Link to="/music">Make a CD</Link></main>;
+  if (deleted) return <Desk nav={<Link to="/music">Make a CD</Link>}><header className="mk-head"><h1>CD deleted</h1><p className="mk-lede"><Link to="/music">Back to the workshop</Link></p></header></Desk>;
+  if (!cd) return <Desk nav={<Link to="/music">Make a CD</Link>}><header className="mk-head"><h1>{notFound ? 'CD not found' : 'Opening the case…'}</h1><p className="mk-lede">{error || 'Loading CD…'}</p>{error && !notFound && <button className="mk-brass" onClick={() => setAttempt((n) => n + 1)}>Retry CD</button>}<p className="mk-lede"><Link to="/music">Make a CD</Link></p></header></Desk>;
+  const look = cdLook(code, cd.title, cd.look);
+  const entries = cd.links?.length
+    ? cd.links.map((link) => ({ id: link.url, title: linkTitle(link), meta: providerName(link.provider), href: link.url }))
+    : cd.tracks.map((track) => ({ id: track.id, title: track.title, meta: formatTime(track.duration) }));
   return (
-    <main className="music-page">
-      <nav><Link to="/">Libsic Studio</Link><Link to="/music">Make a CD / My CDs</Link></nav>
-      <p className="music-eyebrow">{cd.official ? 'Studio collection' : 'A personal mix'}</p><h1>{cd.title}</h1>
-      <div className="music-columns"><section className="music-card cd-listening">
-        <div className={`retro-disc${player.playing ? ' spinning' : ''}`} aria-hidden="true" /><HoloPlayer player={player} />
-        <ol>{cd.tracks.map((track) => <li key={track.id}>{track.title} <small>{formatTime(track.duration)}</small></li>)}</ol>
-        <Link className="chip" to={`/new?cd=${encodeURIComponent(code)}`}>Listen in a room</Link>
-      </section><section className="music-card"><h2>Share this CD</h2>
-        <label>Share link<input readOnly value={link} onFocus={(e) => e.target.select()} /></label><button className="chip" onClick={copy}>Copy CD link</button>
-        {status && <p role="status">{status}</p>}
-        {!cd.official && key && <details><summary>Back up edit key</summary><p>Keep this secret. Anyone with this key can change or delete the CD.</p><code>{key}</code></details>}
-        {location.state?.recoveryKey && <p role="alert">Browser storage is unavailable. Save this edit key to keep control of the CD: <code>{key}</code></p>}
-        {!cd.official && <><h2>Manage CD</h2>{key ? <><button className="chip" disabled={busy} onClick={() => setEditing(!editing)}>{editing ? 'Cancel editing' : 'Edit CD'}</button><button className="chip" disabled={busy} onClick={() => setDeleting(!deleting)}>Delete CD</button>{deleting && <div><p>Delete this CD and its share link?</p><button className="chip" disabled={busy} onClick={remove}>Confirm delete CD</button><button className="chip" onClick={() => setDeleting(false)}>Keep CD</button></div>}</> : <form onSubmit={(e) => { e.preventDefault(); setKey(restoreKey); setEditing(true); }}><p>Only its creator can edit. If you saved the edit key, enter it here.</p><label>Edit key<input type="password" autoComplete="off" required value={restoreKey} onChange={(e) => setRestoreKey(e.target.value)} /></label><button className="chip">Use edit key</button></form>}</>}
-      </section></div>
-      {error && <p role="alert">{error}</p>}
-      {editing && <section className="music-card"><h2>Edit your mix</h2><CdEditor key={cd.updatedAt ?? cd.code} cd={cd} busy={busy} onSave={save} /></section>}
-    </main>
+    <Desk nav={<Link to="/music">Make a CD / My CDs</Link>}>
+      <header className="mk-head">
+        <p className="mk-eyebrow">{cd.official ? 'Studio collection' : 'A personal mix'}</p>
+        <h1>{cd.title}</h1>
+      </header>
+      <div className="mk-listen">
+        <section className="mk-sheet mk-sheet-center">
+          <CdPreview look={look} title={cd.title} spinning={player.playing} caption={cd.official ? 'Libsic Studio' : 'a Libsic mix'} />
+          <ol className="mk-playlist" aria-label={cd.links?.length ? 'Links on the CD' : 'Tracks on the CD'}>
+            {entries.map((entry, index) => (
+              <li key={entry.id}>
+                <span className="mk-mark" aria-hidden="true">{index + 1}</span>
+                <span className="mk-entry"><b>{entry.href ? <a href={entry.href} target="_blank" rel="noreferrer">{entry.title} ↗</a> : entry.title}</b></span>
+                <small className="mk-time">{entry.meta}</small>
+              </li>
+            ))}
+          </ol>
+          {cd.links?.length ? <p className="mk-note">The links play one after the other when you put this CD in a room.</p> : <div className="mk-display"><HoloPlayer player={player} /></div>}
+          <Link className="mk-press" to={`/new?cd=${encodeURIComponent(code)}`}>Listen in a room</Link>
+        </section>
+        <aside className="mk-stand mk-stand-plain">
+          <section className="mk-sheet">
+            <h2 className="mk-hand">Share this CD</h2>
+            <label className="mk-field"><span className="mk-note">Share link</span><input readOnly value={link} onFocus={(e) => e.target.select()} /></label>
+            <button className="mk-brass" onClick={copy}>Copy CD link</button>
+            {status && <p role="status" className="mk-ok">{status}</p>}
+            {!cd.official && key && <details><summary>Back up edit key</summary><p>Keep this secret. Anyone with this key can change or delete the CD.</p><code>{key}</code></details>}
+            {location.state?.recoveryKey && <p role="alert" className="mk-warn">Browser storage is unavailable. Save this edit key to keep control of the CD: <code>{key}</code></p>}
+          </section>
+          {!cd.official && (
+            <section className="mk-sheet">
+              <h2 className="mk-hand">Manage CD</h2>
+              {key ? (
+                <>
+                  <button className="mk-brass" disabled={busy} onClick={() => setEditing(!editing)}>{editing ? 'Cancel editing' : 'Edit CD'}</button>
+                  <button className="mk-brass mk-danger" disabled={busy} onClick={() => setDeleting(!deleting)}>Delete CD</button>
+                  {deleting && <div className="mk-confirm"><p>Delete this CD and its share link?</p><button className="mk-brass mk-danger" disabled={busy} onClick={remove}>Confirm delete CD</button><button className="mk-brass" onClick={() => setDeleting(false)}>Keep CD</button></div>}
+                </>
+              ) : (
+                <form onSubmit={(e) => { e.preventDefault(); setKey(restoreKey); setEditing(true); }}>
+                  <p>Only its creator can edit. If you saved the edit key, enter it here.</p>
+                  <label className="mk-field"><span className="mk-note">Edit key</span><input type="password" autoComplete="off" required value={restoreKey} onChange={(e) => setRestoreKey(e.target.value)} /></label>
+                  <button className="mk-brass">Use edit key</button>
+                </form>
+              )}
+            </section>
+          )}
+        </aside>
+      </div>
+      {error && <p role="alert" className="mk-warn mk-banner">{error}</p>}
+      {editing && <section className="mk-edit"><h2 className="mk-hand">Edit your mix</h2><CdEditor key={cd.updatedAt ?? cd.code} cd={{ ...cd, code }} busy={busy} onSave={save} /></section>}
+    </Desk>
   );
 }

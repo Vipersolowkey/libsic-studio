@@ -4,6 +4,7 @@ import RoomPage from './pages/RoomPage.jsx';
 import CdPage from './pages/CdPage.jsx';
 import MusicPage from './pages/MusicPage.jsx';
 import './music/music.css';
+import './music/workshop.css';
 import RoomScreen from './room/RoomScreen.jsx';
 
 // Every address of the website and the page it shows.

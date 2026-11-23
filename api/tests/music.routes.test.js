@@ -71,7 +71,7 @@ it('creates a custom CD, preserves playback order and never exposes hashes on re
 it.each([
   {}, { title: '', trackIds: ['lamp-light'] }, { ...input, title: ' '.repeat(8) },
   { ...input, title: 'a'.repeat(61) }, { ...input, title: 42 },
-  { ...input, trackIds: [] }, { ...input, trackIds: null },
+  { ...input, trackIds: [] }, { ...input, trackIds: null }, { title: 'No music', trackIds: [], links: [] },
   { ...input, trackIds: ['missing'] }, { ...input, trackIds: [null] },
   { ...input, trackIds: ['lamp-light', 'lamp-light'] },
   { ...input, trackIds: Array.from({ length: 31 }, (_, n) => `id-${n}`) },
@@ -102,6 +102,58 @@ it('changes and deletes only with the matching edit key; invalid updates preserv
   expect(updated.body).toMatchObject({ title: 'Changed', trackIds: ['lamp-light'], official: false, code: cd.code });
   expect((await request(app).delete(url).set('x-edit-key', editKey)).status).toBe(204);
   expect((await request(app).get(url)).status).toBe(404);
+});
+
+describe('CDs made of online links', () => {
+  const links = ['https://youtu.be/dQw4w9WgXcQ', 'https://soundcloud.com/chillhopdotcom/sets/chillhop-essentials-fall-2024/', 'https://example.com/lofi/rain.mp3'];
+  const look = { hue: 200, cover: 2, disc: 1, font: 3 };
+  it('keeps the links in order in their canonical form, with the look, and reads them back', async () => {
+    const res = await create({ title: 'Link mix', links, look });
+    expect(res.status).toBe(201);
+    expect(res.body.cd).toMatchObject({ trackIds: [], tracks: [], look });
+    expect(res.body.cd.links).toEqual([
+      { provider: 'youtube', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+      { provider: 'soundcloud', url: 'https://soundcloud.com/chillhopdotcom/sets/chillhop-essentials-fall-2024' },
+      { provider: 'audio', url: 'https://example.com/lofi/rain.mp3' },
+    ]);
+    const read = await request(app).get(`/api/cds/${res.body.cd.code}`);
+    expect(read.body.links).toHaveLength(3);
+    expect(read.body.look).toEqual(look);
+  });
+  it('gives older CDs an empty list of links and no look', async () => {
+    const res = await create();
+    expect(res.body.cd).toMatchObject({ links: [], look: null });
+  });
+  it.each([
+    [{ links: ['https://example.com/page'] }],
+    [{ links: ['not a link'] }],
+    [{ links: [] }],
+    [{ links: Array.from({ length: 13 }, (_, n) => `https://example.com/${n}.mp3`) }],
+    [{ links: ['https://example.com/a.mp3', 'https://example.com/a.mp3'] }],
+    [{ links: ['https://example.com/a.mp3'], trackIds: ['lamp-light'] }],
+    [{ links: ['https://example.com/a.mp3'], look: { hue: 400, cover: 0, disc: 0, font: 0 } }],
+    [{ links: ['https://example.com/a.mp3'], look: { hue: 10 } }],
+    [{ links: ['https://example.com/a.mp3'], look: 'red' }],
+  ])('rejects %j', async (extra) => {
+    const res = await create({ title: 'Bad', ...extra });
+    expect(res.status).toBe(400);
+    expect(fake.store.size).toBe(3);
+  });
+  it('lets the owner rename it, repaint it and change its links, and switch it to our tracks', async () => {
+    const { cd, editKey } = (await create({ title: 'Link mix', links, look })).body;
+    const url = `/api/cds/${cd.code}`;
+    const put = (body) => request(app).put(url).set('x-edit-key', editKey).send(body);
+    const renamed = await put({ title: 'New name', look: { hue: 10, cover: 0, disc: 0, font: 0 }, links: links.slice(0, 2) });
+    expect(renamed.status).toBe(200);
+    expect(renamed.body).toMatchObject({ title: 'New name', look: { hue: 10, cover: 0, disc: 0, font: 0 } });
+    expect(renamed.body.links).toHaveLength(2);
+    expect((await put({ title: 'Only the name changed' })).body.links).toHaveLength(2);
+    expect((await put({ look: null })).body.look).toBeNull();
+    expect((await put({ trackIds: ['lamp-light'] })).status).toBe(400);
+    const switched = await put({ trackIds: ['lamp-light'], links: [] });
+    expect(switched.status).toBe(200);
+    expect(switched.body).toMatchObject({ trackIds: ['lamp-light'], links: [] });
+  });
 });
 
 it('protects official CDs and gives 404 for missing codes', async () => {

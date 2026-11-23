@@ -579,7 +579,6 @@ components:
       type: object
       required:
         - title
-        - trackIds
       properties:
         title: &a1
           type: string
@@ -588,17 +587,44 @@ components:
           description: Trimmed; must contain a non-space character.
         trackIds: &a2
           type: array
-          minItems: 1
           maxItems: 30
+          description: Our own tracks. A CD holds either tracks or links, never both, and at least one of them.
           uniqueItems: true
           items:
             type: string
             minLength: 1
+        links: &a3
+          type: array
+          maxItems: 12
+          description: Online music (YouTube, SoundCloud, Spotify or a direct https audio file), played one after the other. Each entry is a link or an object with a `url`; the API stores the canonical link and works out the provider.
+          items:
+            type: string
+        look:
+          $ref: "#/components/schemas/CdLook"
     CdUpdate:
       type: object
       properties:
         title: *a1
         trackIds: *a2
+        links: *a3
+        look:
+          type: object
+          nullable: true
+          description: Null (or left out) means the CD is painted from its code.
+          properties: &lookprops
+            hue: { type: integer, minimum: 0, maximum: 359 }
+            cover: { type: integer, minimum: 0, maximum: 3 }
+            disc: { type: integer, minimum: 0, maximum: 3 }
+            font: { type: integer, minimum: 0, maximum: 4 }
+    CdLook:
+      type: object
+      description: How the CD is painted. Only paint; the same numbers draw the same CD in every browser.
+      required: [hue, cover, disc, font]
+      properties:
+        hue: { type: integer, minimum: 0, maximum: 359 }
+        cover: { type: integer, minimum: 0, maximum: 3, description: "Pattern of the front cover" }
+        disc: { type: integer, minimum: 0, maximum: 3, description: "Print on the disc" }
+        font: { type: integer, minimum: 0, maximum: 4, description: "Lettering of the spine" }
     Cd:
       type: object
       required:
@@ -606,6 +632,7 @@ components:
         - title
         - official
         - trackIds
+        - links
         - tracks
         - createdAt
         - updatedAt
@@ -616,6 +643,18 @@ components:
         official:
           type: boolean
         trackIds: *a2
+        links:
+          type: array
+          items:
+            type: object
+            required: [provider, url]
+            properties:
+              provider: { type: string, enum: [soundcloud, spotify, youtube, audio] }
+              url: { type: string }
+        look:
+          type: object
+          nullable: true
+          properties: *lookprops
         tracks:
           type: array
           items:
@@ -658,7 +697,7 @@ components:
 
     Effect:
       type: string
-      enum: [rain, snow, fireflies, stars, dust, bubbles, plankton]
+      enum: [rain, snow, fireflies, stars, dust, bubbles, plankton, glitter]
       description: An animated weather or sky effect.
 
     SceneSummary:
@@ -990,7 +1029,7 @@ components:
       properties:
         effect:
           type: string
-          enum: [none, rain, snow, fireflies, stars, dust, bubbles, plankton]
+          enum: [none, rain, snow, fireflies, stars, dust, bubbles, plankton, glitter]
           default: none
         lightOn:
           type: boolean
