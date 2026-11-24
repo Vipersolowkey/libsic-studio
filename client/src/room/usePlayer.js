@@ -22,7 +22,12 @@ function readVolume() {
 //   volume                0 to 1, remembered in this browser
 //   toggle, next, prev    the three buttons (prev goes back to the start of the track first, like a real CD player)
 //   seek(seconds), setVolume(0 to 1)
-export function usePlayer(cd) {
+// `options` is for a CD that is only one step of a longer queue: `onEnd` is called when the last track finishes (instead of
+// starting over) and `autoplay` makes a newly inserted CD start by itself.
+export function usePlayer(cd, options = {}) {
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+  const indexRef = useRef(0);
   const audioRef = useRef(null);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -31,6 +36,7 @@ export function usePlayer(cd) {
   const [volume, setVolumeState] = useState(readVolume);
   const [error, setError] = useState('');
   const [restart, setRestart] = useState(0);
+  indexRef.current = index;
   const countRef = useRef(cd.tracks.length);
   countRef.current = cd.tracks.length;
   const previousCd = useRef(cd);
@@ -48,6 +54,7 @@ export function usePlayer(cd) {
     const onLength = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
     const onEnded = () => {
       if (!countRef.current) return;
+      if (optionsRef.current.onEnd && indexRef.current === countRef.current - 1) { optionsRef.current.onEnd(); return; }
       setIndex((i) => (i + 1) % countRef.current);
       setRestart((n) => n + 1); // also replays a one-track CD
     };
@@ -70,7 +77,7 @@ export function usePlayer(cd) {
   useEffect(() => {
     previousCd.current = cd;
     setIndex(0);
-    setPlaying(false);
+    setPlaying(Boolean(optionsRef.current.autoplay && cd.tracks.length));
     setError('');
     setTime(0);
     setDuration(0);

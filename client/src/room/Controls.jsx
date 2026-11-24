@@ -1,7 +1,8 @@
 import { Section } from './Sidebar.jsx';
 import { skinOf } from './skins.js';
+import { activeEffect } from '../scene/sceneSettings.js';
 
-const EFFECT_NAMES = { rain: 'Rain', snow: 'Snow', fireflies: 'Fireflies', stars: 'Stars', dust: 'Dust', bubbles: 'Bubbles', plankton: 'Plankton' };
+const EFFECT_NAMES = { rain: 'Rain', snow: 'Snow', fireflies: 'Fireflies', stars: 'Stars', dust: 'Dust', bubbles: 'Bubbles', plankton: 'Plankton', glitter: 'Glitter' };
 
 // A small outline picture for each kind of weather. Stroke only, so it takes the colour of the button it is on.
 const DOTS = <><circle cx="6" cy="8" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="17" cy="10" r="1" /><circle cx="9" cy="14" r="1" /><circle cx="15" cy="17" r="1" /><circle cx="5" cy="19" r="1" /></>;
@@ -12,6 +13,7 @@ const EFFECT_ICONS = {
   stars: <path d="M12 3l2.4 6 6.6.5-5 4.3 1.6 6.4-5.6-3.5L6.4 20.2 8 13.8 3 9.5 9.6 9z" />,
   bubbles: <><circle cx="9" cy="15" r="5" /><circle cx="17" cy="7" r="2.5" /><circle cx="6" cy="6" r="1.2" /></>,
   plankton: DOTS,
+  glitter: <path d="M12 2c.6 5.5 3.5 8.4 9 9-5.5.6-8.4 3.5-9 9-.6-5.5-3.5-8.4-9-9 5.5-.6 8.4-3.5 9-9z" />,
   dust: DOTS,
 };
 const Icon = ({ children }) => <svg viewBox="0 0 24 24" aria-hidden="true">{children}</svg>;
@@ -66,8 +68,8 @@ export default function Controls({ scenes, scene, settings, onChooseScene, onSet
                 key={name}
                 type="button"
                 className="stamp"
-                aria-pressed={settings.effect === name}
-                onClick={() => onSettingsChange({ ...settings, effect: settings.effect === name ? 'none' : name })}
+                aria-pressed={activeEffect(scene, settings.effect) === name}
+                onClick={() => onSettingsChange({ ...settings, effect: activeEffect(scene, settings.effect) === name ? 'none' : name })}
               >
                 <Icon>{EFFECT_ICONS[name] || DOTS}</Icon>
                 <span>{EFFECT_NAMES[name] || name}</span>

@@ -13,7 +13,7 @@ export const EMPTY_ONLINE_PLAYER = {
 };
 
 // The provider's own player stays visible. It also drives the room's hologram.
-export default function ExternalMusic({ source, onPlayer, onClose }) {
+export default function ExternalMusic({ source, onPlayer, onClose, onEnded, autoplay = false }) {
   const [attempt, setAttempt] = useState(0);
   // The provider's own player is only needed to read, to sign in or to see the video, so SoundCloud starts folded
   // (its title bar shows, the player keeps running). A person can unfold it with the button.
@@ -28,26 +28,30 @@ export default function ExternalMusic({ source, onPlayer, onClose }) {
           <button className="chip" type="button" onClick={onClose} aria-label="Eject online music">Eject</button>
         </span>
       </header>
-      {source.provider === 'audio' ? <DirectAudio key={source.url} source={source} onPlayer={onPlayer} /> : <EmbeddedMusic key={`${source.url}:${attempt}`} source={source} onPlayer={onPlayer} onRetry={() => setAttempt((n) => n + 1)} />}
+      {source.provider === 'audio' ? <DirectAudio key={source.url} source={source} onPlayer={onPlayer} onEnded={onEnded} autoplay={autoplay} /> : <EmbeddedMusic key={`${source.url}:${attempt}`} source={source} onPlayer={onPlayer} onEnded={onEnded} autoplay={autoplay} onRetry={() => setAttempt((n) => n + 1)} />}
       <a href={source.url} target="_blank" rel="noreferrer">Open original source ↗</a>
     </aside>
   );
 }
 
-function DirectAudio({ source, onPlayer }) {
+function DirectAudio({ source, onPlayer, onEnded, autoplay }) {
   const cd = useMemo(() => {
     const filename = new URL(source.url).pathname.split('/').pop();
     let title = filename;
     try { title = decodeURIComponent(filename); } catch { /* keep the filename */ }
     return { title: 'Audio link', tracks: [{ title, src: source.url }] };
   }, [source.url]);
-  const player = usePlayer(cd);
+  const player = usePlayer(cd, { autoplay, onEnd: onEnded });
   useEffect(() => { onPlayer(player); }, [onPlayer, cd, player.index, player.playing, player.time, player.duration, player.volume, player.error, player.toggle]);
   return <div className="direct-audio"><p>{player.track?.title}</p><button className="chip" onClick={player.toggle}>{player.playing ? 'Pause audio' : 'Play audio'}</button>{player.error && <p role="alert">{player.error}</p>}</div>;
 }
 
-function EmbeddedMusic({ source, onPlayer, onRetry }) {
+function EmbeddedMusic({ source, onPlayer, onRetry, onEnded, autoplay }) {
   const frame = useRef(null);
+  // A CD made of several links moves on to the next link when this one is over, and starts it by itself.
+  const endedRef = useRef(onEnded);
+  endedRef.current = onEnded;
+  const autoplayRef = useRef(autoplay);
   const spotifyHost = useRef(null);
   const controls = useRef(null);
   const [state, setState] = useState(() => ({ tracks: [], track: null, index: 0, playing: false, time: 0, duration: 0, volume: 0.7, ready: false, error: '' }));
@@ -142,11 +146,16 @@ function EmbeddedMusic({ source, onPlayer, onRetry }) {
             ready();
             widget.setVolume(70);
             readTrack();
+            if (autoplayRef.current) widget.play();
           },
           [events.PLAY]: () => { playing = true; patch({ playing: true, error: '' }); readTrack(); },
           [events.PAUSE]: () => { playing = false; patch({ playing: false }); },
           [events.PLAY_PROGRESS]: (event) => patch({ time: event.currentPosition / 1000 }),
-          [events.FINISH]: () => { if (tracks.length && index === tracks.length - 1) { widget.skip(0); widget.play(); } },
+          [events.FINISH]: () => {
+            if (!tracks.length || index !== tracks.length - 1) return;
+            if (endedRef.current) endedRef.current();
+            else { widget.skip(0); widget.play(); }
+          },
           [events.ERROR]: () => fail('SoundCloud could not play this source. Try another playlist or open the original link.'),
         };
         Object.entries(listeners).forEach(([event, listener]) => widget.bind(event, listener));
@@ -165,14 +174,26 @@ function EmbeddedMusic({ source, onPlayer, onRetry }) {
           if (!active) { value.destroy(); return; }
           controller = value;
           value.addListener('ready', () => { ready(); patch({ track: { title: 'Spotify' } }); });
+          let finished = false;
+          value.addListener('playback_update', (event) => {
+            const { isPaused, isBuffering, duration, position } = event.data;
+            // Spotify has no "finished" event: a paused player at the very end of its length is a finished one.
+            if (!isPaused && !isBuffering) finished = false;
+            else if (isPaused && duration > 0 && position >= duration - 500 && !finished) { finished = true; endedRef.current?.(); }
+          });
           value.addListener('playback_update', (event) => patch({ playing: !event.data.isPaused && !event.data.isBuffering, duration: event.data.duration / 1000, time: event.data.position / 1000 }));
           controls.current = { toggle: () => value.togglePlay(), pause: () => value.pause(), seek: (seconds) => value.seek(seconds) };
         });
         dispose = () => controller?.destroy();
       } else if (source.provider === 'youtube') {
         const controller = new api.Player(frame.current, { events: {
-          onReady: () => { ready(); controller.setVolume(70); update(); },
-          onStateChange: (event) => { patch({ playing: event.data === 1, ...(event.data === 1 ? { error: '' } : {}) }); update(); },
+          onReady: () => { ready(); controller.setVolume(70); update(); if (autoplayRef.current) controller.playVideo(); },
+          onStateChange: (event) => {
+            if (event.data === 0) {
+              const list = controller.getPlaylist?.() || [];
+              if (!list.length || (controller.getPlaylistIndex?.() ?? 0) >= list.length - 1) endedRef.current?.();
+            }
+            patch({ playing: event.data === 1, ...(event.data === 1 ? { error: '' } : {}) }); update(); },
           onError: () => fail('This YouTube video cannot play here. It may be unavailable or embedding is disabled.'),
           onAutoplayBlocked: () => fail('Press Play in the YouTube player to allow sound.'),
         } });

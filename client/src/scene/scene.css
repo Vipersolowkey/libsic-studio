@@ -292,6 +292,41 @@
   .layer { transition: none; }
 }
 
+/* Glitter: four-pointed sparkles that flash on and off. They belong to the night, so they fade in when the lights
+   go off and are hidden (not drawn at all) in the daytime. */
+.effect-glitter {
+  transition: opacity 1.6s ease;
+}
+.stage.has-lights:not(.lights-off) .effect-glitter {
+  opacity: 0;
+  visibility: hidden;
+}
+.effect-glitter i {
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  opacity: 0;
+  background: radial-gradient(circle, #fff 0 14%, hsla(var(--hue), 90%, 85%, 0.55) 30%, transparent 62%);
+  animation: glitter var(--dur) ease-in-out var(--delay) infinite;
+}
+.effect-glitter i::before,
+.effect-glitter i::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: linear-gradient(90deg, transparent, #fff 50%, transparent);
+  transform: translate(-50%, -50%);
+}
+.effect-glitter i::before { width: 330%; height: 8%; }
+.effect-glitter i::after { width: 8%; height: 330%; background: linear-gradient(180deg, transparent, #fff 50%, transparent); }
+@keyframes glitter {
+  0%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); }
+  45% { opacity: 1; transform: scale(1) rotate(18deg); }
+  60% { opacity: 0.7; transform: scale(0.75) rotate(30deg); }
+}
+
 /* ---------- Animated layers ---------- */
 /* Glows add light to what is below them. */
 .layer[data-blend='screen'] {
@@ -594,6 +629,17 @@
    (see usePicturesArrived in SceneStage.jsx). */
 .stage { transition: opacity 0.6s ease; }
 .stage.arriving { opacity: 0; transition: none; }
+
+/* Warm-up. Right after a room has arrived, the day and night pictures that are hidden are drawn once, almost
+   see-through, so the graphics card already has them. Otherwise the first switch between day and night has to
+   prepare ~30 big pictures at the same moment: the window flashes and the rest of the room follows a moment later.
+   (A picture that is hidden with visibility is not drawn at all, so the card would only get it at the switch.) */
+.stage.warming:not(.lights-off) .layer[data-night],
+.stage.warming.lights-off .layer[data-light] {
+  opacity: 0.01;
+  visibility: visible;
+  transition: none;
+}
 
 /* Low power mode: every movement of the scene is held still, so nothing changes on screen and the graphics card has
    nothing to redraw. Falling rain and snow are hidden, because streaks frozen in mid-air look like scratches. */

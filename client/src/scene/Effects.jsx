@@ -59,6 +59,16 @@ const BUILDERS = {
       '--dx': px(between(r, -34, 34)),
       '--dy': px(between(r, -48, 20)),
     })),
+  // glitter: little four-pointed sparkles that flash on and off at night, like frost catching the light
+  glitter: () =>
+    makeParticles(60, 91, (r) => ({
+      '--x': pct(between(r, 2, 98)),
+      '--y': pct(between(r, 2, 94)),
+      '--size': px(between(r, 6, 15)),
+      '--dur': sec(between(r, 2.6, 6.5)),
+      '--delay': sec(-between(r, 0, 6.5)),
+      '--hue': Math.round(between(r, 165, 215)),
+    })),
   stars: () =>
     makeParticles(70, 44, (r) => ({
       '--x': pct(between(r, 0, 100)),

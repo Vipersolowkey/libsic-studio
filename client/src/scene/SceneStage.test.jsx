@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SceneStage from './SceneStage.jsx';
 import { scene } from '../test/fixtures.js';
@@ -220,6 +220,30 @@ describe('SceneStage', () => {
       expect(container.querySelectorAll('.effect-bubbles i').length).toBeGreaterThan(20);
       rerender(<SceneStage scene={watery} settings={{ effect: 'plankton', lightOn: true }} onSettingsChange={noop} />);
       expect(container.querySelectorAll('.effect-plankton i').length).toBeGreaterThan(20);
+    });
+
+    it('draws glitter sparkles when that effect is on', () => {
+      const frosty = { ...scene, effects: ['glitter'], effectLayer: 0 };
+      const { container } = render(<SceneStage scene={frosty} settings={{ effect: 'glitter', lightOn: false }} onSettingsChange={noop} />);
+      expect(container.querySelectorAll('.effect-glitter i').length).toBeGreaterThan(20);
+    });
+
+    it('warms up the hidden day and night pictures for a moment after the room has arrived, then stops', () => {
+      vi.useFakeTimers();
+      try {
+        const nightly = { ...scene, layers: [...scene.layers, { name: 'night sky', image: '/scenes/test-room/night.webp', depth: 0.1, night: true }] };
+        render(<SceneStage scene={nightly} settings={{ effect: 'none', lightOn: true }} onSettingsChange={noop} />);
+        expect(screen.getByTestId('stage')).toHaveClass('warming');
+        act(() => vi.advanceTimersByTime(1000));
+        expect(screen.getByTestId('stage')).not.toHaveClass('warming');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does not warm up a room that has no day and night pictures', () => {
+      render(<SceneStage scene={scene} settings={{ effect: 'none', lightOn: true }} onSettingsChange={noop} />);
+      expect(screen.getByTestId('stage')).not.toHaveClass('warming');
     });
 
     it('lets a scene choose how dark the lights-off dimming is, and draws multiply layers', () => {
