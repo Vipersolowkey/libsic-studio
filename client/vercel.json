@@ -1,5 +1,5 @@
 {
-  "rewrites": [{ "source": "/((?!scenes/|audio/|assets/).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!scenes/|audio/|assets/|robots\\.txt$|sitemap\\.xml$|og-cover\\.jpg$|favicon\\.svg$).*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/scenes/(.*)",
