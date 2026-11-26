@@ -1,13 +1,16 @@
+// Part of: Music: a CD drawn in its case.
+// Uses: cdLook.js.
+// Used by: CdEditor.jsx, CdPage.jsx.
 import { lookVars } from './cdLook.js';
 
-// The lettering of a CD, as inline style (the same lettering that is printed on its spine on the shelf).
+// Inline style for a CD's lettering (the same on the case, the spine and the shelf).
 export function letteringStyle(look) {
   const l = look.lettering || {};
   return { fontFamily: l.ff, fontStyle: l.fst, textTransform: l.tt, letterSpacing: l.ls };
 }
 
-// A CD standing on the workshop desk: its spine, its front cover in a case and its printed disc.
-// `look` comes from cdLook(). The same paint is used on the shelf in the rooms and on the disc that spins in the player.
+// A CD in its case: spine, cover and printed disc. `look` comes from cdLook(). `spinning` turns the disc.
+// ===== THE CD DRAWING. Used by CdEditor (live preview) and CdPage. CSS: workshop.css .mk-preview, .mk-case, .mk-disc =====
 export default function CdPreview({ look, title, spinning = false, caption = 'a Libsic mix' }) {
   const name = title?.trim() || 'Untitled CD';
   return (

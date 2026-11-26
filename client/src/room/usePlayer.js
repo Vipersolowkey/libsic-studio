@@ -1,3 +1,5 @@
+// Part of: Music: plays our own CDs (mp3 files).
+// Used by: CdPage.jsx, ExternalMusic.jsx, RoomScreen.jsx.
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const VOLUME_KEY = 'libsic.volume';
@@ -12,19 +14,13 @@ function readVolume() {
   }
 }
 
-// Plays the tracks of one CD, one after the other, and starts again at the first track after the last one.
-// The sound itself comes from one <audio> element of the browser, which this hook creates and controls.
-//   cd        { title, tracks: [{ title, src }] }
-// It returns what the player shows and the actions of its buttons:
-//   track, index, count   the current track, its position on the CD and how many tracks there are
-//   playing               true while music plays
-//   time, duration        seconds played and the length of the track (0 until the browser knows it)
-//   volume                0 to 1, remembered in this browser
-//   toggle, next, prev    the three buttons (prev goes back to the start of the track first, like a real CD player)
-//   seek(seconds), setVolume(0 to 1)
-// `options` is for a CD that is only one step of a longer queue: `onEnd` is called when the last track finishes (instead of
-// starting over) and `autoplay` makes a newly inserted CD start by itself.
+// Plays our own CD (hosted mp3 files) with one <audio> element. Loops back to track 1 after the last one.
+//   cd  { title, tracks: [{ title, src }] }. IMPORTANT: pass a stable object (the effect restarts whenever `cd` changes identity).
+// Returns { cd, track, index, count, playing, time, duration, volume, error, toggle, pause, next, prev, seek(seconds), setVolume(0-1) }.
+// prev restarts the track first when more than 3 s in (like a real CD player). Volume is remembered ("libsic.volume").
+// options: onEnd = called after the last track instead of looping; autoplay = a newly inserted CD starts by itself.
 export function usePlayer(cd, options = {}) {
+  // ===== STATE: which track, playing or paused, time, volume, error. The UI that reads it: HoloPlayer.jsx (hologram) =====
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const indexRef = useRef(0);
@@ -45,6 +41,7 @@ export function usePlayer(cd, options = {}) {
   const count = cd.tracks.length;
   const track = cd.tracks[index] ?? cd.tracks[0] ?? null;
 
+  // ===== THE AUDIO ELEMENT: events update the numbers shown in the hologram; ended = next track =====
   // The audio element is made once, and its events keep the numbers on screen up to date.
   useEffect(() => {
     const audio = new Audio();
@@ -73,7 +70,7 @@ export function usePlayer(cd, options = {}) {
     };
   }, []);
 
-  // Inserting a CD always starts at its first track and waits for a click before playing.
+  // A new CD always starts at track 1 and waits for Play (unless options.autoplay).
   useEffect(() => {
     previousCd.current = cd;
     setIndex(0);
@@ -83,7 +80,7 @@ export function usePlayer(cd, options = {}) {
     setDuration(0);
   }, [cd]);
 
-  // Another track: load its file, and keep playing if music was playing.
+  // New track (or restart): load its file. The effect below decides whether to play.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -100,7 +97,7 @@ export function usePlayer(cd, options = {}) {
     if (!audio || !track) return;
     let cancelled = false;
     if (playing && !changedCd) {
-      // A browser may refuse to start sound (for example before the first click on the page): then the player shows "paused".
+      // Browsers refuse sound before the first click on the page; then we show "paused" and a hint.
       Promise.resolve(audio.play()).catch((err) => {
         if (cancelled) return;
         setPlaying(false);
@@ -116,6 +113,7 @@ export function usePlayer(cd, options = {}) {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
+  // ===== BUTTONS: play/pause (toggle), next, prev, seek (progress bar), volume. HoloPlayer.jsx calls these =====
   const toggle = useCallback(() => {
     if (!count) return;
     if (error) setRestart((n) => n + 1);

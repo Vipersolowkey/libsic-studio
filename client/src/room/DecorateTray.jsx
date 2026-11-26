@@ -1,7 +1,9 @@
+// Part of: Decorate mode: the objects to add.
+// Uses: itemsEdit.js.
+// Used by: DecorateHud.jsx.
 import { MAX_ITEMS } from '../scene/itemsEdit.js';
 
-// The objects a visitor can add to the room, each with its picture. An object that may only be placed once
-// is switched off while it is in the room, and everything is switched off when the room is full.
+// The catalog of objects to add. "unique" objects are disabled while placed; all are disabled at MAX_ITEMS (30, same as the API).
 export default function DecorateTray({ scene, items, onAdd }) {
   const full = items.length >= MAX_ITEMS;
 

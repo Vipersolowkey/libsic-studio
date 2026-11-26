@@ -1,7 +1,9 @@
+// Part of: Room page, side bar: save, share and delete buttons.
+// Used by: RoomScreen.jsx.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-// The room's name, edited in place at the top of the room.
+// The room name input (max 60 characters, same as the API).
 export function RoomNameField({ name, onNameChange }) {
   return (
     <input
@@ -16,12 +18,10 @@ export function RoomNameField({ name, onNameChange }) {
   );
 }
 
-// Saving and sharing. What it shows depends on the situation:
-//   new room                 -> "Save room"
-//   saved room, our own      -> "Save changes" and "Delete room" (this browser holds the edit key)
-//   saved room, someone else -> "Save my own copy" (without the edit key nobody can change it)
-// Deleting asks once more inside the bar itself ("Delete for everyone?"), because it cannot be undone.
-// A note about what just happened (saved, copied, an error) pops up at the bottom of the screen; see .status.
+// Save / share buttons; which ones show depends on the case:
+//   new room -> "Save room" | saved + owner (has the edit key) -> "Save changes" (only when dirty) and "Delete room"
+//   saved + not owner -> "Save my own copy" (a new room; nobody can edit without the key)
+// Delete asks again inline (it cannot be undone). `status` = { kind: 'ok' | 'error', text }, shown as a toast (.status in CSS).
 export default function SaveBar({ saved, isOwner, dirty, busy, status, link, onSaveNew, onSaveChanges, onDelete, onCopy, onDismissStatus }) {
   const [confirming, setConfirming] = useState(false);
   return (
@@ -71,8 +71,8 @@ export default function SaveBar({ saved, isOwner, dirty, busy, status, link, onS
       {saved && (
         <div className="link-field">
           <input type="text" readOnly aria-label="Share link" value={link} onFocus={(e) => e.target.select()} />
-          <button type="button" className="chip" onClick={onCopy}>
-            Copy link
+          <button type="button" className="chip" aria-label="Copy link" onClick={onCopy}>
+            Copy
           </button>
         </div>
       )}

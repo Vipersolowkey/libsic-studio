@@ -1,8 +1,9 @@
+// Part of: Room page: scales the side bar and CD tower on big screens.
+// Used by: CdRow.jsx, RoomScreen.jsx.
 import { useEffect, useState } from 'react';
 
-// How much bigger the side bar and the CD tower are drawn on a big screen. They are made for a window about 1280 pixels
-// wide; on a wider (or taller) window they would look small, so they grow with it, up to 1.7 times.
-// The value is rounded to steps of 0.05 so that dragging the window edge does not redraw them all the time.
+// Scale of the side bar and CD tower (sent as the CSS variable --ui). Designed for a 1280 x 760 window; bigger windows
+// scale them up to 1.7x. Rounded to steps of 0.05 so resizing does not redraw constantly.
 const BASE_W = 1280;
 const BASE_H = 760;
 const MAX = 1.7;

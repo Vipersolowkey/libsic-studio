@@ -1,9 +1,11 @@
-// Changes to the list of placed objects. Every function returns a new list and leaves the one it was given
-// alone. When a change would do nothing (unknown id, a scale that stays the same, ...) it returns the very
-// same list, so callers can tell "nothing happened" with ===.
+// Part of: Decorate mode: add, move, resize, flip and remove objects.
+// Uses: placement.js.
+// Used by: DecorateTray.jsx, RoomScreen.jsx, useItemsEditor.js.
+// Pure edits of the placed-items list (Decorate). Each returns a NEW list, or the very same list when nothing changed,
+// so callers can test "nothing happened" with ===.
 import { clampToSurface, entryOf, newItem, surfaceOf } from './placement.js';
 
-// The most objects a room can hold (the API refuses more).
+// Keep equal to MAX_ITEMS in api/src/constants.js.
 export const MAX_ITEMS = 30;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));

@@ -1,20 +1,20 @@
+// Part of: Rain effect: the rain sound.
+// Used by: RoomScreen.jsx.
 import { useEffect, useRef } from 'react';
 
-// A soft rain sound for rooms where the rain is switched on: a real recording of light rain on a window
-// (client/public/audio/ambience/rain-on-window.mp3, from the free sound library of Moodist, Pixabay/CC0 licence,
-// cut into a 30-second piece whose end flows into its start). It plays as an endless loop far under the music,
-// and follows the music's volume. Browsers keep sound off until the visitor has clicked or pressed a key once;
-// the sound then starts by itself.
+// Soft rain sound when the Rain effect is on: a 30 s seamless loop of rain on a window
+// (client/public/audio/ambience/rain-on-window.mp3, CC0), played far under the music and following its volume.
+// Browsers keep audio off until the first click or key press; the sound then starts by itself.
 export const RAIN_SRC = '/audio/ambience/rain-on-window.mp3';
-export const RAIN_LEVEL = 0.18; // loudness of the rain at full music volume: about 16 dB under the music, a hush in the background
-export const ALONE_BOOST = 1.4; // with no music playing, the rain is a little louder, so it can still be heard on its own
+export const RAIN_LEVEL = 0.18; // rain loudness at full music volume (about 16 dB under the music)
+export const ALONE_BOOST = 1.4; // rain is a little louder when no music plays
 
-export const SOFTEN_HZ = 2200; // sound above this pitch is turned down; lower = softer and duller, higher = crisper
+export const SOFTEN_HZ = 2200; // low-pass cutoff: lower = softer and duller, higher = crisper
 
 const FADE = 1.2; // seconds the rain takes to fade in and out
 
-// The rain: the recording, looped without a gap through one master volume.
-// Returns the master gain node, which starts silent; the recording is fetched and starts as soon as it has arrived.
+// Builds the audio chain (file -> loop -> low-pass -> master gain) and returns the master gain, which starts silent.
+// The file loads in the background; if it fails the rain is simply silent.
 export function buildRain(ctx, src = RAIN_SRC) {
   const master = ctx.createGain();
   master.gain.value = 0;
@@ -40,7 +40,7 @@ export function buildRain(ctx, src = RAIN_SRC) {
   return master;
 }
 
-// on: the rain is switched on in the room. volume: the music volume, 0 to 1. playing: music is playing.
+// Target loudness. volume = music volume 0-1, playing = music is playing.
 export const rainGain = (volume, playing) => RAIN_LEVEL * volume * (playing ? 1 : ALONE_BOOST);
 
 export function useRainSound(on, volume, playing) {
@@ -76,7 +76,7 @@ export function useRainSound(on, volume, playing) {
     };
   }, [on]);
 
-  // the music volume was changed, or the music started or stopped: the rain follows (and steps back for music)
+  // Follows the music volume and play state.
   useEffect(() => {
     if (!on || !graph.current) return;
     const { ctx, master } = graph.current;

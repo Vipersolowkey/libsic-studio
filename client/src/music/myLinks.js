@@ -1,5 +1,7 @@
-// Music links a visitor pasted (or opened with a shared room) are kept in this browser, so they stay on the shelf and can
-// be played again later. Only the provider and the link are kept, at most 12 of them, the newest first.
+// Part of: Music: remembers pasted links in this browser.
+// Used by: CdEditor.jsx, CdPage.jsx, CdRow.jsx.
+// Online music links the visitor has used, kept in this browser (localStorage) so they stay on the shelf.
+// Only provider + url are stored; at most 12, newest first.
 const KEY = 'libsic.links';
 const MAX = 12;
 const PROVIDER = { soundcloud: 'SoundCloud', spotify: 'Spotify', youtube: 'YouTube', audio: 'Audio' };
@@ -31,7 +33,7 @@ export function forgetLink(url) {
 
 const nice = (text) => decodeURIComponent(text).replace(/[-_+]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, (c) => c.toUpperCase());
 
-// A readable name for a link, worked out from the link itself.
+// A readable name worked out from the link text alone (no network call), e.g. "Spotify playlist".
 export function linkTitle({ provider, url }) {
   const name = PROVIDER[provider] || 'Music';
   try {

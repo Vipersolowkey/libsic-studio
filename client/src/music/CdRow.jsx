@@ -1,3 +1,6 @@
+// Part of: Music: the CD tower and wide shelf in the room.
+// Uses: HoloPlayer.jsx, api.js, cdLook.js, discovery.js, musicSource.js, myCds.js, myLinks.js, useUiScale.js.
+// Used by: RoomScreen.jsx.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getCds, resolveMusicLink } from '../api.js';
@@ -9,34 +12,32 @@ import { cdLook, lookVars } from './cdLook.js';
 import { formatTime } from '../room/HoloPlayer.jsx';
 import { uiScaleFor } from '../room/useUiScale.js';
 
-// The way into all the music: a wooden CD tower standing in the bottom-right corner of the room. The CDs lie in it one
-// above the other with their spines to the front, like on the shelf at home. The tower rests below the edge of the
-// window with only its paper tag showing (what is in the player), so it takes no room. Pointing at the tag lifts the whole
-// tower; moving away lowers it again (see music.css). A CD that is pointed at slides out and shows its front;
-// clicking it sends its disc to the CD player in the room and the music starts there.
+// The CD tower in the bottom-right corner of the room: the way into ALL music. Only its paper tag shows ("In the player");
+// hovering lifts it (CSS in music.css), hovering a CD slides it out, clicking sends the disc to the room's player.
+// "All CDs" opens a wide shelf (dialog). The "+" case opens a slip to paste a link or a CD code.
+// The list is built in `items`: our CDs, online playlists, this browser's CDs, then saved links.
 //
-//   source / cdCode   what is playing now (an online playlist, or a CD of ours); that CD's place in the row stays empty
-//   player            the player that is active, only used for the list of tracks of an online playlist
-//   loading / error   state of loading a CD of ours (the error stays visible even while the row is closed)
-//   onChooseSource    an online playlist or pasted link was chosen: { provider, url }
-//   onChooseCd        a CD of ours was chosen by its code
-//   onEject           take whatever is playing out of the player
-//   onRetry           try loading the same CD again
+// Props:
+//   source / cdCode   what is playing now: an online source { provider, url } OR a CD code, never both
+//   loadedCd          the CD object when a CD from a shared room is loaded
+//   player            active player (only used for an online playlist's track list)
+//   loading / error   state of loading a CD (the error stays visible even when the tower is lowered)
+//   onChooseSource({provider,url}) / onChooseCd(code) / onEject() / onRetry()
+// Two-letter marks on the spines: LS studio, SC SoundCloud, ME my CD, LK link, SH shared.
 const SOURCE_MARK = { studio: 'LS', soundcloud: 'SC', mine: 'ME', link: 'LK', shared: 'SH' };
 const isLink = (text) => /^(https?:\/\/|spotify:)/i.test(text);
 
-// The front of a pulled-out CD is 118 px square with a small label under it (about 142 px in all, measured in the tower's own pixels).
+// Size of a pulled-out CD front (px, tower's own pixels): 118 square, 142 with its label. Keep equal to the CSS in music.css.
 const PULL_FRONT = 118;
 const PULL_TOTAL = 142;
-const SLOT = 52; // the width one CD takes on the wide shelf
+const SLOT = 52; // width one CD takes on the wide shelf (px)
 // How many CDs fit on one plank of the wide shelf in a window this wide.
 function slotsPerRow() {
   const ui = uiScaleFor(window.innerWidth, window.innerHeight);
   return Math.max(4, Math.floor((Math.min(1180, window.innerWidth / ui - 64) - 76) / SLOT));
 }
 
-// Sends a copy of the disc flying from the CD that was picked to the music object in the room, so the choice is seen.
-// Only decoration: it does nothing when the browser cannot animate or the visitor asked for less motion.
+// Decoration only: flies a copy of the disc to the room's music object (.hotspot with action nextTrack). Skipped for reduced motion.
 function flyDisc(fromElement, face) {
   if (!fromElement?.animate || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
   let start = fromElement.getBoundingClientRect();
@@ -66,6 +67,7 @@ function flyDisc(fromElement, face) {
 }
 
 export default function CdRow({ source, cdCode, loadedCd, player, loading, error, onChooseSource, onChooseCd, onEject, onRetry }) {
+  // ===== STATE: which panel is open (slip = paste box, tracks, wide shelf), which CD is pointed at. CSS: music.css (.cdc-*, .cdw-*) =====
   const [links, setLinks] = useState(getMyLinks); // links pasted earlier, kept in this browser
   const [pinned, setPinned] = useState(false); // a tap on the tag keeps the tower lifted (for screens without a mouse)
   const [hovered, setHovered] = useState(null); // { item, top }: the CD that is pulled out, and where its front is shown
@@ -84,12 +86,14 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
 
   useEffect(() => {
     let cancelled = false;
+    // ===== LOADING: GET /api/cds gives the official CDs (CD list in the tower) =====
     setFailure('');
     getCds().then((list) => { if (!cancelled) setStudio(list); }).catch((err) => { if (!cancelled) { setStudio([]); setFailure(err.message); } });
     return () => { cancelled = true; };
   }, [attempt]);
 
-  // Escape closes the slip or the list of tracks. It is caught before the room sees it, because the room uses Escape to close the hologram.
+  // ===== BEHAVIOUR: Escape key, window resize, opening/closing the wide shelf =====
+  // Escape closes the slip / track list / shelf. Caught in the capture phase and stopped, because the room also uses Escape to close the hologram.
   useEffect(() => {
     if (!slip && !tracksOpen && wall !== 'open') return undefined;
     const onKey = (event) => {
@@ -125,7 +129,8 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
     setTimeout(() => setWall((now) => (now === 'closing' ? 'closed' : now)), 260);
   }
 
-  // Every CD in one list: ours, then the online playlists, then the ones this browser made. The number on a spine is its place.
+  // ===== THE LIST OF CDs: official (API) + online playlists (discovery.js) + my CDs (myCds.js) + saved links (myLinks.js) =====
+  // One list for everything (the number on a spine is its place). kind: studio | soundcloud | mine | shared | link.
   const [mine, setMine] = useState(getMyCds);
   useEffect(() => { setMine(getMyCds()); }, []); // read again when the tower is drawn, so a CD made a moment ago is there
   const items = useMemo(() => {
@@ -148,6 +153,7 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
   const isPlaying = (item) => (item.kind === 'soundcloud' || item.kind === 'link' ? source?.url === item.key : !source && cdCode === item.key);
   const loaded = Boolean(source || cdCode);
 
+  // ===== ACTIONS: pick a CD (tells RoomScreen via onChooseCd / onChooseSource), paste a link or CD code (the slip) =====
   function pick(item, discElement) {
     flyDisc(discElement, item.look.face);
     if (item.kind === 'soundcloud') onChooseSource({ provider: 'soundcloud', url: item.key });
@@ -164,7 +170,7 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
     setBusy(true);
     setLinkError('');
     try {
-      if (!isLink(text)) onChooseCd(text); // not a link: it is the code of a CD
+      if (!isLink(text)) onChooseCd(text); // not a link: treat it as a CD share code
       else {
         const host = (() => { try { return new URL(text).hostname; } catch { return ''; } })();
         const chosen = ['on.soundcloud.com', 'spotify.link'].includes(host) ? await resolveMusicLink(text) : parseMusicSource(text);
@@ -182,12 +188,13 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
 
   const tracks = source?.provider === 'soundcloud' ? player?.cd?.tracks || [] : [];
 
+  // ===== TEXT SHOWN ON THE PAPER TAG ("In the player") =====
   const nowTitle = current?.title || (source ? 'Online music' : cdCode ? 'Loading…' : 'Nothing yet');
   const nowFace = current ? current.look.face : source || cdCode ? cdLook(source ? source.url : cdCode).face : null;
 
-  // Pointing at a case slides it out and shows its front next to the tower. The front sits level with the case.
-  // The tower is drawn bigger on big screens (CSS zoom), so the distances on the screen are divided by that zoom to get the
-  // tower's own pixels. The front is kept inside the window: for a CD low in the tower it moves up instead of being cut off.
+  // Shows a hovered CD's front next to the tower, level with its case but kept inside the window.
+  // The tower is scaled by CSS zoom on big screens, so screen distances are divided by that zoom.
+  // ===== DRAWING HELPERS: where a pulled-out CD front is shown, and one CD case (spine) in the tower =====
   function point(item, button) {
     const body = wrapRef.current;
     if (!body) { setHovered({ item, top: 0 }); return; }
@@ -247,6 +254,7 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
       )}
       {failure && <p className="cdc-note cdc-error" role="alert">{failure} <button type="button" className="cdc-chip" onClick={() => setAttempt((n) => n + 1)}>Retry CDs</button></p>}
       {tracksOpen && tracks.length > 0 && <TrackList tracks={tracks} player={player} />}
+      {/* PASTE SLIP: link or CD code box (calls submit above; the "make a CD" link goes to MusicPage) */}
       {slip && (
         <form className="cdc-slip" onSubmit={submit}>
           <b>Add your own music</b>
@@ -260,6 +268,7 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
         </form>
       )}
 
+      {/* THE TOWER BODY: paper tag (now playing + buttons), the stack of CD cases, and the pulled-out CD front */}
       {(
         <div className="cdc-body" ref={wrapRef}>
           <div className="cdc-tag">
@@ -298,6 +307,7 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
         </div>
       )}
     </section>
+    {/* WIDE CD SHELF: a dialog showing all CDs on planks (CSS .cdw-*) */}
     {wall !== 'closed' && (
       <div className={`cdw${wall === 'closing' ? ' cdw-out' : ''}`} role="dialog" aria-modal="true" aria-label="All CDs" onMouseDown={(event) => { if (event.target === event.currentTarget) closeWall(); }}>
         <div className="cdw-panel" style={{ '--cols': columns }}>
@@ -357,7 +367,7 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
   );
 }
 
-// The tracks of the playlist that is playing, with a search box. A track is played by clicking it.
+// Track list of the playing online playlist, with search. Shows 30 at a time ("Show more").
 function TrackList({ tracks, player }) {
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(30);

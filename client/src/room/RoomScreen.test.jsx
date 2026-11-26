@@ -325,6 +325,35 @@ describe('saving a new room', () => {
     expect(getMyRooms()).toEqual([]);
   });
 
+  it('shows the "too fast" message from the API when saving is limited, and lets the visitor try again', async () => {
+    api.createRoom.mockRejectedValueOnce(new api.ApiError('You are saving too fast. Please wait a minute and try again.', 429));
+    renderAt('/new');
+    await screen.findByTestId('stage');
+    await userEvent.click(screen.getByRole('button', { name: 'Save room' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('You are saving too fast');
+    expect(getMyRooms()).toEqual([]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save room' }));
+    expect(await screen.findByText(/Room saved! Copy the link/)).toBeInTheDocument();
+    expect(api.createRoom).toHaveBeenCalledTimes(2);
+  });
+
+  it('sends only one request when Save room is pressed twice quickly (no duplicate rooms)', async () => {
+    let finish;
+    api.createRoom.mockImplementation(() => new Promise((resolve) => { finish = () => resolve({ room: { ...savedRoom, name: 'My room' }, editKey: 'new-secret' }); }));
+    renderAt('/new');
+    await screen.findByTestId('stage');
+    const save = screen.getByRole('button', { name: 'Save room' });
+    await userEvent.click(save);
+    await userEvent.click(save);
+
+    expect(api.createRoom).toHaveBeenCalledTimes(1);
+    finish();
+    expect(await screen.findByText(/Room saved! Copy the link/)).toBeInTheDocument();
+    expect(getMyRooms()).toHaveLength(1);
+  });
+
   it('shows the edit key when the browser cannot remember it', async () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('blocked');

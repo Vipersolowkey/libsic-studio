@@ -1,3 +1,7 @@
+// Part of: Music: remembers my CDs and their edit keys in this browser.
+// Used by: CdPage.jsx, CdRow.jsx, MusicPage.jsx.
+// "My CDs": CDs made in this browser, with their secret edit keys, kept in localStorage (no accounts).
+// Same idea as ../myRooms.js: clearing site data loses the keys. rememberCd returns false when storage is blocked.
 const KEY = 'libsic:myCds';
 export function getMyCds() {
   try {

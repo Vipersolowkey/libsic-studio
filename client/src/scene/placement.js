@@ -1,16 +1,17 @@
-// Where the objects a visitor placed are drawn. Pure functions, no React.
-//
-// An object is described by a catalog entry of the scene (its home, bounds and surface) and, for every copy
-// in a room, an item { id, key, x, y, scale, flip }. x and y are where the object's contact point (the bottom
-// centre) touches its surface, in percent of the scene. The pictures of the object are layers of the scene
-// that name it in `item`; they are drawn once per item, moved and sized around that contact point.
+// Part of: Decorate mode: where placed objects are drawn (perspective maths).
+// Used by: DecorateHud.jsx, DecorateOverlay.jsx, Hologram.jsx, SceneStage.jsx, itemsEdit.js, useItemsEditor.js.
+// Decorate maths (pure, no React): where placed objects are drawn.
+// Catalog entry (in the scene) = what an object is (home, bounds, surface). Item { id, key, x, y, scale, flip } = one copy in a room;
+// x, y = contact point (bottom centre) on its surface, percent of the scene. The object's pictures are the scene layers
+// whose `item` equals its key; each is moved and sized around the contact point, with perspective from the surface.
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+// ===== LOOKUPS: catalog entry (what) and surface (where) of an object =====
 export const entryOf = (scene, key) => scene.catalog?.find((entry) => entry.key === key);
 export const surfaceOf = (scene, entry) => scene.surfaces?.find((surface) => surface.key === entry.surface);
 
-// How big things look at height y of a surface: farScale at its far edge, nearScale at its near edge.
+// Perspective size at height y: farScale at farY ... nearScale at nearY (clamped).
 export function scaleAt({ perspective }, y) {
   const { farY, nearY, farScale, nearScale } = perspective;
   if (farY === nearY) return farScale;
@@ -25,8 +26,8 @@ export function defaultItems(scene) {
     .map((entry) => ({ id: entry.key, key: entry.key, x: entry.home.x, y: entry.home.y, scale: 1, flip: false }));
 }
 
-// Moves and sizes a box of the entry (drawn for its home) to where the item stands.
-// An object at its home with scale 1 gets its own box back.
+// Maps a box drawn for the entry's home to where the item stands (scale + perspective, mirrored across the contact point when flipped).
+// At home with scale 1 it returns the same box.
 export function placeBox(box, item, entry, surface) {
   const { home } = entry;
   const s = (item.scale * scaleAt(surface, item.y)) / scaleAt(surface, home.y);
@@ -34,13 +35,10 @@ export function placeBox(box, item, entry, surface) {
   return { x: item.x + fromHome * s, y: item.y + (box.y - home.y) * s, width: box.width * s, height: box.height * s };
 }
 
-// The list of things to draw, back to front. Layers without an item stay in their order; the items of a
-// surface are drawn just before the layer at surface.drawAt, nearer ones (larger y) later. Each entry:
-//   key             stable key for React: the layer index, or "<item id>:<layer index>"
-//   itemId          the id of the item a picture belongs to (undefined for the fixed layers)
-//   layer, box      the layer and where it is drawn (undefined: the whole scene, or the layer's own box)
-//   templateIndex   index in scene.layers of the layer this entry comes from
-//   flip            true when the picture must be mirrored
+// The full back-to-front draw list. Fixed layers keep their order; the items of a surface are drawn just before the layer at
+// surface.drawAt, nearer ones (larger y) later. Entry: { key (React key), itemId (undefined for fixed layers), layer, box,
+// templateIndex (index in scene.layers), flip }.
+// ===== DRAW LIST: used by SceneStage.jsx to draw layers and placed objects in the right order =====
 export function buildDrawList(scene, items) {
   const placedBySurface = new Map();
   for (const item of items) {
@@ -51,8 +49,7 @@ export function buildDrawList(scene, items) {
     placedBySurface.get(surface).push({ item, entry });
   }
 
-  // A shadow (a layer with mirror: false) lies flat on the surface, so the shadows of all objects are drawn first and
-  // the objects themselves after them. Otherwise the shadow of a nearer object would be painted over the object behind it.
+  // Shadows (layers with mirror: false) are drawn before all objects, so a nearer object's shadow never covers one behind it.
   const isShadow = (layer) => layer.mirror === false;
   const drawItemsOf = (surface) => {
     const placed = (placedBySurface.get(surface) || []).sort((a, b) => a.item.y - b.item.y || a.item.id.localeCompare(b.item.id));
@@ -78,7 +75,7 @@ export function buildDrawList(scene, items) {
   return list;
 }
 
-// The ids of the items from the back to the front, in the order they are drawn. Items the scene cannot draw are left out.
+// Item ids back to front (used for click-box stacking). Items the scene cannot draw are left out.
 export function drawOrder(scene, items) {
   const ids = buildDrawList(scene, items).flatMap((entry) => (entry.itemId ? [entry.itemId] : []));
   return [...new Set(ids)];
@@ -91,14 +88,13 @@ export function itemBounds(scene, item) {
   return surface ? placeBox(entry.bounds, item, entry, surface) : null;
 }
 
-// A scene is 16:9, so one percent of its height is shorter on screen than one percent of its width.
+// Scenes are 16:9: 1% of the height is shorter on screen than 1% of the width.
 const HEIGHT_PER_WIDTH = 9 / 16;
 
 const insideBox = ({ x, y }, box) => x > box.x && x < box.x + box.width && y > box.y && y < box.y + box.height;
 
-// The nearest point of the surface's area, so a dragged object cannot leave its surface. A point inside one
-// of the surface's blocked boxes (a spot that is taken, like the clam) is pushed out to the nearest edge that
-// is still free. A surface without `blocked` only gets the clamp.
+// Keeps a dragged point on its surface (inside area) and pushes it out of any `blocked` box (e.g. the clam) to the nearest free edge.
+// ===== KEEPING OBJECTS ON THEIR SURFACE: used by itemsEdit.js while dragging in Decorate mode =====
 export function clampToSurface({ area, blocked }, point) {
   const inArea = (p) => ({ x: clamp(p.x, area.x, area.x + area.width), y: clamp(p.y, area.y, area.y + area.height) });
   let spot = inArea(point);
@@ -120,7 +116,7 @@ export function clampToSurface({ area, blocked }, point) {
   return spot;
 }
 
-// A new copy of an object, standing in the middle of its surface. Its id is the key, then key2, key3, ...
+// A new copy in the middle of its surface. id = key, then key2, key3... (ids must be unique and match [A-Za-z0-9_-]{1,16} in the API).
 export function newItem(scene, key, items) {
   const entry = entryOf(scene, key);
   const surface = surfaceOf(scene, entry);

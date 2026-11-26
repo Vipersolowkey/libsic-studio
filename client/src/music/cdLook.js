@@ -1,10 +1,12 @@
-// How each CD looks on the shelf: its spine, its front cover and the print on its disc.
-// A few CDs are drawn by hand (the studio CDs and the two Chillhop playlists). Every other CD, including the ones people
-// make themselves, gets a look worked out from its title, so the same title always looks the same and different titles
-// look different. Nothing here is stored: it is only paint.
+// Part of: Music: how a CD looks (cover, disc, lettering).
+// Used by: CdEditor.jsx, CdPage.jsx, CdPreview.jsx, CdRow.jsx, RoomScreen.jsx.
+// How a CD looks (spine, cover, printed disc), all drawn with CSS gradients, no image files.
+// Main entry: cdLook(key, title, custom). A few CDs are hand-drawn (HANDMADE below). Every other CD gets a look from its
+// saved { hue, cover, disc, font } choice, or from a hash of its code when it has none, so a CD looks the same everywhere.
 
-// Lettering styles for the spine. `ff` is the font, the rest tune it. The fonts come from index.html; if one fails to
-// load the browser falls back to the page's normal font.
+// Lettering styles (ff = font family; fs size, ls letter-spacing, tt text-transform, fst font-style). The font index is
+// saved in a CD, so DO NOT reorder or remove entries (add at the end, and raise the max of `font` in the API Cd model and routes/cds.js).
+// Fonts are loaded in index.html.
 const LETTERING = [
   { ff: "'Playfair Display', Georgia, serif", fst: 'italic', fs: '13px' },
   { ff: "'Oswald', 'Arial Narrow', sans-serif", tt: 'uppercase', ls: '.14em', fs: '12px' },
@@ -13,7 +15,7 @@ const LETTERING = [
   { ff: "'Oswald', 'Arial Narrow', sans-serif", tt: 'uppercase', ls: '.08em', fs: '11px' },
 ];
 
-// Hand-drawn looks. The key is the CD code (studio CDs) or the playlist link (online ones).
+// Hand-drawn looks. Key = CD code (official CDs) or playlist link (online ones). `width` = spine thickness in px.
 const HANDMADE = {
   'night-study': {
     spine: 'linear-gradient(#2a3550, #0f1524)',
@@ -53,14 +55,14 @@ const HANDMADE = {
   },
 };
 
-// A small number worked out from a text: the same text always gives the same number.
+// Same text -> same number (used to pick a look). Not for security.
 function hash(text) {
   let h = 7;
   for (const ch of String(text)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return h;
 }
 
-// Four ways to draw the front cover, four for the disc. The colours come from one hue, so a CD looks like one object.
+// Four cover designs and four disc prints, all built from one hue so the CD looks like one object. The order is saved in CDs (index 0-3): do not reorder.
 function cover(i, dark, mid, light, faint) {
   const base = `linear-gradient(160deg, ${mid}, ${dark})`;
   return [
@@ -79,7 +81,7 @@ function printedDisc(i, dark, mid, light) {
   ][i % 4];
 }
 
-// What a person can choose when they make or edit a CD (it is saved with the CD as { hue, cover, disc, font }).
+// The choices in the CD workshop. The name lists must match the number of designs above; the choice is saved as { hue, cover, disc, font }.
 export const HUES = [8, 28, 42, 78, 140, 172, 200, 222, 262, 300, 330];
 export const COVER_NAMES = ['Sun', 'Ripples', 'Stripe', 'Horizon'];
 export const DISC_NAMES = ['Rainbow', 'Grooves', 'Rays', 'Target'];
@@ -87,8 +89,7 @@ export const FONT_NAMES = ['Serif', 'Poster', 'Hand-written', 'Typewriter', 'Blo
 
 const isChoice = (look) => look && typeof look === 'object' && [['hue', 359], ['cover', 3], ['disc', 3], ['font', 4]].every(([key, max]) => Number.isInteger(look[key]) && look[key] >= 0 && look[key] <= max);
 
-// The choice a CD gets when nobody painted it: worked out from its key, so it is the same one that is drawn on the shelf.
-// An editor starts from it, so editing an old CD does not change how it looks until a person picks something.
+// The look a CD gets when nobody painted it, worked out from its key. The editor starts from it so editing an old CD does not repaint it.
 export function defaultChoice(key) {
   const h = hash(String(key));
   return { hue: h % 360, cover: (h >>> 3) % 4, disc: (h >>> 5) % 4, font: (h >>> 9) % LETTERING.length };
@@ -99,9 +100,7 @@ export function randomChoice() {
   return { hue: HUES[Math.floor(Math.random() * HUES.length)], cover: Math.floor(Math.random() * 4), disc: Math.floor(Math.random() * 4), font: Math.floor(Math.random() * LETTERING.length) };
 }
 
-// The look of one CD. `key` is what makes it unique (its code or link). `custom` is the choice a person made for a CD of
-// their own ({ hue, cover, disc, font }); without one, the look is worked out from the key, so a CD looks the same on the
-// shelf and in the player. `title` is not used for the look.
+// The look of one CD. key = its code or link. custom = the saved { hue, cover, disc, font } (ignored if invalid). `title` is unused (kept for callers).
 export function cdLook(key, title, custom) {
   const hand = HANDMADE[key];
   if (hand) return { ink: '#fff', ...hand };
@@ -121,7 +120,7 @@ export function cdLook(key, title, custom) {
   };
 }
 
-// The CSS variables that carry a look to the styles in music.css.
+// Turns a look into CSS variables (--sp, --art, --face...) that music.css reads. Spread it into a style prop.
 export function lookVars(look) {
   const vars = { '--sp': look.spine, '--art': look.art, '--face': look.face, '--ink2': look.ink, '--w': `${look.width}px` };
   const l = look.lettering || {};

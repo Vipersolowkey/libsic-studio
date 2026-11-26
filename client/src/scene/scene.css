@@ -1,3 +1,9 @@
+/* Part of: Room picture: layers, animations and effects look.
+   Used by: SceneStage.jsx. */
+/* The scene picture: the stage, its layers, effects (rain, snow...) and every layer animation (spin, sway, glide...).
+   Names here must match the classes set in SceneStage.jsx / Effects.jsx and the names allowed in api/src/constants.js.
+   Rule of thumb for speed: animate only transform and opacity, so the browser can run them on the graphics card. */
+
 /* The stage keeps the picture's 16:9 shape so clickable areas (percentages) line up. */
 .stage {
   position: relative;
@@ -101,6 +107,7 @@
   opacity: 1;
 }
 
+/* Below: effects are drawn by Effects.jsx; each block here is the look of one effect. */
 /* ---------- Effects ---------- */
 .effect {
   position: absolute;
@@ -327,6 +334,7 @@
   60% { opacity: 0.7; transform: scale(0.75) rotate(30deg); }
 }
 
+/* Below: the `anim` names of a scene layer (api/src/constants.js LAYER_ANIMS); SceneStage.jsx adds the class. */
 /* ---------- Animated layers ---------- */
 /* Glows add light to what is below them. */
 .layer[data-blend='screen'] {

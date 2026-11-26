@@ -1,7 +1,10 @@
+// Part of: Music: the wooden desk frame of the CD pages.
+// Uses: skins.js.
+// Used by: CdPage.jsx, MusicPage.jsx.
 import { Link } from 'react-router-dom';
 import { skinOf } from '../room/skins.js';
 
-// The wooden desk that the CD pages stand on. It uses the paper, wood and brass of the Golden Hour Loft, like the CD tower in the rooms.
+// Page frame for /music and /cd/:code: a wooden desk using the Golden Hour Loft colours. `nav` = extra link top right.
 export default function Desk({ nav, children }) {
   return (
     <main className="mk-desk" style={skinOf('golden-loft').vars}>

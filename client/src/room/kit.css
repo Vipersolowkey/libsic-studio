@@ -1,3 +1,5 @@
+/* Part of: Room page: look of the paper side bar.
+   Used by: RoomScreen.jsx. */
 /* The room kit: the side bar as a page of paper pinned over the picture. The colours come from the room's skin (see skins.js),
    which sets CSS variables on .room. Everything here is scoped to .sidebar / .side-open, so the rest of the page is untouched. */
 
@@ -91,6 +93,7 @@
   border-top: 1.5px dashed var(--stitch);
 }
 
+/* Below: the room cards, the mood switches and the chips are drawn by Controls.jsx and SaveBar.jsx. */
 /* the rooms: the one you are in is a big polaroid, the others sit in a two-column grid of small polaroids to pick */
 .room-list .polaroid { position: relative; padding: 6px 6px 5px; border: 0; background: #fffdf6; color: #3a2a1a; text-align: center; box-shadow: 0 3px 8px #0004; cursor: pointer; font: inherit; }
 .room-list .polaroid img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--paper2); }

@@ -1,10 +1,12 @@
+// Part of: Hologram player: clock, track title and controls.
+// Used by: CdEditor.jsx, CdPage.jsx, CdRow.jsx, RoomScreen.jsx.
 import { useEffect, useState } from 'react';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const two = (n) => String(n).padStart(2, '0');
 
-// Seconds as "01:05". Used for the time played and the time left.
+// Seconds -> "01:05".
 export function formatTime(seconds) {
   const s = Math.max(0, Math.floor(seconds || 0));
   return `${two(Math.floor(s / 60))}:${two(s % 60)}`;
@@ -26,11 +28,12 @@ const SkipIcon = () => (
   </svg>
 );
 
-// What the hologram shows: a clock, and the player under it.
-// Before any music was started it is a clock (day, date, time). Once a track was started, the big line becomes
-// the track title and the small line the CD and track number; the time of day stays.
-//   player   everything from usePlayer (see usePlayer.js)
-//   now      only for tests; the real clock reads the time itself
+// The hologram's content: clock + player. Before music starts: day / date / time. After the first play: the big line is the
+// track title, the small one "CD title . n / total"; the time of day stays.
+//   player   the object from usePlayer, or from an online player (same shape). Optional flags turn controls off:
+//            canSeek / canNavigate / canVolume === false (Spotify, for example)
+//   now      fixed date for tests only
+// ===== THE HOLOGRAM CONTENT: title lines, progress bar, buttons, volume. All values come from `player` (usePlayer.js or ExternalMusic.jsx) =====
 export default function HoloPlayer({ player, now }) {
   const [clock, setClock] = useState(() => now ?? new Date());
   const [started, setStarted] = useState(false); // true once music has played: from then on the title is shown

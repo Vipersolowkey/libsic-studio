@@ -1,3 +1,6 @@
+// Part of: Music: the CD workshop form (make and edit a CD).
+// Uses: CdPreview.jsx, HoloPlayer.jsx, api.js, cdLook.js, musicSource.js, myLinks.js.
+// Used by: CdPage.jsx, MusicPage.jsx.
 import { useEffect, useMemo, useState } from 'react';
 import { getTracks, resolveMusicLink } from '../api.js';
 import { formatTime } from '../room/HoloPlayer.jsx';
@@ -6,17 +9,19 @@ import { COVER_NAMES, DISC_NAMES, FONT_NAMES, HUES, cdLook, defaultChoice, rando
 import { linkTitle, providerName } from './myLinks.js';
 import { parseMusicSource } from './musicSource.js';
 
-const MAX_LINKS = 12;
+const MAX_LINKS = 12; // keep equal to the API (routes/cds.js)
 const MAX_TRACKS = 30;
 const MARK = { youtube: 'YT', soundcloud: 'SC', spotify: 'SP', audio: '♪' };
+// Short links (on.soundcloud.com, spotify.link) cannot be read in the browser: the API resolves them.
 const SHORT_HOSTS = ['on.soundcloud.com', 'spotify.link'];
 const hostOf = (text) => { try { return new URL(text).hostname; } catch { return ''; } };
 
-// The form of the CD workshop. It makes a new CD, or (with `cd`) changes one that its owner made.
-//   A CD holds online links (YouTube, SoundCloud, Spotify, a direct audio file), played one after the other, or tracks from
-//   our own library. Never both, so the player always knows what to play.
-//   `onSave({ title, trackIds, links, look })` is called with what the person made; `children` is shown under the preview.
+// The CD workshop form: makes a new CD, or edits one when `cd` is passed.
+// A CD holds online links OR our own tracks, never both (the "kind" switch; the API rejects a mix).
+// onSave({ title, trackIds, links, look }) gets what the visitor made (the unused list is empty). `children` shows under the preview.
+// Limits match the API: 12 links, 30 tracks, name up to 60 characters.
 export default function CdEditor({ cd, busy, onSave, children }) {
+  // ===== STATE: name, links or tracks (only one kind), and the look (colour, cover, disc, lettering) =====
   const [title, setTitle] = useState(cd?.title ?? '');
   const [kind, setKind] = useState(cd && !cd.links?.length && cd.trackIds?.length ? 'tracks' : 'links');
   const [links, setLinks] = useState(cd?.links ?? []);
@@ -27,7 +32,7 @@ export default function CdEditor({ cd, busy, onSave, children }) {
   const [tracks, setTracks] = useState(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
-  // A new CD starts with a random look. An old CD starts with the look it has now, so editing does not repaint it by itself.
+  // New CD: random look. Old CD: keeps its look (older CDs without one get a default made from the code), so editing never repaints it.
   const [choice, setChoice] = useState(() => cd?.look ?? (cd ? defaultChoice(cd.code) : randomChoice()));
   const key = cd?.code ?? 'new-cd';
   const look = useMemo(() => cdLook(key, title, choice), [key, title, choice]);
@@ -40,6 +45,7 @@ export default function CdEditor({ cd, busy, onSave, children }) {
     return () => { cancelled = true; };
   }, [kind, attempt, tracks]);
 
+  // ===== ACTIONS: change the look, reorder a list, add pasted links =====
   const paint = (change) => setChoice((old) => ({ ...old, ...change }));
   const swap = (list, set, index, offset) => {
     const next = [...list];
@@ -47,8 +53,7 @@ export default function CdEditor({ cd, busy, onSave, children }) {
     set(next);
   };
 
-  // Several links can be pasted at once, separated by spaces or new lines. Each one is checked; the ones that fail stay in the
-  // box, with the reason, so they can be corrected.
+  // Several links can be pasted at once (spaces, commas or new lines). Good ones are added; failed ones stay in the box with the reason.
   async function addLinks(event) {
     event.preventDefault();
     const words = draft.split(/[\s,]+/).filter(Boolean);
@@ -75,6 +80,7 @@ export default function CdEditor({ cd, busy, onSave, children }) {
     setChecking(false);
   }
 
+  // Save is allowed only with a name and at least one item (and the track list loaded, for tracks).
   const ready = title.trim() && (kind === 'links' ? links.length > 0 : ids.length > 0 && tracks);
   function submit(event) {
     event.preventDefault();
@@ -89,6 +95,7 @@ export default function CdEditor({ cd, busy, onSave, children }) {
   const count = kind === 'links' ? links.length : ids.length;
 
   return (
+    // ===== THE FORM (CSS: workshop.css .mk-*). Left: name + step 1 (what is on it) + step 2 (look). Right: live CD preview + save button =====
     <form className="mk-form" onSubmit={submit}>
       <div className="mk-sheet">
         <label className="mk-field">
@@ -96,6 +103,7 @@ export default function CdEditor({ cd, busy, onSave, children }) {
           <input required maxLength={60} value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} placeholder="Rainy sunday, slow focus…" />
         </label>
 
+        {/* STEP 1: what is on the CD. Online links (API resolves short links) or our tracks (api.js getTracks) */}
         <fieldset className="mk-block" disabled={busy}>
           <legend><span className="mk-step">1</span> What is on it</legend>
           <div className="mk-switch" role="tablist" aria-label="Where the music comes from">
@@ -158,6 +166,7 @@ export default function CdEditor({ cd, busy, onSave, children }) {
           )}
         </fieldset>
 
+        {/* STEP 2: the look; music/cdLook.js turns the choice into the picture shown in the preview */}
         <fieldset className="mk-block" disabled={busy}>
           <legend><span className="mk-step">2</span> How it looks</legend>
           <div className="mk-look">
@@ -181,6 +190,7 @@ export default function CdEditor({ cd, busy, onSave, children }) {
         </fieldset>
       </div>
 
+      {/* RIGHT: live preview (CdPreview.jsx), item count and the save button (calls onSave: MusicPage creates, CdPage updates) */}
       <aside className="mk-stand">
         <CdPreview look={look} title={title} spinning />
         <p className="mk-count">{count ? `${count} ${kind === 'links' ? (count === 1 ? 'link' : 'links') : (count === 1 ? 'track' : 'tracks')} on the CD` : 'Nothing on the CD yet'}</p>
@@ -192,7 +202,7 @@ export default function CdEditor({ cd, busy, onSave, children }) {
   );
 }
 
-// A row of little pictures to choose from: the cover, the print on the disc or the lettering.
+// A row of small pictures to pick from (cover, disc print or lettering). `sample(i)` draws option i.
 function Options({ label, names, value, onPick, sample }) {
   return (
     <div className="mk-row">

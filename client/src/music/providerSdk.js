@@ -1,3 +1,7 @@
+// Part of: Music: loads the SoundCloud, Spotify and YouTube player scripts.
+// Used by: ExternalMusic.jsx.
+// Loads a provider's official player script (SoundCloud, Spotify, YouTube) once and caches the promise.
+// Rejects after 18 s or on a load error so the UI can show "could not connect" instead of waiting forever.
 const pending = new Map();
 const urls = {
   soundcloud: 'https://w.soundcloud.com/player/api.js',
@@ -6,6 +10,7 @@ const urls = {
 };
 let spotifyApi;
 
+// Resolves with the SDK object (SC / spotify api / YT). Each provider announces readiness differently, hence the branches.
 export function loadProviderSdk(provider) {
   const current = provider === 'soundcloud' ? window.SC : provider === 'youtube' ? window.YT : spotifyApi;
   if (provider === 'soundcloud' && current?.Widget || provider === 'youtube' && current?.Player || provider === 'spotify' && current) return Promise.resolve(current);

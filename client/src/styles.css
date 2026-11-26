@@ -1,3 +1,8 @@
+/* Part of: Look of the room page, side bar frame, hologram player, save toast and start page.
+   Used by: main.jsx. */
+/* App-wide styles: page base, the room window, the side bar frame, hologram player, save toasts and the start-page intro.
+   Colours of the side bar and CD tower come from the room's "skin" (room/skins.js) via CSS variables set on .room.
+   Related files: scene/scene.css (the picture), room/kit.css (paper side bar), music/*.css (CD tower and workshop). */
 :root {
   color-scheme: dark;
   --bg: #07090f;
