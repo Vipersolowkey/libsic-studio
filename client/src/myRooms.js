@@ -1,7 +1,8 @@
-// "My rooms": the rooms this browser has saved, and the secret edit key of each one.
-// They live in the browser's localStorage (there are no accounts), so they stay on this
-// browser only. A share link still opens a room anywhere, but only this browser can edit it.
-// Every function copes with storage being blocked or holding junk: it then behaves as if empty.
+// Part of: My rooms: remembers saved rooms and their edit keys in this browser.
+// Used by: HomePage.jsx, RoomScreen.jsx.
+// "My rooms": rooms saved by this browser, with each one's secret edit key, in localStorage (there are no accounts).
+// A share link opens a room anywhere, but only this browser holds the key to edit it. Clearing site data loses the keys.
+// Every function survives blocked storage or junk data (it acts as if empty; saving returns false).
 const ROOMS_KEY = 'libsic:myRooms';
 const LAST_KEY = 'libsic:lastRoom';
 
@@ -22,6 +23,7 @@ function write(key, value) {
   }
 }
 
+// Drops damaged entries (e.g. hand-edited storage) so they cannot crash the page.
 const isOptionalString = (v) => v === undefined || typeof v === 'string';
 const validRoomEntry = (r) =>
   Boolean(
@@ -34,6 +36,7 @@ const validRoomEntry = (r) =>
   );
 
 // The saved rooms, newest first: [{ code, editKey, name, sceneSlug }]
+// ===== THE API OF THIS FILE: used by RoomScreen (save / forget), MyRooms.jsx (list) and HomePage (My rooms, last room) =====
 export function getMyRooms() {
   try {
     const list = JSON.parse(read(ROOMS_KEY));
@@ -60,7 +63,7 @@ export function removeMyRoom(code) {
   return write(ROOMS_KEY, JSON.stringify(getMyRooms().filter((r) => r.code !== code)));
 }
 
-// The room to reopen when the visitor comes back to the home page.
+// The room the home page reopens ("Your room"). clearLastRoomCode only clears it if it is that room.
 export const getLastRoomCode = () => read(LAST_KEY) || null;
 export const setLastRoomCode = (code) => write(LAST_KEY, code);
 export function clearLastRoomCode(code) {

@@ -1,3 +1,7 @@
+/* Part of: Music: look of the CD tower, wide shelf and online player.
+   Used by: App.jsx. */
+/* Styles of the CD tower in the room (.cdc-*), the wide CD shelf (.cdw-*) and the online player box (.online-player).
+   Used by music/CdRow.jsx and music/ExternalMusic.jsx. Sizes of a pulled-out CD match PULL_FRONT / PULL_TOTAL in CdRow.jsx. */
 @keyframes cd-spin { to { transform: rotate(360deg); } }
 .cd-code-form { display: grid; gap: 8px; margin: 16px 0; font-size: .75rem; }
 .cd-code-form .chip-row { flex-wrap: nowrap; }
@@ -28,6 +32,7 @@
 .online-player header { gap: 8px; }
 .online-player header button + button { margin-left: 4px; }
 
+/* Below: .cdc-* = CdRow.jsx (the tower in the room, drawn by RoomScreen.jsx). */
 /* ---- the CD tower, bottom right ----
    A wooden CD tower like the one on a living-room cupboard: an oak side panel, a top cap, and the CDs lying one above the
    other with their spines to the front. The wood and paper are painted from the room's skin (see room/skins.js).
@@ -160,6 +165,7 @@ a.cdc-brass { text-decoration: none; }
 .online-player.folded { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; overflow: hidden; opacity: 0; pointer-events: none; box-shadow: none; }
 .online-player.folded:has([role='alert']) { width: min(340px, calc(100vw - 32px)); height: auto; padding: 12px; border: 1px solid var(--edge, var(--line)); overflow-y: auto; opacity: 1; pointer-events: auto; box-shadow: 0 10px 30px #0006; }
 
+/* Below: .cdw-* = the wide shelf on the start page and /music (see HomePage.jsx, MusicPage.jsx). */
 /* ---- the wide shelf ----
    Opened with "All CDs" on the tower's tag. Every CD stands upright with its spine to the front on a wooden plank, like books in a
    case. Pointing at one lifts it and names it on the brass plate below. It is drawn from the same pieces as the tower (the room's

@@ -1,5 +1,7 @@
-// Full playlists load their current track list from SoundCloud's Widget API.
-// These are provider links, not copies of their audio files.
+// Part of: Music: ready-made online playlists and player addresses.
+// Used by: CdRow.jsx, ExternalMusic.jsx, RoomScreen.jsx.
+// Ready-made online playlists offered in the room's music panel. Links only (we do not host these audio files).
+// The first one is the default source. Add one by adding an entry; the track list is loaded live from SoundCloud.
 export const DISCOVERY_PLAYLISTS = [
   { title: 'Chillhop Essentials · Fall', caption: 'Warm lo-fi and jazz beats', provider: 'soundcloud', url: 'https://soundcloud.com/chillhopdotcom/sets/chillhop-essentials-fall-2024' },
   { title: 'Chillhop Essentials · Summer', caption: 'Laid-back instrumental beats', provider: 'soundcloud', url: 'https://soundcloud.com/chillhopdotcom/sets/chillhop-essentials-summer-2026' },
@@ -8,6 +10,7 @@ export const DEFAULT_MUSIC_SOURCE = { provider: DISCOVERY_PLAYLISTS[0].provider,
 export const PROVIDER_NAMES = { soundcloud: 'SoundCloud', spotify: 'Spotify', youtube: 'YouTube', audio: 'Audio link' };
 export const sourceName = (source) => DISCOVERY_PLAYLISTS.find((p) => p.url === source?.url)?.title || PROVIDER_NAMES[source?.provider] || 'Online music';
 
+// The iframe address for the provider's own player. Spotify gets none: it is driven through its SDK instead (see providerSdk.js).
 export function embedUrl(source) {
   if (source.provider === 'soundcloud') {
     return `https://w.soundcloud.com/player/?${new URLSearchParams({ url: source.url, auto_play: 'false', show_artwork: 'true', show_user: 'true', show_comments: 'false', visual: 'false', color: '#e8b86a' })}`;

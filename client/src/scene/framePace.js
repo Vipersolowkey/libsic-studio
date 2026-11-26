@@ -1,15 +1,13 @@
+// Part of: Room picture: runs animations at 30 fps to save the graphics card.
+// Used by: SceneStage.jsx.
 import { useEffect } from 'react';
 
-// How many times per second the movements of a scene are redrawn. A screen normally redraws 60 times (or more)
-// per second, and for every redraw the graphics card has to stack all the layers of the picture again. The movements
-// in a room are slow (leaves, light, drifting fish), so half as many redraws look the same and cost half the work.
+// Animation rate of a scene. Every redraw makes the GPU re-stack ~100 layers; the movements are slow, so 30 fps looks the same at half the cost.
 export const SCENE_FPS = 30;
 
-// Sets the pace of every CSS animation inside the stage.
-// Normally the browser moves each animation forward by itself on every redraw of the screen. Here the animations are
-// held still (speed 0) and moved forward by hand, SCENE_FPS times per second. Between two steps nothing changes on
-// screen, so the browser has nothing to redraw. Animations that CSS has paused (the record when the music stops)
-// stay paused, and fades between day and night (transitions) are not touched: they stay perfectly smooth.
+// Paces every CSS animation inside the stage: sets playbackRate 0 and advances currentTime by hand `fps` times a second.
+// CSS-paused animations stay paused and transitions (day/night fades) are untouched. enabled = false hands everything back.
+// Does nothing in browsers without CSSAnimation.
 export function useFramePace(stageRef, fps = SCENE_FPS, enabled = true) {
   useEffect(() => {
     if (!enabled) return undefined;
@@ -24,14 +22,14 @@ export function useFramePace(stageRef, fps = SCENE_FPS, enabled = true) {
     const tick = (now) => {
       frame = requestAnimationFrame(tick);
       const passed = now - last;
-      if (passed < step - 2) return; // not time yet: skip this redraw
+      if (passed < step - 2) return; // not time for a step yet
       last = now;
-      // the list of animations changes rarely (another room, another effect), so it is looked up twice a second
+      // The animation list changes rarely, so refresh it only twice a second.
       if (now - listed > 500) {
         listed = now;
         animations = stage.getAnimations({ subtree: true }).filter((a) => a instanceof CSSAnimation);
       }
-      const forward = Math.min(passed, 250); // after a pause (another tab was open) the scene does not jump ahead
+      const forward = Math.min(passed, 250); // capped, so returning from another tab does not jump the scene ahead
       for (const animation of animations) {
         if (animation.playState !== 'running') continue;
         if (animation.playbackRate !== 0) animation.playbackRate = 0;

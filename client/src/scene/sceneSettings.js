@@ -1,21 +1,19 @@
-// The things a visitor can change in a room. These are also what a saved room remembers.
-//   effect: 'none' or one of the scene's effects (rain, snow, fireflies, stars, dust)
-//   lightOn: true for day, false for night (the sunlight goes out, the night layers come in)
-//   curtainsClosed: true when the curtains are drawn
+// Part of: Room picture: light, effect and curtains settings.
+// Used by: Controls.jsx, RoomScreen.jsx, SceneStage.jsx.
+// The room settings a saved room remembers:
+//   effect: 'none' or one of the scene's effects | lightOn: true = day, false = night | curtainsClosed: boolean
 export function defaultSettings(scene) {
   return { effect: scene.defaultEffect || 'none', lightOn: true, curtainsClosed: false };
 }
 
-// The effect that is really drawn. A saved room may remember an effect that its scene no longer has (the Aurora
-// Observatory used to have snow): that one is ignored and the scene's own default is used. 'none' stays 'none'.
+// The effect actually drawn. A saved room may hold an effect its scene no longer has: then the scene's default is used. 'none' stays 'none'.
 export function activeEffect(scene, effect) {
   if (!effect || effect === 'none') return 'none';
   if (scene.effects?.includes(effect)) return effect;
   return scene.defaultEffect && scene.effects?.includes(scene.defaultEffect) ? scene.defaultEffect : 'none';
 }
 
-// Works out the new settings after a click on an object. It returns a new object and
-// never changes the old one. Objects that play music (nextTrack) do not change the settings.
+// New settings after a click on an object (pure: returns a new object). nextTrack changes nothing here.
 export function applyObjectAction(settings, object) {
   const { type, effect } = object.action;
   if (type === 'toggleLight') return { ...settings, lightOn: !settings.lightOn };

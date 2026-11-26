@@ -1,11 +1,13 @@
+// Part of: Decorate mode: the side bar content.
+// Uses: DecorateTray.jsx, ItemToolbar.jsx, Sidebar.jsx, placement.js.
+// Used by: RoomScreen.jsx.
 import { entryOf } from '../scene/placement.js';
 import DecorateTray from './DecorateTray.jsx';
 import ItemToolbar from './ItemToolbar.jsx';
 import { Section } from './Sidebar.jsx';
 
-// What the side bar shows in decorate mode: Undo, Reset room and Done, the objects to add,
-// and the settings of the selected object.
-//   editor   what useItemsEditor returns
+// Side bar content in Decorate mode: Undo / Reset room / Done, the selected object's size, flip and remove, and the tray to add objects.
+// editor = the object returned by useItemsEditor.
 export default function DecorateHud({ scene, editor, onDone }) {
   const selected = editor.items.find((item) => item.id === editor.selectedId);
   const entry = selected && entryOf(scene, selected.key);

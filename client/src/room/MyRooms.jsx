@@ -1,8 +1,9 @@
+// Part of: Room page, side bar: the "My rooms" list.
+// Used by: RoomScreen.jsx.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-// The list of rooms this browser has saved. "Forget" only removes a room from this list;
-// the room itself stays on the server and its share link keeps working.
+// Rooms saved in this browser (from myRooms.js). "Forget" only removes the entry (and its edit key): the room stays online.
 export default function MyRooms({ rooms, scenes, currentCode, onForget }) {
   const [open, setOpen] = useState(false);
   const sceneName = (slug) => scenes.find((s) => s.slug === slug)?.name ?? slug;

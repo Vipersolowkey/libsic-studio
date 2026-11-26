@@ -1,3 +1,5 @@
+/* Part of: Music: look of the CD workshop and CD page.
+   Used by: App.jsx. */
 /* The CD workshop (/music) and the page of one CD (/cd/<code>).
    A wooden desk with paper sheets, brass labels and the CDs standing on it, in the colours of the Golden Hour Loft
    (the variables come from room/skins.js, put on .mk-desk by music/Desk.jsx), so the page looks like the CD tower in the rooms. */
@@ -30,6 +32,7 @@
 .mk-note { color: var(--soft); font-size: .85rem; line-height: 1.5; }
 .mk-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
+/* Below: classes of MusicPage.jsx (list and editor), CdEditor.jsx (the form) and CdPage.jsx (one CD). */
 /* paper */
 .mk-sheet {
   position: relative; min-width: 0; padding: 26px 26px 28px; background: var(--paper); border: 1px solid var(--edge); border-radius: 10px;
