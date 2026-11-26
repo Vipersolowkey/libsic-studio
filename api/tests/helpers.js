@@ -63,6 +63,23 @@ function installFakeRoomStore(Room, { duplicateFirst = 0 } = {}) {
     };
   };
   Room.deleteOne = async (filter) => ({ deletedCount: store.delete(filter.code) ? 1 : 0 });
+  Room.estimatedDocumentCount = async () => store.size;
+  // find({ owner }) for "my rooms": the documents of one owner, newest change first.
+  Room.find = (filter = {}) => {
+    let list = [...store.values()].filter((r) => filter.owner === undefined || String(r.owner) === String(filter.owner));
+    const query = {
+      sort: () => {
+        list = list.sort((a, b) => b.updatedAt - a.updatedAt);
+        return query;
+      },
+      limit: (n) => {
+        list = list.slice(0, n);
+        return query;
+      },
+      lean: async () => list,
+    };
+    return query;
+  };
 
   return {
     store,
@@ -70,8 +87,83 @@ function installFakeRoomStore(Room, { duplicateFirst = 0 } = {}) {
       delete Room.prototype.save;
       delete Room.findOne;
       delete Room.deleteOne;
+      delete Room.estimatedDocumentCount;
+      delete Room.find;
     },
   };
 }
 
-module.exports = { validationErrors, fakeSceneModel, installFakeRoomStore };
+// The same idea for the Cd model: real Mongoose documents (so the real validation runs) kept in a Map.
+// "official" lists CDs that already exist and may not be changed, such as the studio CDs.
+function installFakeCdStore(Cd, { official = [] } = {}) {
+  const store = new Map();
+  Cd.prototype.save = async function save() {
+    await this.validate();
+    this.createdAt = this.createdAt || new Date();
+    this.updatedAt = new Date();
+    store.set(this.code, this);
+    return this;
+  };
+  for (const cd of official) store.set(cd.code, new Cd({ ...cd, official: true }));
+  Cd.findOne = (filter) => {
+    const found = store.get(filter.code) || null;
+    return { select: () => Promise.resolve(found), then: (ok, fail) => Promise.resolve(found).then(ok, fail) };
+  };
+  Cd.find = (filter) => {
+    let wanted = [...store.values()].filter((cd) => (filter.official === undefined || cd.official === filter.official) && (filter.owner === undefined || String(cd.owner) === String(filter.owner)));
+    const query = {
+      sort: () => query,
+      limit: (n) => {
+        wanted = wanted.slice(0, n);
+        return query;
+      },
+      lean: async () => wanted,
+    };
+    return query;
+  };
+  Cd.deleteOne = async (filter) => ({ deletedCount: store.delete(filter.code) ? 1 : 0 });
+  Cd.estimatedDocumentCount = async () => store.size;
+  return {
+    store,
+    restore() {
+      for (const name of ['save']) delete Cd.prototype[name];
+      for (const name of ['findOne', 'find', 'deleteOne', 'estimatedDocumentCount']) delete Cd[name];
+    },
+  };
+}
+
+// A pretend Track model that knows the given tracks ({ _id, title, artist, src, duration, license }).
+function fakeTrackModel(tracks) {
+  return { find: (filter) => ({ lean: async () => tracks.filter((t) => filter._id.$in.includes(t._id)) }) };
+}
+
+// The same idea for the User model: real Mongoose documents kept in a Map, with the one unique rule MongoDB would enforce (the username).
+function installFakeUserStore(User) {
+  const store = new Map(); // username -> document
+  User.prototype.save = async function save() {
+    await this.validate();
+    const taken = store.get(this.username);
+    if (taken && String(taken._id) !== String(this._id)) throw Object.assign(new Error('E11000 duplicate key error'), { code: 11000 });
+    this.createdAt = this.createdAt || new Date();
+    this.updatedAt = new Date();
+    store.set(this.username, this);
+    return this;
+  };
+  const query = (found) => ({
+    select: () => query(found),
+    lean: () => Promise.resolve(found ? found.toObject({ virtuals: false }) : null),
+    then: (ok, fail) => Promise.resolve(found).then(ok, fail),
+  });
+  User.findOne = (filter) => query(store.get(filter.username) || null);
+  User.findById = (id) => query([...store.values()].find((u) => String(u._id) === String(id)) || null);
+  User.countDocuments = async () => store.size;
+  return {
+    store,
+    restore() {
+      delete User.prototype.save;
+      for (const name of ['findOne', 'findById', 'countDocuments']) delete User[name];
+    },
+  };
+}
+
+module.exports = { validationErrors, fakeSceneModel, installFakeRoomStore, installFakeCdStore, fakeTrackModel, installFakeUserStore };

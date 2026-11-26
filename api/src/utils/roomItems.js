@@ -1,11 +1,16 @@
+// Part of: Decorate mode: server-side check of the placed items in a room.
+// Uses: constants.js.
+// Used by: rooms.js.
 const { MAX_ITEMS } = require('../constants');
 
+// Rules for a room's placed items: at most MAX_ITEMS, unique ids, known catalog keys, scale within the entry's range,
+// x/y inside the surface area, no flip if not flippable, "unique" entries only once.
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,16}$/;
 
 const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
 
-// Checks the objects a visitor placed in a room against what the scene allows.
-// Returns null when everything is fine, otherwise { path: message } for every problem found.
+// Returns null when fine, else { "items[2].x": message, ... } for every problem.
+// Called by routes/rooms.js on POST and PUT. Mirrors the client rules in scene/itemsEdit.js and placement.js (MAX_ITEMS, scale range, surface area).
 function validateItems(items, scene) {
   if (!Array.isArray(items)) return { items: 'items must be a list' };
   if (items.length > MAX_ITEMS) return { items: `a room holds at most ${MAX_ITEMS} objects` };

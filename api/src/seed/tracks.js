@@ -1,4 +1,8 @@
-// Original synthesized pieces; reproducible with docs/art-tools/make_music_tracks.py.
+// Part of: Our own music: data of the 12 tracks and 3 official CDs.
+// Used by: seedMusic.js.
+// The 12 tracks and 3 official CDs. Tracks are our own synthesized pieces (CC0, made by docs/art-tools/make_music_tracks.py),
+// the mp3s live in client/public/audio/music/<id>.mp3. Each official CD takes 4 tracks, in play order.
+// names = [id, title, length in seconds]: the length is typed by hand, so keep it equal to the real file.
 const names = [
   ['lamp-light', 'Lamp Light', 51], ['paper-clouds', 'Paper Clouds', 43],
   ['quiet-pages', 'Quiet Pages', 51], ['midnight-ink', 'Midnight Ink', 55],

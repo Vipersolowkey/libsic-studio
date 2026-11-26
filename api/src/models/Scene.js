@@ -1,21 +1,27 @@
+// Part of: Scenes: what a room looks like (layers, objects, Decorate catalog).
+// Uses: constants.js.
+// Used by: app.js, seedScenes.js.
 const mongoose = require('mongoose');
 const { EFFECTS, ACTION_TYPES, LAYER_KINDS, LAYER_BLENDS, LAYER_ANIMS } = require('../constants');
 
+// A scene = a stack of image layers (back to front) + clickable objects + effects + the surfaces and catalog for Decorate mode.
+// Most of the file is the shape of one layer. All positions are percentages of the scene, so they fit any screen.
+// The checks at the bottom keep indexes (object.layer, effectLayer, drawAt) pointing at real layers.
 const { Schema } = mongoose;
 
 // Where a layer sits when it does not cover the whole scene: percentages of the scene (0 to 100).
+// ===== SMALL SHARED PIECES: a box in percent, scale limits, glide coordinates =====
 const boxPercent = { type: Number, required: true, min: 0, max: 100 };
 const boxSchema = new Schema({ x: boxPercent, y: boxPercent, width: boxPercent, height: boxPercent }, { _id: false });
 
 const scaleValue = { type: Number, required: true, min: 0.2, max: 3 };
 const glideCoord = { type: Number, required: true, min: -2000, max: 2000 };
 
-// A small movement for a layer. Which one is picked by name:
-//   spin (the record), tonearm, sway (leaves), steam, pulse (glows), breathe (a sleeping cat), drift (clouds),
-//   flick (a tail), billow (a curtain in the breeze), throb (a jellyfish bell squashing and stretching),
-//   sweep (a radar beam turning all the time), shut (a shell that folds down while the music is paused),
-//   cover (the same, but only visible while paused: the closed shell in front of the pearl)
-// pivot: the point it turns around, in percent of the layer's own picture.
+// A small looping movement of a layer, picked by name:
+//   spin (record), tonearm, sway (leaves), steam, pulse (glows), breathe (sleeping cat), drift (clouds), flick (tail),
+//   billow (curtain), throb (jellyfish bell), sweep (radar beam), shut (shell folds while music is paused),
+//   cover (like shut, but only visible while paused)
+// pivot = the point it turns around, in percent of the layer's own picture. Which extra fields apply depends on the name (see below).
 const animSchema = new Schema(
   {
     name: { type: String, enum: LAYER_ANIMS, required: true },
@@ -34,9 +40,9 @@ const animSchema = new Schema(
   { _id: false }
 );
 
-// One transparent image in the stack that makes up a scene.
-// depth: 0 = far away and almost still, 1 = nearest and moves the most with the mouse.
-// Everything after depth is optional, so a plain full-size picture only needs name, image and depth.
+// One transparent image in a scene. depth: 0 = far and almost still, 1 = near and moves most with the mouse.
+// Only name, image and depth are needed (full-size picture); everything else is optional.
+// ===== LAYER: one picture of a scene. Drawn by client scene/SceneStage.jsx; its animations are CSS in scene/scene.css =====
 const layerSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -54,12 +60,11 @@ const layerSchema = new Schema(
     light: { type: Boolean, default: undefined }, // true: lamp light that goes off with the lights
     tile: { type: Number, min: 1, max: 100, default: undefined }, // repeat the picture, this wide in percent of the layer
     anim: { type: animSchema, default: undefined },
-    // The key of the catalog object this layer belongs to. Such a layer is a template: it is drawn once for
-    // every copy of the object a room places, and not in its own place in the stack.
+    // Key of the catalog object this layer belongs to. Such a layer is a template: drawn once per copy the room places,
+    // not at its own place in the stack. Needs a box and a catalog entry (checked below).
     item: { type: String, default: undefined },
-    // A straight, slow trip across the scene that repeats: a fish swimming by, a jellyfish drifting up. It starts at `from`,
-    // ends at `to` (both in percent of the layer's own width and height, and they may lie outside the layer), and fades in and
-    // out at the ends. `mirror` flips the picture (a fish drawn facing right that swims to the left). Works together with `anim`.
+    // A repeating slow trip (a fish swimming by). From `from` to `to`, in percent of the layer's own size (may lie outside it),
+    // fading in and out. mirror flips the picture (a fish drawn facing right that swims left). Can be combined with `anim`.
     glide: {
       type: new Schema(
         {
@@ -68,37 +73,36 @@ const layerSchema = new Schema(
           duration: { type: Number, required: true, min: 1 },
           delay: { type: Number },
           mirror: { type: Boolean },
-          // true: instead of fading out and starting over, it drifts to `to` and back again, smoothly, and never fades (a jellyfish hanging in the water).
+          // true: goes to `to` and back again without fading, instead of restarting (a hanging jellyfish).
           pingpong: { type: Boolean },
         },
         { _id: false }
       ),
       default: undefined,
     },
-    // true: only shown at night (when the lights are off), for example the night sky seen through a window.
+    // true: shown only at night (lights off). Pair with `light: true` layers, which show only by day.
     night: { type: Boolean, default: undefined },
-    // The layer is a curtain: when the room's curtains are closed it is drawn this many times wider, growing out of
-    // the edge at `origin` (percent of its own width: 0 = the left edge stays, 100 = the right edge stays).
+    // Marks a curtain: when curtains are closed it is drawn `scale` times wider, growing from the edge at `origin`
+    // (0 = left edge stays, 100 = right edge stays).
     curtain: {
       type: new Schema({ scale: { type: Number, required: true, min: 1, max: 4 }, origin: { type: Number, required: true, min: 0, max: 100 } }, { _id: false }),
       default: undefined,
     },
-    // false: the picture is not mirrored when its object is flipped (a shadow keeps falling away from the lamp).
+    // false: not mirrored when its object is flipped (a shadow must keep falling away from the lamp).
     mirror: { type: Boolean, default: undefined },
   },
   { _id: false }
 );
 
-// A clickable object. Position and size are percentages of the scene (0 to 100),
-// so they stay correct on any screen size.
+// A clickable object on the picture (lamp, clock, record player). Position and size in percent of the scene.
 const percent = { type: Number, required: true, min: 0, max: 100 };
 
+// ===== CLICKABLE OBJECT (lamp, window, music object). Client: SceneStage.jsx hotspots + sceneSettings.js =====
 const objectSchema = new Schema(
   {
     key: { type: String, required: true }, // for example "lamp"
     label: { type: String, required: true }, // shown on hover
-    // Position in the layers list (0 = first layer) of the image this object is drawn on,
-    // so the object moves together with that layer when the mouse moves.
+    // Index of the layer it sits on (0 = first), so the click area moves with that layer's parallax.
     layer: { type: Number, required: true, min: 0 },
     x: percent,
     y: percent,
@@ -119,17 +123,17 @@ const objectSchema = new Schema(
   { _id: false }
 );
 
+// ===== DECORATE MODE data: surfaces (where) and catalog (what). Client: scene/placement.js, itemsEdit.js, room/DecorateTray.jsx =====
 const point = new Schema({ x: boxPercent, y: boxPercent }, { _id: false });
 const scale = { type: Number, required: true, min: 0.01 };
 
-// A surface is a flat area objects can stand on (a desk, a window pane). The further down it an object stands,
-// the closer it looks, so its size runs from farScale at farY to nearScale at nearY.
+// A flat area decorations can stand on (desk, window pane). Lower = closer = bigger: size runs from farScale at farY to nearScale at nearY.
 const surfaceSchema = new Schema(
   {
     key: { type: String, required: true },
     area: { type: boxSchema, required: true }, // where an object's contact point may be
-    blocked: { type: [boxSchema], default: [] }, // where a contact point may not be, e.g. a fixed object (the editor pushes a dragged object out; may reach past the area)
-    drawAt: { type: Number, required: true, min: 0 }, // its objects are drawn just before this layer
+    blocked: { type: [boxSchema], default: [] }, // no-go boxes (e.g. a fixed object); the editor pushes a dragged item out
+    drawAt: { type: Number, required: true, min: 0 }, // layer index: its objects are drawn just before (in front of) that layer
     perspective: {
       type: new Schema({ farY: boxPercent, nearY: boxPercent, farScale: scale, nearScale: scale }, { _id: false }),
       required: true,
@@ -138,14 +142,14 @@ const surfaceSchema = new Schema(
   { _id: false }
 );
 
-// A kind of object visitors can place in a room (a mug, a plant). Its pictures are the layers with the same item key.
+// A kind of decoration visitors can place (mug, plant). Its pictures are the layers whose `item` equals this key.
 const catalogSchema = new Schema(
   {
     key: { type: String, required: true },
     label: { type: String, required: true },
     surface: { type: String, required: true },
-    home: { type: point, required: true }, // contact point (bottom centre) in the drawn scene; the object scales around it
-    bounds: { type: boxSchema, required: true }, // the area to click or drag, at home
+    home: { type: point, required: true }, // contact point (bottom centre) where it first stands; it scales around this point
+    bounds: { type: boxSchema, required: true }, // clickable / draggable area when at home
     thumb: { type: String, required: true }, // picture shown in the tray
     flippable: { type: Boolean, default: true }, // false for things with writing on them
     unique: { type: Boolean, default: false }, // true: at most one in a room
@@ -158,6 +162,7 @@ const catalogSchema = new Schema(
   { _id: false }
 );
 
+// ===== THE SCENE: slug, layers, objects, effects, night dimming, surfaces, catalog =====
 const sceneSchema = new Schema({
   slug: { type: String, required: true, unique: true, trim: true }, // for example "rainy-cafe"
   name: { type: String, required: true, trim: true },
@@ -169,16 +174,16 @@ const sceneSchema = new Schema({
   objects: { type: [objectSchema], default: [] },
   effects: { type: [{ type: String, enum: EFFECTS }], default: [] },
   defaultEffect: { type: String, enum: EFFECTS },
-  // Effects (rain, snow...) are drawn on top of this layer and behind the ones after it.
-  // For a window, that is the layer just behind the wall, so the rain only shows through the glass.
+  // Effects (rain, snow...) are drawn above this layer and behind later ones. For a window: the layer behind the wall,
+  // so rain shows only through the glass.
   effectLayer: { type: Number, min: 0, default: 0 },
-  // How dark the whole picture gets when the lights are off (0 to 1). Leave it out for the usual dimming;
-  // a scene whose night is painted in its own layers can set a small number.
+  // How dark the picture gets when lights are off (0-1). Omit for the default; scenes with painted night layers use a small value.
   nightDim: { type: Number, min: 0, max: 1 },
   surfaces: { type: [surfaceSchema], default: [] },
   catalog: { type: [catalogSchema], default: [] },
 });
 
+// Cross-field checks (a field cannot see its siblings, so they live here).
 sceneSchema.path('objects').validate(function (objects) {
   return objects.every((object) => object.layer < this.layers.length);
 }, 'An object points to a layer the scene does not have');

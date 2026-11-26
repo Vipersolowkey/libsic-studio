@@ -11,9 +11,14 @@
     "seed:scenes": "node src/seed/seedScenes.js",
     "seed:music": "node src/seed/seedMusic.js",
     "try:music": "node scripts/tryMusic.js",
-    "try:rooms": "node scripts/tryRooms.js"
+    "try:rooms": "node scripts/tryRooms.js",
+    "make-admin": "node scripts/makeAdmin.js"
+  },
+  "jest": {
+    "testTimeout": 30000
   },
   "dependencies": {
+    "@sentry/node": "^11.18.0",
     "compression": "^1.8.2",
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
