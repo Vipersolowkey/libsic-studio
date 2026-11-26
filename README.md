@@ -4,6 +4,16 @@ An ambient music room for the web. Enter through a cinematic intro at `/`, pick 
 
 Course project for **Web Application Development**.
 
+## Live site
+
+| What | Address |
+| --- | --- |
+| Website | https://libsic.id.vn |
+| API | https://libsic-studio-api.onrender.com |
+| API documentation | https://libsic-studio-api.onrender.com/api-docs |
+
+The API runs on Render's free plan, so the first request after a quiet period can take about a minute while it wakes up.
+
 ## Features
 
 - Five layered scenes with mouse-parallax depth, day/night lighting, and animated effects (rain, snow, fireflies, stars, dust, bubbles, plankton):
@@ -65,6 +75,22 @@ How it works:
 - The API refuses (400, with the field named) an item that is not in the scene catalog, stands outside its surface, is too big or too small, repeats a one-only object or has a duplicate `id`. Details are in `/api-docs`.
 - After pulling changes that touch scenes, run `npm run seed:scenes` in `api` again.
 
+## Running the live site
+
+Settings for the live server are environment variables on the host (see `api/.env.example`). None of them is required.
+
+| Setting | Where | What it does |
+| --- | --- | --- |
+| `SENTRY_DSN` | API | Sends unexpected server errors (500) to Sentry. Off without it. |
+| `VITE_SENTRY_DSN` | Client (build time) | Sends browser crashes to Sentry. Off without it. |
+| `STATS_TOKEN` | API | Turns on the visit totals at `/stats` on the API address. Without it, `/api/stats` answers 404. |
+| `WRITES_PER_MINUTE`, `CREATES_PER_10_MIN` | API | Per-visitor limits on saving (defaults 40 and 60). |
+| `MAX_ROOMS`, `MAX_CDS` | API | Most rooms / custom CDs stored; above it new ones get 503. |
+
+- **Spam protection:** every address has a general limit (300 requests per minute per visitor), saves and deletes have a stricter one, and rooms and CDs are checked field by field. Names are cleaned of control and invisible characters.
+- **Visit counting:** the site tells the API which kind of page opened (never room codes). The API adds one to a daily total and counts each visitor once a day using a one-way scrambled mark that is deleted after 2 days. No cookies, no addresses stored, and "Do Not Track" is respected.
+- **Error monitoring:** see the table. Reports carry no personal data.
+
 ## Running the project
 
 Use [Node.js](https://nodejs.org) 26 (also used by CI), and MongoDB Atlas or a local MongoDB instance. The current client test dependencies need Node 22.22.2+, 24.15+ or 26+.
@@ -99,7 +125,7 @@ npm run dev                   website at http://localhost:5173 (the API must be 
 npm test                      run the client tests
 ```
 
-The client talks to the API at `http://localhost:4000` by default. To use another address, copy `client/.env.example` to `client/.env` and change `VITE_API_URL`.
+The client talks to the API at `http://localhost:4000` by default. To use another address, copy `client/.env.example` to `client/.env` and change `VITE_API_URL`. The live site is built with `VITE_API_URL=https://libsic-studio-api.onrender.com`.
 
 ## Team
 
