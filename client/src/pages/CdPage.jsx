@@ -1,3 +1,6 @@
+// Part of: CD page (/cd/:code): listen, share, edit and delete a CD.
+// Uses: CdEditor.jsx, CdPreview.jsx, Desk.jsx, HoloPlayer.jsx, api.js, cdLook.js, myCds.js, myLinks.js, usePlayer.js.
+// Used by: App.jsx.
 import { useEffect, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { deleteCd, getCd, updateCd } from '../api.js';
@@ -17,6 +20,7 @@ export default function CdPage() {
 }
 function CdDetails({ code }) {
   const location = useLocation();
+  // ===== STATE: the CD (GET /api/cds/:code), edit key (from myCds.js or the URL), editing / deleting flags =====
   const [cd, setCd] = useState(null);
   const [error, setError] = useState('');
   const [notFound, setNotFound] = useState(false);
@@ -36,6 +40,7 @@ function CdDetails({ code }) {
     getCd(code).then((value) => { if (!cancelled) setCd(value); }).catch((err) => { if (!cancelled) { setError(err.message); setNotFound(err.status === 404); } });
     return () => { cancelled = true; };
   }, [code, attempt]);
+  // ===== ACTIONS: save changes (PUT /api/cds/:code), delete (DELETE), copy the link. All three need the edit key =====
   async function save(input) {
     setBusy(true); setError('');
     try {
@@ -58,6 +63,7 @@ function CdDetails({ code }) {
     : cd.tracks.map((track) => ({ id: track.id, title: track.title, meta: formatTime(track.duration) }));
   return (
     <Desk nav={<Link to="/music">Make a CD / My CDs</Link>}>
+      {/* PAGE TOP + LEFT: CD preview with its disc, the playlist, and the hologram player for our own tracks (usePlayer.js) */}
       <header className="mk-head">
         <p className="mk-eyebrow">{cd.official ? 'Studio collection' : 'A personal mix'}</p>
         <h1>{cd.title}</h1>
@@ -77,6 +83,7 @@ function CdDetails({ code }) {
           {cd.links?.length ? <p className="mk-note">The links play one after the other when you put this CD in a room.</p> : <div className="mk-display"><HoloPlayer player={player} /></div>}
           <Link className="mk-press" to={`/new?cd=${encodeURIComponent(code)}`}>Listen in a room</Link>
         </section>
+        {/* RIGHT: share link + back-up edit key, then Manage CD (only for custom CDs: edit opens CdEditor.jsx) */}
         <aside className="mk-stand mk-stand-plain">
           <section className="mk-sheet">
             <h2 className="mk-hand">Share this CD</h2>
