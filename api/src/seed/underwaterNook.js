@@ -1,13 +1,16 @@
-// Scene: Clam Cove. A 3D-rendered diorama on the sea floor (Blender layers). The clam IS the player: it is open while the music plays and half-closes when it is paused,
-// its pearl turns like a record, and the nine eyes along its mantle pulse like a level meter. A rock arch with coral, kelp and a far reef frame the cove;
-// jellyfish and a ribbon of small distant fish drift through the open water, light shafts sweep slowly. The star-shaped glimmer at the surface (top right)
-// switches day and night. Night is its own lighting: deep indigo water, one faint moon shaft, bioluminescent jellyfish and corals, and the pearl as the key light.
-// Pictures: client/public/scenes/underwater-nook/ (made by scratchpad/b3_new, Blender Cycles, clean stylised 3D). Positions of layers and objects are percentages of the scene.
-// Layers are listed from back to front. `light` layers are day only, `night` layers are night only.
+// Part of: Scenes: data of Room "Clam Cove". Drawn by client SceneStage.jsx.
+// Used by: scenes.js.
+// Scene: Clam Cove (slug underwater-nook). A 3D sea-floor diorama. The giant clam IS the player: open while music plays, half-closed
+// when paused (anims `shut` / `cover`); its pearl spins and the eyes pulse. Jellyfish and fish drift through (`glide`). The glimmer at the
+// top right switches day / night; night has its own layers.
+// Pictures: client/public/scenes/underwater-nook/. Positions are percentages. Layers go back to front.
+// `light: true` layers show by day only, `night: true` layers at night only. This scene has the most layers (~120), so it is the heaviest to draw.
+// After editing, run `npm run seed:scenes`.
 module.exports = {
   slug: 'underwater-nook',
   name: 'Clam Cove',
   description: 'A cove on the sea floor where a giant clam is the music player: it opens while the music plays, its pearl turns like a record and its eyes pulse like a level meter. Jellyfish and a ribbon of small fish drift by, kelp sways and light shafts sweep. The glimmer at the surface switches day and night: at night the jellyfish and corals glow and the pearl lights the cove.',
+  // ===== LAYERS, back to front. Each row = one picture (file in client/public/scenes/<slug>/). The number at the end is the index used below. =====
   layers: [
     { name: 'sea', image: '/scenes/underwater-nook/sea.webp', depth: 0.02 }, // 0
     { name: 'sun glimmer', image: '/scenes/underwater-nook/sun_glimmer.webp', depth: 0.03, box: { x: 74.56, y: 0.0, width: 25.38, height: 38.33 }, light: true }, // 1
@@ -135,12 +138,14 @@ module.exports = {
     { name: 'Little fish night', image: '/scenes/underwater-nook/fish_night.webp', depth: 0.3, box: { x: 1.71, y: 32.04, width: 10.73, height: 8.15 }, blend: 'multiply', night: true, anim: { name: 'sway', amplitude: 1.0, pivot: { x: 50, y: 50 }, duration: 7.0, delay: -2.0 }, glide: { from: { x: -8.16, y: 2.73 }, to: { x: 8.16, y: -2.73 }, duration: 24, pingpong: true }, item: 'fish' }, // 122
     { name: 'Little fish nlit', image: '/scenes/underwater-nook/fish_nlit.webp', depth: 0.3, box: { x: 1.71, y: 32.04, width: 10.73, height: 8.15 }, night: true, anim: { name: 'sway', amplitude: 1.0, pivot: { x: 50, y: 50 }, duration: 7.0, delay: -2.0 }, glide: { from: { x: -8.16, y: 2.73 }, to: { x: 8.16, y: -2.73 }, duration: 24, pingpong: true }, item: 'fish' }, // 123
   ],
+  // ===== CLICKABLE OBJECTS: where a click does something (toggle light / effect / curtains, or open the music player). `layer` = index above. =====
   objects: [
     { key: 'window', label: 'Open sea', layer: 0, x: 40.0, y: 38.89, width: 18.75, height: 30.0, action: { type: 'toggleEffect', effect: 'bubbles' } },
     { key: 'gauge', label: 'Sun glimmer', layer: 0, x: 83.75, y: 0, width: 12.5, height: 22.22, action: { type: 'toggleLight' } },
     { key: 'cdplayer', label: 'Clam player', layer: 81, x: 4.75, y: 60.0, width: 34.41, height: 24.5, action: { type: 'nextTrack' } },
   ],
   // What a visitor may add (Decorate). The pictures of an object are the layers at the end of the list with its key in `item`.
+  // ===== DECORATE: what a visitor can add (catalog) and where it can stand (surfaces). Pictures = layers with the same `item` key. =====
   catalog: [
     { key: 'starfish', label: 'Starfish', surface: 'seabed', home: { x: 31.59, y: 82.55 }, bounds: { x: 26.17, y: 79.56, width: 10.85, height: 4.7 }, thumb: '/scenes/underwater-nook/starfish_thumb.webp', flippable: true, unique: false, inDefault: false, scale: { min: 0.6, max: 1.8 } },
     { key: 'conch', label: 'Conch shell', surface: 'seabed', home: { x: 48.02, y: 83.53 }, bounds: { x: 44.69, y: 74.0, width: 6.67, height: 10.81 }, thumb: '/scenes/underwater-nook/conch_thumb.webp', flippable: true, unique: false, inDefault: false, scale: { min: 0.6, max: 1.8 } },
@@ -159,6 +164,7 @@ module.exports = {
     { key: 'seabed', area: { x: 28, y: 78, width: 70, height: 18 }, blocked: [{ x: 0, y: 60, width: 40.5, height: 27 }], drawAt: 81, perspective: { farY: 70, nearY: 96, farScale: 0.65, nearScale: 1.35 } },
     { key: 'water', area: { x: 3, y: 10, width: 94, height: 52 }, drawAt: 50, perspective: { farY: 12, nearY: 62, farScale: 0.75, nearScale: 1.25 } },
   ],
+  // ===== EFFECTS the room can show (client scene/Effects.jsx), which one starts, and the layer index they are drawn above =====
   effects: ['bubbles', 'plankton'],
   defaultEffect: 'bubbles', // bubbles rise from the start; clicking the open water switches them off
   effectLayer: 81, // the empty bubble-area layer: the whole cove is under water

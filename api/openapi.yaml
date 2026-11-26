@@ -6,18 +6,36 @@ info:
     REST API behind **Libsic Studio**, an ambient music room for the web. Visitors pick a layered scene,
     load a CD into a retro CD player and save the result as a *room* with a short share link.
 
-    **No accounts.** Anyone with a room's code can open it. When a room is created, the API returns a
-    secret **edit key** once. Changing or deleting the room needs that key in the `x-edit-key` header.
-    Only a hash of the key is stored on the server.
+    **Accounts are optional.** Anyone with a room's code can open it, and anyone can save a room without
+    signing in. When a room is created, the API returns a secret **edit key** once. Changing or deleting the
+    room needs that key in the `x-edit-key` header. Only a hash of the key is stored on the server.
+
+    A visitor may also make an account (a username and a password, no email). Signing in gives a token that
+    is sent as `Authorization: Bearer <token>`. Rooms and CDs saved while signed in belong to the account, so
+    the owner can change or delete them from any device without the edit key. The edit key still works too.
+    Tokens last 7 days. Passwords are stored only as a salted scrypt hash and are never sent back.
 
     Data is sent and received as JSON. Errors always look like `{ "error": "..." }`.
 
     **Fair use.** One visitor may send 300 requests per minute to the `/api` addresses. Above that the API
     answers `429 Too Many Requests` until the minute is over. Answers are sent compressed (gzip) to browsers
     that accept it.
+
+    **Saving limits.** Saving is limited more strictly, per visitor: 40 saves or deletes per minute and
+    60 new rooms or CDs per 10 minutes (answer `429`). When the free database is almost full, new rooms and
+    CDs are refused with `503` until space is freed.
+
+    **Sign-in limits.** Making accounts is limited to 30 per 15 minutes per visitor. Only *failed* sign-ins
+    count: 10 per 15 minutes per visitor, and 5 per 15 minutes for one username (answer `429`).
+
+    **Privacy.** There are no cookies. The only personal data kept for an account is the username, an
+    optional display name and the password hash. Page visits are counted anonymously
+    (`POST /api/visits`): only totals per day are kept, never addresses. "Do Not Track" is respected.
 servers:
   - url: /
     description: This server
+  - url: https://libsic-studio-api.onrender.com
+    description: Live API
   - url: http://localhost:4000
     description: Local development
 
@@ -32,6 +50,14 @@ tags:
     description: Original CC0 music library.
   - name: CDs
     description: Official collections and editable custom mixes.
+  - name: Accounts
+    description: Optional accounts. Sign up, sign in and the signed-in person's own profile.
+  - name: My things
+    description: The signed-in person's own rooms and CDs, and moving guest rooms onto the account.
+  - name: Admin
+    description: Only for accounts with the admin role (made with `npm run make-admin`). Look at totals and remove spam.
+  - name: Visits
+    description: Anonymous visit counter (totals per day, no cookies, no addresses stored).
 
 paths:
   # ---------------------------------------------------------------- Health
@@ -123,6 +149,10 @@ paths:
                 $ref: '#/components/schemas/RoomCreated'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServerFull'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -282,6 +312,10 @@ paths:
                 $ref: "#/components/schemas/CreatedCd"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          $ref: "#/components/responses/ServerFull"
         "500": *a1
   /api/cds/{code}:
     get:
@@ -470,8 +504,464 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /api/visits:
+    post:
+      tags: [Visits]
+      summary: Count one page view
+      description: |
+        Called by the website when a page opens. Nothing is stored about the visitor except that, once a day,
+        a scrambled one-way mark is used to count each visitor once (it is deleted after 2 days).
+        A request with the `DNT: 1` or `Sec-GPC: 1` header is accepted but not counted.
+        Use `page: scene` with `scene` for a room being shown; scenes that do not exist are ignored.
+      operationId: countVisit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [page]
+              properties:
+                page:
+                  type: string
+                  enum: [home, new, room, cd, music, other, scene]
+                scene:
+                  type: string
+                  description: "The scene slug, only with page = scene."
+            example:
+              page: scene
+              scene: night-study
+      responses:
+        '204':
+          description: Counted (or ignored because of Do Not Track).
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/stats:
+    get:
+      tags: [Visits]
+      summary: Visit totals per day (owner only)
+      description: |
+        Needs the `STATS_TOKEN` of the server in the header `Authorization: Bearer <token>`.
+        Answers `404` while no token is set on the server. A small page that shows these numbers is at `/stats`.
+      operationId: getStats
+      parameters:
+        - name: days
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 90, default: 7 }
+      responses:
+        '200':
+          description: One entry per day, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [days]
+                properties:
+                  days:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        day: { type: string, example: '2026-11-26' }
+                        visitors: { type: integer }
+                        pages:
+                          type: object
+                          additionalProperties: { type: integer }
+                        scenes:
+                          type: object
+                          additionalProperties: { type: integer }
+        '401':
+          description: The token is missing or wrong.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Stats are switched off (no `STATS_TOKEN` is set).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ---------------------------------------------------------------- Accounts
+  /api/auth/register:
+    post:
+      tags: [Accounts]
+      summary: Make an account
+      description: |
+        Creates an account and signs it in. The username is 3 to 20 letters, numbers or underscores (it is
+        saved in lower case). The password is 8 to 128 characters and must not be a very common password or
+        the username. A `role` sent along is ignored: nobody can make themselves admin.
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+            example:
+              username: night_owl
+              password: correct horse battery
+      responses:
+        '201':
+          description: The account was made.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: That username is taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/login:
+    post:
+      tags: [Accounts]
+      summary: Sign in
+      description: |
+        A wrong username and a wrong password give the same answer, so nobody can find out which usernames exist.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '200':
+          description: Signed in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Wrong username or password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Wrong username or password
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/me:
+    get:
+      tags: [Accounts]
+      summary: Who am I
+      description: Used when the website starts, to check that the saved token is still good.
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: The signed-in person.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    patch:
+      tags: [Accounts]
+      summary: Change my display name or disc colour
+      description: Nothing else (username, password, role) can be changed here.
+      operationId: updateMe
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+            example:
+              displayName: Night Owl
+              avatarHue: 210
+      responses:
+        '200':
+          description: The profile after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ---------------------------------------------------------------- My things
+  /api/me/rooms:
+    get:
+      tags: [My things]
+      summary: My rooms
+      description: The rooms owned by the signed-in account, newest first (at most 200).
+      operationId: getMyRooms
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: The rooms.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MyRoom'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/me/cds:
+    get:
+      tags: [My things]
+      summary: My CDs
+      description: The custom CDs owned by the signed-in account, newest first (at most 200).
+      operationId: getMyCds
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: The CDs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MyCd'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/me/claim:
+    post:
+      tags: [My things]
+      summary: Move guest rooms and CDs onto my account
+      description: |
+        Each room or CD needs its real edit key, so only the person who saved it can claim it. Anything that
+        cannot be claimed is listed with a reason and nothing else changes. Safe to repeat. At most 50 entries.
+      operationId: claimMine
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimInput'
+      responses:
+        '200':
+          description: What was moved and what was not.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ---------------------------------------------------------------- Admin
+  /api/admin/stats:
+    get:
+      tags: [Admin]
+      summary: Totals
+      operationId: adminStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Totals from our own database.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStats'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          $ref: '#/components/responses/NotAdmin'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/rooms:
+    get:
+      tags: [Admin]
+      summary: Search all rooms
+      operationId: adminRooms
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchText'
+        - $ref: '#/components/parameters/PageNumber'
+      responses:
+        '200':
+          description: One page of rooms (20 per page).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRoomPage'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          $ref: '#/components/responses/NotAdmin'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/rooms/{code}:
+    parameters:
+      - $ref: '#/components/parameters/RoomCode'
+    delete:
+      tags: [Admin]
+      summary: Delete any room
+      description: For spam. An admin can look and delete but not edit. Each delete is written to the server log.
+      operationId: adminDeleteRoom
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: The room was deleted. There is no response body.
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          $ref: '#/components/responses/NotAdmin'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/cds:
+    get:
+      tags: [Admin]
+      summary: Search custom CDs
+      description: Official CDs are not listed.
+      operationId: adminCds
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchText'
+        - $ref: '#/components/parameters/PageNumber'
+      responses:
+        '200':
+          description: One page of CDs (20 per page).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCdPage'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          $ref: '#/components/responses/NotAdmin'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/cds/{code}:
+    parameters:
+      - name: code
+        in: path
+        required: true
+        description: The CD's share code.
+        schema:
+          type: string
+    delete:
+      tags: [Admin]
+      summary: Delete a custom CD
+      description: Official CDs cannot be deleted.
+      operationId: adminDeleteCd
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: The CD was deleted. There is no response body.
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          $ref: '#/components/responses/NotAdmin'
+        '404':
+          description: No custom CD has that code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: CD not found
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      summary: List accounts
+      description: Usernames and room counts only. Never any password data.
+      operationId: adminUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+      responses:
+        '200':
+          description: One page of accounts (20 per page).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserPage'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          $ref: '#/components/responses/NotAdmin'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: "The token returned by sign up or sign in. Valid for 7 days. Sent only in this header, never in an address."
     EditKey:
       type: apiKey
       in: header
@@ -479,6 +969,22 @@ components:
       description: The secret edit key returned when the room or custom CD was created.
 
   parameters:
+    SearchText:
+      name: q
+      in: query
+      required: false
+      description: Search text (at most 60 characters). Used as plain text.
+      schema:
+        type: string
+    PageNumber:
+      name: page
+      in: query
+      required: false
+      description: Page number, starting at 1.
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
     SceneSlug:
       name: slug
       in: path
@@ -497,6 +1003,36 @@ components:
       example: k4m9x2qa
 
   responses:
+    SignInNeeded:
+      description: No valid token was sent, or it has expired. Sign in again.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Sign in first
+    NotAdmin:
+      description: The account is not an admin.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Not allowed
+    TooManyRequests:
+      description: This visitor sent too many requests. Wait a minute (or a few minutes for new rooms and CDs) and try again.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: You are saving too fast. Please wait a minute and try again.
+    ServerFull:
+      description: The database holds the most rooms or CDs it may. Try again later.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     BadRequest:
       description: The request body is not valid JSON, or a value is not allowed. `details` names each field.
       content:
@@ -549,6 +1085,193 @@ components:
             error: Something went wrong on the server
 
   schemas:
+    Credentials:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 20
+          pattern: '^[A-Za-z0-9_]+$'
+          example: night_owl
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          format: password
+    User:
+      type: object
+      description: What the API says about a person. There is no id, email or password data.
+      required: [username, displayName, avatarHue, role, createdAt]
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+          maxLength: 30
+        avatarHue:
+          type: integer
+          minimum: 0
+          maximum: 359
+        role:
+          type: string
+          enum: [user, admin]
+        createdAt:
+          type: string
+          format: date-time
+    Session:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          description: "Send it as `Authorization: Bearer <token>`. Valid for 7 days."
+        user:
+          $ref: '#/components/schemas/User'
+    ProfileUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 30
+        avatarHue:
+          type: integer
+          minimum: 0
+          maximum: 359
+    MyRoom:
+      type: object
+      required: [code, name, sceneSlug, updatedAt]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        sceneSlug: { type: string }
+        updatedAt: { type: string, format: date-time }
+    MyCd:
+      type: object
+      required: [code, title, updatedAt]
+      properties:
+        code: { type: string }
+        title: { type: string }
+        look:
+          type: object
+          nullable: true
+          properties:
+            hue: { type: integer, minimum: 0, maximum: 359 }
+            cover: { type: integer, minimum: 0, maximum: 3 }
+            disc: { type: integer, minimum: 0, maximum: 3 }
+            font: { type: integer, minimum: 0, maximum: 4 }
+        updatedAt: { type: string, format: date-time }
+    ClaimEntry:
+      type: object
+      required: [code, editKey]
+      properties:
+        code: { type: string }
+        editKey: { type: string }
+    ClaimInput:
+      type: object
+      properties:
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimEntry'
+        cds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimEntry'
+    ClaimResult:
+      type: object
+      required: [claimed, skipped]
+      properties:
+        claimed:
+          type: array
+          items:
+            type: object
+            required: [type, code]
+            properties:
+              type: { type: string, enum: [room, cd] }
+              code: { type: string }
+        skipped:
+          type: array
+          items:
+            type: object
+            required: [type, code, reason]
+            properties:
+              type: { type: string, enum: [room, cd] }
+              code: { type: string }
+              reason:
+                type: string
+                enum: [invalid entry, not found, official CDs cannot be claimed, wrong edit key, already on another account]
+    AdminStats:
+      type: object
+      required: [accounts, rooms, roomsThisWeek, customCds, officialCds, roomsPerScene]
+      properties:
+        accounts: { type: integer }
+        rooms: { type: integer }
+        roomsThisWeek: { type: integer }
+        customCds: { type: integer }
+        officialCds: { type: integer }
+        roomsPerScene:
+          type: array
+          items:
+            type: object
+            required: [sceneSlug, rooms]
+            properties:
+              sceneSlug: { type: string }
+              rooms: { type: integer }
+    AdminRoomPage:
+      type: object
+      required: [total, page, pageSize, items]
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+        items:
+          type: array
+          items:
+            type: object
+            required: [code, name, sceneSlug, owner, updatedAt]
+            properties:
+              code: { type: string }
+              name: { type: string }
+              sceneSlug: { type: string }
+              owner: { type: string, nullable: true, description: "The owner's username, or null for a guest room." }
+              updatedAt: { type: string, format: date-time }
+    AdminCdPage:
+      type: object
+      required: [total, page, pageSize, items]
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+        items:
+          type: array
+          items:
+            type: object
+            required: [code, title, owned, updatedAt]
+            properties:
+              code: { type: string }
+              title: { type: string }
+              owned: { type: boolean, description: "Whether an account owns it." }
+              updatedAt: { type: string, format: date-time }
+    AdminUserPage:
+      type: object
+      required: [total, page, pageSize, items]
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+        items:
+          type: array
+          items:
+            type: object
+            required: [username, displayName, role, createdAt, rooms]
+            properties:
+              username: { type: string }
+              displayName: { type: string }
+              role: { type: string, enum: [user, admin] }
+              createdAt: { type: string, format: date-time }
+              rooms: { type: integer }
     Track:
       type: object
       required:
@@ -659,6 +1382,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Track"
+        mine:
+          type: boolean
+          description: True when the signed-in caller owns this CD. Always false without a token.
         createdAt:
           type: string
           format: date-time
@@ -1086,6 +1812,9 @@ components:
           $ref: '#/components/schemas/RoomSettings'
         items:
           $ref: '#/components/schemas/RoomItems'
+        mine:
+          type: boolean
+          description: True when the signed-in caller owns this room. Always false without a token. The owner's id is never sent.
         createdAt:
           type: string
           format: date-time

@@ -1,12 +1,15 @@
-// Scene: Rainy Night Study. A desk beside a big window, drawn as many small layers so that
-// the record can spin, the leaves can sway and the lamp can be switched off on its own.
-// Look: a real 3D room rendered in Blender/Cycles (true bokeh city, glossy desk, warm lamp key light, cool ambient), graded in a lo-fi anime way. See scratchpad b1_3d.
-// Pictures: client/public/scenes/night-study/. Positions of layers and objects are percentages
-// of the scene. Layers are listed from back to front.
+// Part of: Scenes: data of Room "Rainy Night Study". Drawn by client SceneStage.jsx.
+// Used by: scenes.js.
+// Scene: Rainy Night Study. A desk by a big window with a turntable, a lamp and a clock, rendered in 3D and cut into
+// many layers so the record spins and the lamp can go off on its own.
+// Pictures: client/public/scenes/night-study/. Positions are percentages of the scene. Layers go back to front; the
+// number after each layer is its index, which `objects[].layer` and `effectLayer` refer to (keep them in step when inserting a layer).
+// After editing, run `npm run seed:scenes` to update the database.
 module.exports = {
   slug: 'night-study',
   name: 'Rainy Night Study',
   description: 'A quiet desk above the city at night: a turntable, a warm lamp and a clock, with the rain ready to switch on.',
+  // ===== LAYERS, back to front. Each row = one picture (file in client/public/scenes/<slug>/). The number at the end is the index used below. =====
   layers: [
     { name: 'sky', image: '/scenes/night-study/l1_sky.webp', depth: 0.05 }, // 0
     { name: 'city', image: '/scenes/night-study/l2_city.webp', depth: 0.2, box: { x: 6.25, y: 3.67, width: 87.5, height: 65.22 } }, // 1
@@ -114,6 +117,7 @@ module.exports = {
     { name: 'notepad light', image: '/scenes/night-study/c_notepad_lit.webp', depth: 0.9, blend: 'screen', box: { x: 28.56, y: 76.89, width: 13.69, height: 10.56 }, light: true, item: 'notepad' }, // 102
     { name: 'night notepad', image: '/scenes/night-study/c_notepad_night.webp', depth: 0.9, box: { x: 28.56, y: 76.89, width: 13.69, height: 10.56 }, night: true, item: 'notepad' }, // 103
   ],
+  // ===== CLICKABLE OBJECTS: where a click does something (toggle light / effect / curtains, or open the music player). `layer` = index above. =====
   objects: [
     { key: 'window', label: 'Window', layer: 8, x: 7, y: 4, width: 86, height: 62, action: { type: 'toggleEffect', effect: 'rain' } },
     { key: 'lamp', label: 'Desk lamp', layer: 66, x: 0.0, y: 0.0, width: 80.31, height: 45.14, action: { type: 'toggleLight' } },
@@ -123,6 +127,7 @@ module.exports = {
   // What a visitor may put in the room. The pictures of an object are the layers with its key in `item`.
   // home: the bottom centre of the object where it stands in the picture (the point that sticks to the surface).
   // bounds: the area it covers there, which is what a visitor grabs.
+  // ===== DECORATE: what a visitor can add (catalog) and where it can stand (surfaces). Pictures = layers with the same `item` key. =====
   catalog: [
     { key: 'plant', label: 'Plant', surface: 'desk', home: { x: 12.47, y: 75.33 }, bounds: { x: 0.94, y: 43.44, width: 23.06, height: 32.56 }, thumb: '/scenes/night-study/c_plant_thumb.webp', flippable: true, unique: false, inDefault: true, scale: { min: 0.6, max: 1.8 } },
     { key: 'succulent', label: 'Succulent', surface: 'desk', home: { x: 17.94, y: 77.22 }, bounds: { x: 16.38, y: 70.89, width: 3.12, height: 7.0 }, thumb: '/scenes/night-study/c_succ_thumb.webp', flippable: true, unique: false, inDefault: true, scale: { min: 0.6, max: 2.5 } },
@@ -145,6 +150,7 @@ module.exports = {
     { key: 'desk', area: { x: 2, y: 72, width: 96, height: 26 }, drawAt: 64, perspective: { farY: 72, nearY: 98, farScale: 0.7, nearScale: 1.2 } },
     { key: 'window', area: { x: 3, y: 8, width: 94, height: 60 }, drawAt: 8, perspective: { farY: 8, nearY: 68, farScale: 1, nearScale: 1 } },
   ],
+  // ===== EFFECTS the room can show (client scene/Effects.jsx), which one starts, and the layer index they are drawn above =====
   effects: ['rain'],
   // No default effect: the glass is clear until the visitor clicks the window.
   effectLayer: 1, // the city, so the rain falls in front of it and behind the glass

@@ -1,11 +1,15 @@
+// Part of: Scenes: data of Room "Aurora Observatory". Drawn by client SceneStage.jsx.
+// Used by: scenes.js.
 // Scene: Aurora Observatory. A cosy alpine cabin rendered in 3D: a wood stove, velvet curtains, a wide window onto snowy peaks,
 // and a walnut desk with a sleeping arctic fox, a retro CD player, a telescope and cocoa. Clicking the sconce switches between
 // warm alpenglow and the northern lights (clicking the window does the same); the stars twinkle and glitter outside the glass at night. Day and night are two lightings of the same 3D room.
-// The room is built and rendered by docs/art-tools/aurora_observatory_blender.py and cut into layers by make_aurora_observatory.py.
+// Built and rendered by docs/art-tools/aurora_observatory_blender.py, cut into layers by make_aurora_observatory.py. Positions are percentages; layers go back to front.
+// After editing, run `npm run seed:scenes`.
 module.exports = {
   slug: 'aurora-observatory',
   name: 'Aurora Observatory',
   description: 'A cosy alpine cabin above snowy peaks: a sleeping arctic fox, a retro CD player, a telescope and cocoa. Click the window or the sconce for the northern lights, with glitter in the night air.',
+  // ===== LAYERS, back to front. Each row = one picture (file in client/public/scenes/<slug>/). The number at the end is the index used below. =====
   layers: [
     { name: 'alpenglow peaks', image: '/scenes/aurora-observatory/l1_peaks_day.webp', depth: 0.04 }, // 0
     { name: 'moonlit peaks', image: '/scenes/aurora-observatory/l1b_peaks_night.webp', depth: 0.05, box: { x: 10.94, y: 1.48, width: 74.48, height: 67.22 }, night: true }, // 1
@@ -62,6 +66,7 @@ module.exports = {
     { name: 'sconce hit', image: '/scenes/aurora-observatory/hit.webp', depth: 0.52, box: { x: 82.6, y: 17.04, width: 5.36, height: 15.28 } }, // 52
     { name: 'cd player hit', image: '/scenes/aurora-observatory/hit.webp', depth: 0.88, box: { x: 61.77, y: 69.81, width: 17.03, height: 12.31 } }, // 53
   ],
+  // ===== CLICKABLE OBJECTS: where a click does something (toggle light / effect / curtains, or open the music player). `layer` = index above. =====
   objects: [
     { key: 'sky', label: 'Observatory window: day or night', layer: 0, x: 28, y: 8, width: 40, height: 52, action: { type: 'toggleLight' } },
     { key: 'curtains-left', label: 'Velvet curtains', layer: 50, x: 0, y: 0, width: 100, height: 100, action: { type: 'toggleCurtains' } },
@@ -70,6 +75,7 @@ module.exports = {
     { key: 'cd-player', label: 'Retro CD player', layer: 53, x: 0, y: 0, width: 100, height: 100, action: { type: 'nextTrack' } },
   ],
   // What a visitor may put on the desk (Decorate). The pictures of an object are the layers with its key in `item`.
+  // ===== DECORATE: what a visitor can add (catalog) and where it can stand (surfaces). Pictures = layers with the same `item` key. =====
   catalog: [
     { key: 'succulent', label: 'Potted cactus', surface: 'desk', home: { x: 83.39, y: 85.4 }, bounds: { x: 80.99, y: 75.0, width: 14.53, height: 16.2 }, thumb: '/scenes/aurora-observatory/succulent_thumb.webp', flippable: true, unique: false, inDefault: false, scale: { min: 0.6, max: 1.8 } },
     { key: 'candle', label: 'Brass candle', surface: 'desk', home: { x: 10.4, y: 85.4 }, bounds: { x: 4.27, y: 69.35, width: 17.92, height: 21.94 }, thumb: '/scenes/aurora-observatory/candle_thumb.webp', flippable: false, unique: false, inDefault: false, scale: { min: 0.6, max: 1.8 } },
@@ -82,6 +88,7 @@ module.exports = {
     { key: 'desk', area: { x: 10, y: 71.5, width: 80, height: 17 }, perspective: { farY: 71.5, nearY: 88.5, farScale: 0.8, nearScale: 1.0 }, drawAt: 31 },
   ],
   nightDim: 0,
+  // ===== EFFECTS the room can show (client scene/Effects.jsx), which one starts, and the layer index they are drawn above =====
   effects: ['glitter'],
   defaultEffect: 'glitter',
   effectLayer: 5, // the alpine mist, just behind the cabin wall, so the glitter stays outside the glass (it only shows at night)

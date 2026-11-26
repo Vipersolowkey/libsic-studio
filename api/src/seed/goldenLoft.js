@@ -1,12 +1,15 @@
-// Scene: Golden Hour Loft. A bright late-afternoon desk in front of a big window, drawn as many small layers so that
-// the curtains can billow (and be drawn shut), the clouds drift, the cat breathe and the disc spin. Floating dust is an effect (see Effects.jsx).
-// Clicking the clock switches between day and night (night = lights off: the sun goes out and the night sky layer comes in).
-// Pictures: client/public/scenes/golden-loft/. Positions of layers and objects are percentages of the scene. Layers are listed
-// from back to front; the layers of placeable objects (the ones with `item`) come last and are drawn where the surface says.
+// Part of: Scenes: data of Room "Golden Hour Loft". Drawn by client SceneStage.jsx.
+// Used by: scenes.js.
+// Scene: Golden Hour Loft. A late-afternoon desk by a window: curtains billow (and can be closed), clouds drift, a cat breathes,
+// a disc spins. Dust is an effect (Effects.jsx). Clicking the clock switches day / night (lights off: the sun goes out, the night sky comes in).
+// Pictures: client/public/scenes/golden-loft/. Positions are percentages of the scene. Layers go back to front; layers with `item`
+// (placeable objects) come last and are drawn where their surface says. `objects[].layer` is a layer index.
+// After editing, run `npm run seed:scenes`.
 module.exports = {
   slug: 'golden-loft',
   name: 'Golden Hour Loft',
   description: 'A bright loft in the late afternoon: sun streaming through sheer curtains, floating dust, a sleeping cat and a portable CD player on a wooden desk.',
+  // ===== LAYERS, back to front. Each row = one picture (file in client/public/scenes/<slug>/). The number at the end is the index used below. =====
   layers: [
     { name: 'sky', image: '/scenes/golden-loft/l1_sky.webp', depth: 0.05 }, // 0
     { name: 'clouds', image: '/scenes/golden-loft/l2_clouds.webp', depth: 0.08, box: { x: 0.0, y: 7.78, width: 100.0, height: 42.22 }, anim: { name: 'drift', distance: 8, duration: 240 } }, // 1
@@ -88,6 +91,7 @@ module.exports = {
     { name: 'bud vase flowers', image: '/scenes/golden-loft/bud_vase_flowers.webp', depth: 0.9, box: { x: 39.75, y: 56.44, width: 4.0, height: 12.89 }, anim: { name: 'sway', amplitude: 1.8, pivot: { x: 50.0, y: 98.28 }, duration: 5.5, delay: 0.0 }, item: 'bud_vase' }, // 77
     { name: 'candle light', image: '/scenes/golden-loft/candle_pool.webp', depth: 0.9, box: { x: 43.75, y: 66.67, width: 16.88, height: 23.89 }, night: true, anim: { name: 'pulse', duration: 3.1 }, item: 'candle' }, // 78
   ],
+  // ===== CLICKABLE OBJECTS: where a click does something (toggle light / effect / curtains, or open the music player). `layer` = index above. =====
   objects: [
     { key: 'window', label: 'Window', layer: 6, x: 8.96, y: 5.81, width: 81.54, height: 91.47, action: { type: 'toggleEffect', effect: 'dust' } },
     { key: 'curtains', label: 'Curtains', layer: 9, x: 0, y: 0, width: 100, height: 100, action: { type: 'toggleCurtains' } },
@@ -97,6 +101,7 @@ module.exports = {
   ],
   // What a visitor may put in the room. The pictures of an object are the layers with its key in `item`.
   // home: the bottom centre of the object where it stands in the picture. bounds: the area it covers there.
+  // ===== DECORATE: what a visitor can add (catalog) and where it can stand (surfaces). Pictures = layers with the same `item` key. =====
   catalog: [
     { key: 'plant', label: 'Rubber plant', surface: 'desk', home: { x: 59.69, y: 72.44 }, bounds: { x: 52.46, y: 30.59, width: 15.13, height: 42.59 }, thumb: '/scenes/golden-loft/plant_thumb.webp', flippable: true, unique: false, inDefault: true, scale: { min: 0.6, max: 1.8 } },
     { key: 'clock', label: 'Clock', surface: 'desk', home: { x: 93.62, y: 74.44 }, bounds: { x: 91.13, y: 65.33, width: 4.94, height: 9.56 }, thumb: '/scenes/golden-loft/clock_thumb.webp', flippable: false, unique: false, inDefault: true, scale: { min: 0.6, max: 1.6 } },
@@ -116,6 +121,7 @@ module.exports = {
     { key: 'desk', area: { x: 2, y: 64, width: 96, height: 27 }, drawAt: 20, perspective: { farY: 64, nearY: 90, farScale: 0.65, nearScale: 1.2 } },
   ],
   nightDim: 0, // the night is painted in its own layers (night sky, cool shade, moonlight, warm lamp and candle pools), so no extra darkening
+  // ===== EFFECTS the room can show (client scene/Effects.jsx), which one starts, and the layer index they are drawn above =====
   effects: ['dust'],
   defaultEffect: 'dust', // dust floats in the sunbeams from the start; clicking the window switches it off
   effectLayer: 20, // the light beams, so the dust drifts in front of the objects and inside the beams
