@@ -30,7 +30,6 @@ describe('a room owned by the signed-in account', () => {
     await screen.findByTestId('stage');
 
     expect(screen.queryByRole('button', { name: 'Save my own copy' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Delete room' })).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Room name'), ' 2');
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(api.updateRoom).toHaveBeenCalledWith(savedRoom.code, null, expect.objectContaining({ name: 'Study 2' }));
@@ -41,6 +40,5 @@ describe('a room owned by the signed-in account', () => {
     renderAt(`/r/${savedRoom.code}`);
     await screen.findByTestId('stage');
     expect(screen.getByRole('button', { name: 'Save my own copy' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Delete room' })).toBeNull();
   });
 });

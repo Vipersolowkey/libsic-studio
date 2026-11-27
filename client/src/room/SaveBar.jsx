@@ -1,7 +1,5 @@
-// Part of: Room page, side bar: save, share and delete buttons.
+// Part of: Room page, side bar: the name, the Save button and the share link.
 // Used by: RoomScreen.jsx.
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 // The room name input (max 60 characters, same as the API).
 export function RoomNameField({ name, onNameChange }) {
@@ -19,11 +17,11 @@ export function RoomNameField({ name, onNameChange }) {
 }
 
 // Save / share buttons; which ones show depends on the case:
-//   new room -> "Save room" | saved + owner (has the edit key) -> "Save changes" (only when dirty) and "Delete room"
+//   new room -> "Save room" | saved + owner (has the edit key, or the signed-in account owns it) -> "Save changes" (only when dirty)
 //   saved + not owner -> "Save my own copy" (a new room; nobody can edit without the key)
-// Delete asks again inline (it cannot be undone). `status` = { kind: 'ok' | 'error', text }, shown as a toast (.status in CSS).
-export default function SaveBar({ saved, isOwner, dirty, busy, status, link, onSaveNew, onSaveChanges, onDelete, onCopy, onDismissStatus }) {
-  const [confirming, setConfirming] = useState(false);
+// The share link and its Copy button show once the room is saved. Deleting a room is done on the studio page (/me).
+// `status` = { kind: 'ok' | 'error', text }, shown as a toast (.status in CSS).
+export default function SaveBar({ saved, isOwner, dirty, busy, status, link, onSaveNew, onSaveChanges, onCopy, onDismissStatus }) {
   return (
     <div className="savebar">
       {!saved && (
@@ -32,35 +30,9 @@ export default function SaveBar({ saved, isOwner, dirty, busy, status, link, onS
         </button>
       )}
       {saved && isOwner && (
-        <>
-          <button type="button" className="chip primary" disabled={busy || !dirty} onClick={onSaveChanges}>
-            Save changes
-          </button>
-          {!confirming && (
-            <button type="button" className="chip danger" disabled={busy} onClick={() => setConfirming(true)}>
-              Delete room
-            </button>
-          )}
-          {confirming && (
-            <div className="confirm" role="group" aria-label="Delete this room?">
-              <p>Delete this room for everyone? This cannot be undone.</p>
-              <button
-                type="button"
-                className="chip danger solid"
-                disabled={busy}
-                onClick={() => {
-                  setConfirming(false);
-                  onDelete();
-                }}
-              >
-                Yes, delete
-              </button>
-              <button type="button" className="chip" onClick={() => setConfirming(false)}>
-                Keep it
-              </button>
-            </div>
-          )}
-        </>
+        <button type="button" className="chip primary" disabled={busy || !dirty} onClick={onSaveChanges}>
+          Save changes
+        </button>
       )}
       {saved && !isOwner && (
         <button type="button" className="chip primary" disabled={busy} onClick={onSaveNew}>
@@ -75,11 +47,6 @@ export default function SaveBar({ saved, isOwner, dirty, busy, status, link, onS
             Copy
           </button>
         </div>
-      )}
-      {saved && (
-        <Link className="chip" to="/new">
-          New room
-        </Link>
       )}
 
       {status && (

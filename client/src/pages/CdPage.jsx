@@ -55,14 +55,14 @@ function CdDetails({ code }) {
   async function copy() {
     try { await navigator.clipboard.writeText(link); setStatus('CD link copied.'); } catch { setStatus('Select the share link and copy it by hand.'); }
   }
-  if (deleted) return <Desk nav={<Link to="/music">Make a CD</Link>}><header className="mk-head"><h1>CD deleted</h1><p className="mk-lede"><Link to="/music">Back to the workshop</Link></p></header></Desk>;
-  if (!cd) return <Desk nav={<Link to="/music">Make a CD</Link>}><header className="mk-head"><h1>{notFound ? 'CD not found' : 'Opening the case…'}</h1><p className="mk-lede">{error || 'Loading CD…'}</p>{error && !notFound && <button className="mk-brass" onClick={() => setAttempt((n) => n + 1)}>Retry CD</button>}<p className="mk-lede"><Link to="/music">Make a CD</Link></p></header></Desk>;
+  if (deleted) return <Desk current="cds"><header className="mk-head"><h1>CD deleted</h1><p className="mk-lede"><Link to="/music">Back to the workshop</Link></p></header></Desk>;
+  if (!cd) return <Desk current="cds"><header className="mk-head"><h1>{notFound ? 'CD not found' : 'Opening the case…'}</h1><p className="mk-lede">{error || 'Loading CD…'}</p>{error && !notFound && <button className="mk-brass" onClick={() => setAttempt((n) => n + 1)}>Retry CD</button>}<p className="mk-lede"><Link to="/music">Make a CD</Link></p></header></Desk>;
   const look = cdLook(code, cd.title, cd.look);
   const entries = cd.links?.length
     ? cd.links.map((link) => ({ id: link.url, title: linkTitle(link), meta: providerName(link.provider), href: link.url }))
     : cd.tracks.map((track) => ({ id: track.id, title: track.title, meta: formatTime(track.duration) }));
   return (
-    <Desk nav={<Link to="/music">Make a CD / My CDs</Link>}>
+    <Desk current="cds">
       {/* PAGE TOP + LEFT: CD preview with its disc, the playlist, and the hologram player for our own tracks (usePlayer.js) */}
       <header className="mk-head">
         <p className="mk-eyebrow">{cd.official ? 'Studio collection' : 'A personal mix'}</p>

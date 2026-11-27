@@ -25,7 +25,7 @@ describe('CD creation and sharing', () => {
   it('creates an ordered mix, remembers its key and opens its share page', async () => {
     vi.spyOn(api, 'createCd').mockResolvedValue({ cd, editKey: 'creator-secret' });
     renderAt('/music');
-    const create = screen.getByRole('button', { name: 'Create CD' });
+    const create = await screen.findByRole('button', { name: 'Create CD' }); // the page loads on demand
     expect(create).toBeDisabled();
     await userEvent.type(screen.getByLabelText('CD name'), 'My mix');
     await userEvent.click(screen.getByRole('tab', { name: 'Our tracks' }));
@@ -44,7 +44,7 @@ describe('CD creation and sharing', () => {
     api.getTracks.mockRejectedValueOnce(new Error('Server asleep'));
     vi.spyOn(api, 'createCd').mockRejectedValue(new Error('Unknown tracks'));
     renderAt('/music');
-    await userEvent.click(screen.getByRole('tab', { name: 'Our tracks' }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'Our tracks' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Server asleep');
     await userEvent.click(screen.getByRole('button', { name: 'Retry tracks' }));
     await userEvent.click(await screen.findByRole('checkbox', { name: /Lamp Light/ }));
@@ -58,7 +58,7 @@ describe('CD creation and sharing', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
     vi.spyOn(api, 'createCd').mockResolvedValue({ cd, editKey: 'keep-this-key' });
     renderAt('/music');
-    await userEvent.type(screen.getByLabelText('CD name'), 'My mix');
+    await userEvent.type(await screen.findByLabelText('CD name'), 'My mix');
     await userEvent.click(screen.getByRole('tab', { name: 'Our tracks' }));
     await userEvent.click(await screen.findByRole('checkbox', { name: /Lamp Light/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Create CD' }));

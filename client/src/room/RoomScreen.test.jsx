@@ -120,7 +120,6 @@ describe('a new room (/new)', () => {
     expect(await screen.findByTestId('stage')).toBeInTheDocument();
     expect(container.querySelector('[data-effect="rain"]')).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Save room' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Delete room' })).toBeNull();
   });
 
   it('shows the error and lets the visitor try again', async () => {
@@ -138,11 +137,10 @@ describe('a new room (/new)', () => {
     expect(await screen.findByText(/no scenes yet/i)).toBeInTheDocument();
   });
 
-  it('switching scene changes the picture and resets the effect to that scene default', async () => {
-    const { container } = renderAt('/new');
+  it('starts in the scene named by ?scene= (picked on the studio page) with that scene\'s default effect', async () => {
+    const { container } = renderAt('/new?scene=other');
     await screen.findByTestId('stage');
 
-    await pick('Switch room', 'Other Room');
     expect(container.querySelector('[data-effect="stars"]')).not.toBeNull();
     expect(container.querySelector('[data-effect="rain"]')).toBeNull();
   });
@@ -162,16 +160,21 @@ describe('a new room (/new)', () => {
 });
 
 describe('the side bar', () => {
-  it('holds the logo, the rooms and every other control', async () => {
+  it('holds the logo, the effects, the share part and the Go to links', async () => {
     renderAt('/new');
     await screen.findByTestId('stage');
     const bar = within(screen.getByRole('complementary', { name: 'Room controls' }));
 
     expect(bar.getByRole('link', { name: /libsic studio/i })).toHaveAttribute('href', '/');
-    expect(inGroup('Switch room', 'Test Room')).toHaveAttribute('aria-pressed', 'true');
-    expect(inGroup('Switch room', 'Other Room')).toHaveAttribute('aria-pressed', 'false');
+    // Choosing or making another room, and deleting one, happen on the studio page, so the bar has no room list, New room or Delete.
+    expect(bar.getByRole('navigation', { name: 'Go to' })).toBeInTheDocument();
+    expect(bar.getByRole('link', { name: 'My studio' })).toHaveAttribute('href', '/me');
+    expect(bar.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login?next=%2Fnew');
+    expect(bar.queryByRole('group', { name: 'Your room' })).toBeNull();
+    expect(bar.queryByRole('link', { name: 'New room' })).toBeNull();
+    expect(bar.queryByRole('button', { name: /delete/i })).toBeNull();
     await more();
-    for (const name of ['Night', 'Save room', 'Zoom in', /my rooms/i]) expect(bar.getByRole('button', { name })).toBeInTheDocument();
+    for (const name of ['Night', 'Save room', 'Zoom in']) expect(bar.getByRole('button', { name })).toBeInTheDocument();
     expect(bar.getByLabelText('Room name')).toBeInTheDocument();
   });
 
@@ -200,26 +203,18 @@ describe('the side bar', () => {
   });
 });
 
-describe('opening scenes from the menu', () => {
+describe('opening scenes', () => {
   // The real API lists only slug, name and description; the layers come from getScene, one scene at a time.
   const line = ({ slug, name, description }) => ({ slug, name, description });
 
-  it('fetches only the scene that is shown, and another one when it is picked', async () => {
+  it('fetches only the scene the room opens in', async () => {
     api.getScenes.mockResolvedValue([line(scene), line(otherScene)]);
     vi.spyOn(api, 'getScene').mockImplementation(async (slug) => [scene, otherScene].find((s) => s.slug === slug));
-    renderAt('/new');
+    renderAt('/new?scene=other');
     await screen.findByTestId('stage');
 
     expect(api.getScene).toHaveBeenCalledTimes(1);
-    expect(api.getScene).toHaveBeenCalledWith(scene.slug);
-
-    await pick('Switch room', 'Other Room');
-    await waitFor(() => expect(inGroup('Switch room', 'Other Room')).toHaveAttribute('aria-pressed', 'true'));
     expect(api.getScene).toHaveBeenCalledWith(otherScene.slug);
-
-    await pick('Switch room', 'Test Room'); // already fetched: shown again without asking
-    expect(inGroup('Switch room', 'Test Room')).toHaveAttribute('aria-pressed', 'true');
-    expect(api.getScene).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -289,11 +284,10 @@ describe('saving a new room', () => {
   });
 
   it('sends the name, scene and settings, remembers the edit key and opens the room page', async () => {
-    renderAt('/new');
+    renderAt('/new?scene=other');
     await screen.findByTestId('stage');
 
     await userEvent.type(screen.getByLabelText('Room name'), 'My room');
-    await pick('Switch room', 'Other Room');
     await userEvent.click(screen.getByRole('button', { name: 'Night' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save room' }));
 
@@ -371,7 +365,6 @@ describe('opening a saved room (/r/:code)', () => {
     renderAt(`/r/${savedRoom.code}`);
     const stage = await screen.findByTestId('stage');
 
-    expect(inGroup('Switch room', 'Other Room')).toHaveAttribute('aria-pressed', 'true');
     expect(inGroup('Effects', 'Stars')).toHaveAttribute('aria-pressed', 'true');
     expect(stage).toHaveClass('lights-off');
     expect(screen.getByLabelText('Room name')).toHaveValue('Study');
@@ -393,7 +386,6 @@ describe('opening a saved room (/r/:code)', () => {
 
     expect(screen.getByRole('button', { name: 'Save my own copy' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save changes' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Delete room' })).toBeNull();
   });
 
   it('copies the share link', async () => {
@@ -476,71 +468,6 @@ describe('editing your own room', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent('Wrong edit key');
   });
-
-  it('deletes the room after the visitor confirms, then starts a new room', async () => {
-    vi.spyOn(api, 'deleteRoom').mockResolvedValue(null);
-    renderAt(`/r/${savedRoom.code}`);
-    await screen.findByTestId('stage');
-
-    await userEvent.click(screen.getByRole('button', { name: 'Delete room' }));
-    expect(api.deleteRoom).not.toHaveBeenCalled(); // the bar asks once more first
-    await userEvent.click(screen.getByRole('button', { name: 'Yes, delete' }));
-
-    expect(api.deleteRoom).toHaveBeenCalledWith(savedRoom.code, 'secret-key');
-    expect(await screen.findByRole('button', { name: 'Save room' })).toBeInTheDocument();
-    expect(getMyRooms()).toEqual([]);
-    expect(getLastRoomCode()).toBeNull();
-  });
-
-  it('does nothing when the visitor cancels the delete', async () => {
-    vi.spyOn(api, 'deleteRoom').mockResolvedValue(null);
-    renderAt(`/r/${savedRoom.code}`);
-    await screen.findByTestId('stage');
-
-    await userEvent.click(screen.getByRole('button', { name: 'Delete room' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Keep it' }));
-
-    expect(screen.getByRole('button', { name: 'Delete room' })).toBeInTheDocument();
-
-    expect(api.deleteRoom).not.toHaveBeenCalled();
-    expect(getMyRooms()).toHaveLength(1);
-  });
-});
-
-describe('My rooms', () => {
-  it('lists the rooms saved in this browser and opens one when clicked', async () => {
-    saveMyRoom({ code: 'zzz99999', editKey: 'k', name: 'Other one', sceneSlug: 'night-study' });
-    ownRoom();
-    renderAt('/new');
-    await screen.findByTestId('stage');
-
-    await userEvent.click(screen.getByRole('button', { name: /my rooms \(2\)/i }));
-    expect(screen.getByRole('link', { name: 'Study' })).toHaveAttribute('href', `/r/${savedRoom.code}`);
-
-    await userEvent.click(screen.getByRole('link', { name: 'Study' }));
-    expect(await screen.findByLabelText('Room name')).toHaveValue('Study');
-  });
-
-  it('says so when nothing is saved yet', async () => {
-    renderAt('/new');
-    await screen.findByTestId('stage');
-    await userEvent.click(screen.getByRole('button', { name: /my rooms \(0\)/i }));
-    expect(screen.getByText(/no saved rooms yet/i)).toBeInTheDocument();
-  });
-
-  it('Forget removes a room from the list without deleting it on the server', async () => {
-    vi.spyOn(api, 'deleteRoom');
-    ownRoom();
-    renderAt('/new');
-    await screen.findByTestId('stage');
-
-    await userEvent.click(screen.getByRole('button', { name: /my rooms \(1\)/i }));
-    await userEvent.click(screen.getByRole('button', { name: 'Forget' }));
-
-    expect(getMyRooms()).toEqual([]);
-    expect(screen.getByRole('button', { name: /my rooms \(0\)/i })).toBeInTheDocument();
-    expect(api.deleteRoom).not.toHaveBeenCalled();
-  });
 });
 
 describe('decorating the room', () => {
@@ -590,7 +517,11 @@ describe('decorating the room', () => {
     await screen.findByTestId('stage');
     expect(screen.getByRole('button', { name: 'Decorate this room' })).toBeInTheDocument();
 
-    await pick('Switch room', 'Test Room');
+  });
+
+  it('does not offer Decorate in a scene without objects to move', async () => {
+    renderAt('/new?scene=test-room');
+    await screen.findByTestId('stage');
     expect(screen.queryByRole('button', { name: 'Decorate this room' })).toBeNull();
   });
 
@@ -714,16 +645,6 @@ describe('decorating the room', () => {
 
       expect(api.updateRoom.mock.calls[0][2].items).toBeNull();
     });
-  });
-
-  it('forgets the arrangement when the visitor switches to another room and back', async () => {
-    const { container } = await decorate();
-    await nudgeMug();
-    await done();
-
-    await pick('Switch room', 'Test Room');
-    await pick('Switch room', 'Decor Room');
-    expect(mugLayer(container)).toHaveStyle({ left: '37%' });
   });
 
   describe('looking around a zoomed room', () => {

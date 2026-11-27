@@ -15,12 +15,6 @@
 }
 .mk-wrap { max-width: 1120px; margin: 0 auto; padding: 22px 24px 72px; }
 .mk-desk a { color: inherit; }
-.mk-nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 36px; font-size: .9rem; }
-.mk-nav a { color: #f6e7c8; text-decoration: none; }
-.mk-nav > span a { padding: 6px 12px; border: 1px solid #f6e7c855; border-radius: 999px; }
-.mk-nav > span a:hover { background: #f6e7c822; }
-.mk-brand { display: inline-flex; align-items: center; gap: 10px; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-weight: 600; font-size: 1.15rem; }
-.mk-brand i { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle, #5e3e22 0 16%, #f6e7c8 17% 22%, transparent 23%), conic-gradient(#e0b05a, #d9733a, #f3e5c8, #e0b05a); box-shadow: 0 2px 6px #0006; }
 
 .mk-head { margin-bottom: 26px; color: #f6e7c8; }
 .mk-eyebrow { margin: 0; font-family: 'Caveat', cursive; font-size: 1.5rem; color: var(--brass); }

@@ -1,6 +1,6 @@
 // Part of: Accounts: who is signed in, shared by every page.
 // Uses: auth.js, api.js.
-// Used by: main.jsx (the provider), LoginPage.jsx, ProfilePage.jsx, AdminPage.jsx, HomePage.jsx, AccountChip.jsx.
+// Used by: main.jsx (the provider), LoginPage.jsx, ProfilePage.jsx, AdminPage.jsx, HomePage.jsx, GoTo.jsx.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getMe, login, register, updateMe } from '../api.js';
 import { SIGNED_OUT_EVENT, clearSession, getCachedUser, getToken, saveSession, setCachedUser } from '../auth.js';

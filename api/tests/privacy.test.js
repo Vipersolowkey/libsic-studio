@@ -113,9 +113,9 @@ describe('privacy: the code itself stays clean', () => {
     }
   });
 
-  it('privacy: the only admin log lines say who deleted which code, nothing more', () => {
+  it('privacy: the only admin log lines say which admin did what to which code or id, nothing more', () => {
     const lines = read('routes/admin.js').split('\n').filter((l) => /console\./.test(l));
-    expect(lines).toHaveLength(2);
+    expect(lines).toHaveLength(5); // room, CD, account, track added, track removed
     for (const line of lines) expect(line).not.toMatch(/password|token|hash|editKey|username/i);
   });
 });

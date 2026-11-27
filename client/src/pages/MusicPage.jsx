@@ -24,7 +24,7 @@ export default function MusicPage() {
   }
   const mine = getMyCds();
   return (
-    <Desk nav={<Link to="/new">Back to a room</Link>}>
+    <Desk current="music">
       <header className="mk-head">
         <p className="mk-eyebrow">The CD workshop</p>
         <h1>Make a CD</h1>

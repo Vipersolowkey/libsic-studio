@@ -2,13 +2,13 @@
 // Used by: Controls.jsx, DecorateHud.jsx, RoomScreen.jsx.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import AccountChip from '../account/AccountChip.jsx';
+import GoTo from '../account/GoTo.jsx';
 
-// The left side bar (a wheel turn over it only scrolls it and never zooms the picture): ALL controls live here (logo, rooms, mood, save/share).
+// The left side bar (a wheel turn over it only scrolls it and never zooms the picture): ALL controls live here (logo, mood, decorate, share, and where to go next).
 //   open       false = tucked away (it slides out), only the round logo button remains
 //   onToggle   hide / show
 //   settings   rarely used view settings; shown in a small note opened by the top button (Esc closes it)
-//   footer     the last section of the list (room name, save, My rooms) and, under it, the account button
+//   footer     the Share section (room name, save, share link); under it comes the "Go to" section (studio, sign in, admin)
 //   children   the scrolling sections (use <Section>)
 const EXIT_MS = 220; // same as the side-out animation in sidebarThemes.css
 const canAnimate = () => typeof window.matchMedia === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -69,20 +69,21 @@ export default function Sidebar({ open, onToggle, footer, settings, children }) 
         {children}
         {footer && (
           <section className="side-section side-foot">
-            <h2 className="side-title">Keep this room</h2>
+            <h2 className="side-title">Share</h2>
             {footer}
-            <div className="side-account"><AccountChip /></div>
           </section>
         )}
+        {footer && <Section title="Go to" pinned><GoTo /></Section>}
       </div>
     </aside>
   );
 }
 
 // One titled block of the side bar.
-export function Section({ title, children }) {
+// pinned = stays at the bottom of the bar when there is spare room (the "Go to" links).
+export function Section({ title, pinned, children }) {
   return (
-    <section className="side-section">
+    <section className={`side-section${pinned ? ' side-pinned' : ''}`}>
       {title && <h2 className="side-title">{title}</h2>}
       {children}
     </section>

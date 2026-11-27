@@ -1,4 +1,4 @@
-// Part of: Room page, side bar: room picker, light and weather buttons, Decorate button.
+// Part of: Room page, side bar: light and weather buttons, Decorate button.
 // Uses: Sidebar.jsx, sceneSettings.js, skins.js.
 // Used by: RoomScreen.jsx.
 import { Section } from './Sidebar.jsx';
@@ -22,44 +22,14 @@ const EFFECT_ICONS = {
 };
 const Icon = ({ children }) => <svg viewBox="0 0 24 24" aria-hidden="true">{children}</svg>;
 
-// Room picker: current room = big polaroid, others = small ones. Picture: /scenes/<slug>/preview.webp (hidden if missing).
-// ===== ROOM PICKER ("You are in"): clicking a card calls RoomScreen chooseScene (loads that room's scene) =====
-export function RoomList({ scenes, scene, onChooseScene }) {
-  const photo = (s) => (
-    <>
-      <img src={`/scenes/${s.slug}/preview.webp`} alt="" loading="lazy" draggable={false} onError={(e) => (e.target.style.visibility = 'hidden')} />
-      <span>{s.name}</span>
-    </>
-  );
-  const here = scenes.find((s) => s.slug === scene.slug) || scene;
-  return (
-    <div className="room-list" role="group" aria-label="Switch room">
-      <button type="button" className="polaroid here" aria-pressed="true" onClick={() => onChooseScene(here)}>
-        <i className="tape" aria-hidden="true" />
-        {photo(here)}
-      </button>
-      <div className="others">
-        {scenes.filter((s) => s.slug !== scene.slug).map((s) => (
-          <button key={s.slug} type="button" className="polaroid" aria-pressed="false" onClick={() => onChooseScene(s)}>
-            {photo(s)}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Main part of the side bar: rooms ("You are in"), Mood (light + effect toggles), and the Decorate button.
+// Main part of the side bar: Mood (light + effect toggles) and the Decorate button. Choosing or making another room happens on the studio page (/me).
 // Clicking the active effect again switches it off ('none'). onDecorate is omitted for scenes without a catalog (button hidden).
 // Light labels come from the room's skin (skins.js).
 // ===== SIDE BAR MAIN PART: Mood (light + weather; changes the saved settings) and the Decorate button =====
-export default function Controls({ scenes, scene, settings, onChooseScene, onSettingsChange, onDecorate }) {
+export default function Controls({ scene, settings, onSettingsChange, onDecorate }) {
   const [lit, unlit] = skinOf(scene.slug).light;
   return (
     <>
-      <Section title="You are in">
-        <RoomList scenes={scenes} scene={scene} onChooseScene={onChooseScene} />
-      </Section>
       <Section title="Mood">
         <div className="daynight" role="group" aria-label="Light">
           <button type="button" aria-pressed={settings.lightOn} onClick={() => onSettingsChange({ ...settings, lightOn: true })}>{lit}</button>

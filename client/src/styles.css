@@ -125,11 +125,8 @@ body {
   text-transform: uppercase;
 }
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip-group { display: contents; }
 /* Pinned at the bottom of the bar: the name of the room, saving and My rooms */
 .side-foot { display: flex; flex-direction: column; gap: 8px; padding: 12px var(--pad) var(--pad); border-top: 1px solid var(--line); }
-.side-foot .my-rooms { margin-top: 0; }
-.side-foot .my-rooms-panel { max-height: 30vh; overflow-y: auto; }
 .chip-row + .chip-row { margin-top: 8px; }
 
 /* After a few quiet seconds the side bar fades away, so the room can run on a second screen without clutter. */
@@ -155,7 +152,7 @@ body {
 .brand:hover .brand-disc { animation: disc-spin 3s linear infinite; }
 @keyframes disc-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .brand:hover .brand-disc { animation: none; } }
-.brand:focus-visible, .side-hide:focus-visible, .side-open:focus-visible, .polaroid:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.brand:focus-visible, .side-hide:focus-visible, .side-open:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 
 .side-hide, .side-open {
   flex: none;
@@ -628,18 +625,7 @@ a.chip { text-decoration: none; display: inline-block; }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px); } }
 @media (prefers-reduced-motion: reduce) { .status, .status.ok { animation-duration: 0.01s; } }
 
-/* "Delete room" asks once more, inside the bar */
-.confirm { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; padding: 10px 12px; border: 1px solid rgba(229, 103, 95, 0.45); border-radius: 12px; background: rgba(229, 103, 95, 0.08); }
-.confirm p { width: 100%; margin: 0 0 4px; font-size: 13px; line-height: 1.4; }
-.chip.danger.solid { border-color: #e5675f; background: #e5675f; color: #1a0f0e; font-weight: 600; }
-.chip.danger.solid:hover { color: #1a0f0e; filter: brightness(1.08); }
 
-.my-rooms { margin-top: 8px; }
-.my-rooms-panel { margin-top: 8px; padding: 10px 12px; border: 1px solid #34343f; border-radius: 12px; background: rgba(8, 10, 16, 0.5); }
-.my-rooms-panel ul { margin: 0 0 10px; padding: 0; list-style: none; }
-.my-rooms-panel li { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; }
-.my-rooms-panel li a { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.my-rooms-panel li a[aria-current='page'] { color: var(--accent); }
 .muted { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
 .link-button {
   padding: 0;
@@ -726,13 +712,6 @@ a.chip { text-decoration: none; display: inline-block; }
 .intro-tab-bar i { display: block; height: 100%; background: var(--accent); transform-origin: left; animation: intro-fill 8s linear both; }
 @keyframes intro-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
-.intro-mine { position: absolute; top: max(18px, env(safe-area-inset-top, 0px)); right: max(18px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; transition: opacity 0.4s; animation: intro-in 1.4s 2.2s ease both; }
-.intro-mine-toggle { padding: 8px 16px; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; background: rgba(10, 12, 20, 0.6); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
-.intro-mine-toggle:hover { border-color: var(--accent); }
-.intro-mine-panel { order: 2; width: min(320px, calc(100vw - 36px)); max-height: 50vh; overflow-y: auto; margin: 0; padding: 8px; list-style: none; border: 1px solid var(--line); border-radius: 14px; background: rgba(10, 12, 20, 0.86); backdrop-filter: blur(10px); }
-.intro-mine-panel li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
-.intro-mine-panel a { color: var(--accent); font-weight: 600; text-decoration: none; }
-.intro-mine-panel span { flex: 1; color: var(--muted); font-size: 12.5px; }
 
 /* Leaving: the picture zooms in and the page goes black, then the room opens. */
 .intro::after { content: ''; position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 0.5s 0.4s ease-in; }
@@ -740,7 +719,7 @@ a.chip { text-decoration: none; display: inline-block; }
 .intro.leaving .intro-bg { transform: scale(1.7); }
 .intro.leaving::after { opacity: 1; }
 .intro.leaving .intro-center { opacity: 0; transform: scale(1.12); }
-.intro.leaving .intro-rooms, .intro.leaving .intro-mine { opacity: 0; pointer-events: none; }
+.intro.leaving .intro-rooms { opacity: 0; pointer-events: none; }
 
 /* A low window (a small screen, or the browser zoomed in a lot): the page gets tighter so the title, the button and the
    rooms all stay on screen. */

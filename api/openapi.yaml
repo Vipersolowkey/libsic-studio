@@ -822,11 +822,20 @@ paths:
     get:
       tags: [Admin]
       summary: Search all rooms
+      description: The search text is looked for anywhere in the room name, the scene slug and the owner's username, and at the start of the share code. A part of a word is enough.
       operationId: adminRooms
       security:
         - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/SearchText'
+        - name: scenes
+          in: query
+          required: false
+          description: |
+            Scene slugs separated by commas (at most 10). Adds the rooms of those scenes to the search results. The admin page sends the scenes whose name contains the search text. It does nothing without a search text.
+          schema:
+            type: string
+            example: golden-loft
         - $ref: '#/components/parameters/PageNumber'
       responses:
         '200':
@@ -849,8 +858,10 @@ paths:
       - $ref: '#/components/parameters/RoomCode'
     delete:
       tags: [Admin]
-      summary: Delete any room
-      description: For spam. An admin can look and delete but not edit. Each delete is written to the server log.
+      summary: Delete a guest's room
+      description: |
+        For spam made by guests. Rooms are private to the person who made them, so a room that belongs to an account cannot be
+        deleted here (403): the admin deletes the account instead. An admin can never edit a room. Each delete is written to the server log.
       operationId: adminDeleteRoom
       security:
         - BearerAuth: []
@@ -860,7 +871,13 @@ paths:
         '401':
           $ref: '#/components/responses/SignInNeeded'
         '403':
-          $ref: '#/components/responses/NotAdmin'
+          description: Not an admin, or the room belongs to an account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: This room belongs to an account. Delete the account to remove it.
         '404':
           $ref: '#/components/responses/RoomNotFound'
         '429':
@@ -905,8 +922,9 @@ paths:
           type: string
     delete:
       tags: [Admin]
-      summary: Delete a custom CD
-      description: Official CDs cannot be deleted.
+      summary: Delete a guest's CD
+      description: |
+        Only a CD made by a guest. Official CDs cannot be deleted, and a CD that belongs to an account cannot be deleted here (403). The admin deletes the account instead.
       operationId: adminDeleteCd
       security:
         - BearerAuth: []
@@ -916,7 +934,13 @@ paths:
         '401':
           $ref: '#/components/responses/SignInNeeded'
         '403':
-          $ref: '#/components/responses/NotAdmin'
+          description: Not an admin, or the CD belongs to an account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: This CD belongs to an account. Delete the account to remove it.
         '404':
           description: No custom CD has that code.
           content:
@@ -934,11 +958,12 @@ paths:
     get:
       tags: [Admin]
       summary: List accounts
-      description: Usernames and room counts only. Never any password data.
+      description: Usernames and room counts only. Never any password data. The search text is looked for in the username and the display name.
       operationId: adminUsers
       security:
         - BearerAuth: []
       parameters:
+        - $ref: '#/components/parameters/SearchText'
         - $ref: '#/components/parameters/PageNumber'
       responses:
         '200':
@@ -951,6 +976,218 @@ paths:
           $ref: '#/components/responses/SignInNeeded'
         '403':
           $ref: '#/components/responses/NotAdmin'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/users/{username}:
+    parameters:
+      - name: username
+        in: path
+        required: true
+        description: The account's username.
+        schema:
+          type: string
+          example: maya
+    delete:
+      tags: [Admin]
+      summary: Delete an account
+      description: |
+        Deletes the account together with all its rooms and CDs. The same username must be sent again as `confirm`, so this cannot
+        happen by accident. Refused (403) for your own account and for other admins. Official CDs are never touched. The server log
+        records the admin's id and the account's id, not its name.
+      operationId: adminDeleteUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: confirm
+          in: query
+          required: true
+          description: The username again (any letter case).
+          schema:
+            type: string
+            example: maya
+      responses:
+        '200':
+          description: The account is gone. Says how many rooms and CDs went with it.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deletedRooms, deletedCds]
+                properties:
+                  deletedRooms: { type: integer, example: 3 }
+                  deletedCds: { type: integer, example: 1 }
+        '400':
+          description: "`confirm` is missing or is not the username."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Type the username to confirm
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          description: Not an admin, or the account is an admin (yours included).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: An admin account cannot be deleted here
+        '404':
+          description: No account has that username.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Account not found
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/music:
+    get:
+      tags: [Admin]
+      summary: The studio CDs and their tracks
+      description: Every official CD with its tracks in play order. Only the studio's own music, never anything visitors made.
+      operationId: adminMusic
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: The official CDs.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cds]
+                properties:
+                  cds:
+                    type: array
+                    items:
+                      type: object
+                      required: [code, title, tracks]
+                      properties:
+                        code: { type: string, example: night-study }
+                        title: { type: string, example: Quiet Pages }
+                        tracks:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/AdminTrack'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          $ref: '#/components/responses/NotAdmin'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/music/{code}/tracks:
+    parameters:
+      - name: code
+        in: path
+        required: true
+        description: The share code of an official CD.
+        schema:
+          type: string
+          example: night-study
+    post:
+      tags: [Admin]
+      summary: Add a track to a studio CD
+      description: Adds the track at the end of the CD (up to 30 tracks). The link must be the https address of an audio file (mp3, m4a, ogg, wav or aac).
+      operationId: adminAddTrack
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, artist, url, duration]
+              properties:
+                title: { type: string, maxLength: 80, example: Slow Tide }
+                artist: { type: string, maxLength: 60, example: Studio }
+                url: { type: string, example: 'https://cdn.example.com/slow-tide.mp3' }
+                duration: { type: integer, minimum: 1, maximum: 21600, description: Length in seconds., example: 150 }
+      responses:
+        '201':
+          description: The track was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTrack'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          $ref: '#/components/responses/NotAdmin'
+        '404':
+          description: There is no official CD with that code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: CD not found
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/music/{code}/tracks/{id}:
+    parameters:
+      - name: code
+        in: path
+        required: true
+        description: The share code of an official CD.
+        schema:
+          type: string
+          example: night-study
+      - name: id
+        in: path
+        required: true
+        description: The track's id.
+        schema:
+          type: string
+          example: added-3fa91c02b7
+    delete:
+      tags: [Admin]
+      summary: Remove a track from a studio CD
+      description: The last track of a CD cannot be removed (400). The track itself is deleted too unless another CD still uses it.
+      operationId: adminRemoveTrack
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: The track was removed. There is no response body.
+        '400':
+          description: This is the CD's only track.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: A CD needs at least one track
+        '401':
+          $ref: '#/components/responses/SignInNeeded'
+        '403':
+          $ref: '#/components/responses/NotAdmin'
+        '404':
+          description: No such CD, or the track is not on it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Track not found
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -1204,9 +1441,10 @@ components:
                 enum: [invalid entry, not found, official CDs cannot be claimed, wrong edit key, already on another account]
     AdminStats:
       type: object
-      required: [accounts, rooms, roomsThisWeek, customCds, officialCds, roomsPerScene]
+      required: [accounts, accountsThisWeek, rooms, roomsThisWeek, customCds, officialCds, roomsPerScene]
       properties:
         accounts: { type: integer }
+        accountsThisWeek: { type: integer, description: Accounts made in the last 7 days. }
         rooms: { type: integer }
         roomsThisWeek: { type: integer }
         customCds: { type: integer }
@@ -1254,6 +1492,14 @@ components:
               title: { type: string }
               owned: { type: boolean, description: "Whether an account owns it." }
               updatedAt: { type: string, format: date-time }
+    AdminTrack:
+      type: object
+      required: [id, title, artist, duration]
+      properties:
+        id: { type: string, example: added-3fa91c02b7 }
+        title: { type: string }
+        artist: { type: string }
+        duration: { type: integer, description: Length in seconds. }
     AdminUserPage:
       type: object
       required: [total, page, pageSize, items]

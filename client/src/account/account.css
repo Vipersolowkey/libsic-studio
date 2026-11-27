@@ -1,4 +1,4 @@
-/* Accounts: the Sign in pill on the start page, the side bar chip, the profile page and the admin page.
+/* Accounts: the Sign in pill on the start page, and the shared pieces of the account pages.
    The login page has its own file (login.css). Colours come from the variables in styles.css. */
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
@@ -10,61 +10,25 @@
 
 /* Start page corner */
 .account-pill-wrap { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: max(18px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; animation: intro-in 1.4s 2.2s ease both; }
-.account-pill, .account-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; background: rgba(10, 12, 20, 0.6); color: var(--text); font: inherit; font-size: 14px; text-decoration: none; cursor: pointer; }
-.account-pill:hover, .account-chip:hover { border-color: var(--accent); }
-.account-pill:focus-visible, .account-chip:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
-.account-chip { padding: 6px 12px; font-size: 13px; }
-.account-chip.signed-in { padding: 4px 12px 4px 6px; }
-.account-chip.signed-in span { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; background: rgba(10, 12, 20, 0.6); color: var(--text); font: inherit; font-size: 14px; text-decoration: none; cursor: pointer; }
+.account-pill:hover { border-color: var(--accent); }
+.account-pill:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.account-pill-row { display: flex; align-items: center; gap: 8px; }
+.admin-pill { border-color: var(--accent); color: var(--accent); }
+.admin-pill:hover { background: var(--accent); color: #1a1306; }
 .account-menu { width: 200px; margin: 0; padding: 6px; list-style: none; border: 1px solid var(--line); border-radius: 14px; background: rgba(10, 12, 20, 0.88); backdrop-filter: blur(10px); }
 .account-menu a, .account-menu button { display: block; width: 100%; padding: 9px 12px; border: 0; border-radius: 9px; background: none; color: var(--text); font: inherit; font-size: 14px; text-align: left; text-decoration: none; cursor: pointer; }
 .account-menu a:hover, .account-menu button:hover { background: rgba(255, 255, 255, 0.08); }
 
-/* Profile and admin pages */
+/* Plain page shell (the studio and admin pages have their own files, profile.css and admin.css) */
 .account-page { box-sizing: border-box; width: min(640px, 100%); margin: 0 auto; padding: 28px 16px 60px; color: var(--text); }
-.account-page.wide { width: min(980px, 100%); }
-.account-page h1 { margin: 6px 0; font-size: 28px; }
-.account-page h2 { margin: 30px 0 10px; font-size: 18px; }
-.account-back { display: inline-block; margin-bottom: 18px; color: var(--muted); text-decoration: none; font-size: 14px; }
-.account-back:hover { color: var(--text); }
-.account-page a { color: var(--accent); }
 .account-muted { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
-.account-head { display: flex; align-items: center; gap: 16px; }
-.account-head p { margin: 0; }
-.account-form { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
-.account-form label { color: var(--muted); font-size: 13px; }
-.account-form input[type='text'], .account-search input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.06); color: var(--text); font: inherit; font-size: 16px; }
-.account-form input:focus, .account-search input:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
-.account-hue { width: 100%; accent-color: var(--accent); }
-.account-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 8px; }
 .account-button { padding: 9px 18px; border: 1px solid var(--accent); border-radius: 999px; background: var(--accent); color: #1a1306; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .account-button.quiet { border-color: var(--line); background: none; color: var(--text); font-weight: 400; }
 .account-button.quiet:hover:not(:disabled) { border-color: var(--accent); }
-.account-button.danger { border-color: #e5675f; background: #e5675f; color: #1a0f0e; }
 .account-button:disabled { opacity: 0.45; cursor: default; }
 .account-button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
-.account-note { margin: 0; min-height: 1.2em; font-size: 14px; }
-.account-note.ok { color: #8fd694; }
-.account-note.error { color: #ff9d95; }
-.account-list { margin: 0 0 10px; padding: 0; list-style: none; }
-.account-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 2px; border-bottom: 1px solid var(--line); }
-.account-list span { color: var(--muted); font-size: 13px; }
-.account-page > .account-button.quiet { margin-top: 28px; }
 
-.account-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0 24px; padding: 0; list-style: none; }
-.account-tiles li { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
-.account-tiles strong { font-size: 26px; }
-.account-tiles span { color: var(--muted); font-size: 13px; }
-.account-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
-.account-tabs button { padding: 8px 16px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
-.account-tabs button[aria-selected='true'] { border-color: var(--accent); color: var(--accent); }
-.account-search { display: flex; gap: 8px; margin-bottom: 10px; }
-.account-search input { flex: 1; min-width: 0; }
-.account-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.account-table th { padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--muted); font-weight: 400; text-align: left; }
-.account-table td { padding: 9px 10px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
-.account-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
-@media (max-width: 700px) { .account-table th:nth-child(2), .account-table td:nth-child(2) { display: none; } }
 
 /* The "add the rooms from this browser" question on the start page */
 .intro-claim { position: absolute; z-index: 3; left: 50%; bottom: 96px; transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); box-sizing: border-box; margin: 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(10, 12, 20, 0.86); backdrop-filter: blur(10px); color: var(--text); font-size: 14px; text-align: center; }

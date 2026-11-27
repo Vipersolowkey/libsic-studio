@@ -1,9 +1,10 @@
 // Part of: Music: the CD tower and wide shelf in the room.
-// Uses: HoloPlayer.jsx, api.js, cdLook.js, discovery.js, musicSource.js, myCds.js, myLinks.js, useUiScale.js.
+// Uses: AuthContext.jsx, HoloPlayer.jsx, api.js, cdLook.js, discovery.js, musicSource.js, myCds.js, myLinks.js, useUiScale.js.
 // Used by: RoomScreen.jsx.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getCds, resolveMusicLink } from '../api.js';
+import { getAccountCds, getCds, resolveMusicLink } from '../api.js';
+import { useAuth } from '../account/AuthContext.jsx';
 import { DISCOVERY_PLAYLISTS } from './discovery.js';
 import { forgetCd, getMyCds, rememberCd } from './myCds.js';
 import { forgetLink, getMyLinks, linkTitle, providerName, rememberLink } from './myLinks.js';
@@ -14,8 +15,10 @@ import { uiScaleFor } from '../room/useUiScale.js';
 
 // The CD tower in the bottom-right corner of the room: the way into ALL music. Only its paper tag shows ("In the player");
 // hovering lifts it (CSS in music.css), hovering a CD slides it out, clicking sends the disc to the room's player.
-// "All CDs" opens a wide shelf (dialog). The "+" case opens a slip to paste a link or a CD code.
-// The list is built in `items`: our CDs, online playlists, this browser's CDs, then saved links.
+// The tower holds only what the person saved: their own CDs (this browser's and, signed in, their account's), CDs kept from a
+// shared room, and saved links. "All CDs" opens a wide shelf (dialog) with everything, including the studio CDs and the online
+// playlists. The "+" case opens a slip to paste a link or a CD code.
+// The full list is built in `items`: our CDs, online playlists, my CDs, then saved links. `shelf` is the part the tower shows.
 //
 // Props:
 //   source / cdCode   what is playing now: an online source { provider, url } OR a CD code, never both
@@ -133,10 +136,21 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
   // One list for everything (the number on a spine is its place). kind: studio | soundcloud | mine | shared | link.
   const [mine, setMine] = useState(getMyCds);
   useEffect(() => { setMine(getMyCds()); }, []); // read again when the tower is drawn, so a CD made a moment ago is there
+  // Signed in: the CDs of the account too (made on another device, or added to the account), so the tower shows every CD they saved.
+  const { user } = useAuth();
+  const who = user?.username;
+  const [account, setAccount] = useState([]);
+  useEffect(() => {
+    if (!who) { setAccount([]); return undefined; }
+    let cancelled = false;
+    getAccountCds().then((list) => { if (!cancelled) setAccount(Array.isArray(list) ? list : []); }).catch(() => { if (!cancelled) setAccount([]); });
+    return () => { cancelled = true; };
+  }, [who]);
   const items = useMemo(() => {
     const own = (studio || []).map((cd) => ({ kind: 'studio', key: cd.code, title: cd.title, sub: `Studio · ${cd.tracks?.length ?? 0} tracks` }));
     const online = DISCOVERY_PLAYLISTS.map((p) => ({ kind: 'soundcloud', key: p.url, title: p.title, sub: 'SoundCloud playlist' }));
-    const made = mine.map((cd) => ({ kind: 'mine', key: cd.code, title: cd.title, sub: cd.shared ? 'Saved CD' : 'My CD', custom: cd.look, keptFromRoom: Boolean(cd.shared), editable: Boolean(cd.editKey) }));
+    const fromAccount = account.filter((cd) => !mine.some((m) => m.code === cd.code)).map((cd) => ({ kind: 'mine', key: cd.code, title: cd.title, sub: 'My CD', custom: cd.look ?? undefined, keptFromRoom: false, editable: true }));
+    const made = [...mine.map((cd) => ({ kind: 'mine', key: cd.code, title: cd.title, sub: cd.shared ? 'Saved CD' : 'My CD', custom: cd.look, keptFromRoom: Boolean(cd.shared), editable: Boolean(cd.editKey) })), ...fromAccount];
     const known = new Set(online.map((item) => item.key));
     // pasted links stay on the shelf; a link that is playing but not saved yet (a shared room) is shown too
     const saved = links.filter((link) => !known.has(link.url)).map((link) => ({ kind: 'link', key: link.url, provider: link.provider, title: linkTitle(link), sub: `${providerName(link.provider)} link`, saved: true }));
@@ -148,7 +162,9 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
       ? [{ kind: 'shared', key: cdCode, title: loadedCd.title, sub: 'Shared CD', custom: loadedCd.look }]
       : [];
     return [...own, ...online, ...made, ...shared, ...saved, ...playing].map((item, index) => ({ ...item, number: index + 1, look: cdLook(item.key, item.title, item.custom) }));
-  }, [studio, mine, links, source, cdCode, loadedCd]);
+  }, [studio, mine, account, links, source, cdCode, loadedCd]);
+  // The tower: only what the person saved (their CDs, a CD kept from a room, saved links) and whatever is playing now. Numbered from 1 on its own.
+  const shelf = useMemo(() => items.filter((item) => item.kind === 'mine' || item.kind === 'shared' || item.kind === 'link').map((item, index) => ({ ...item, number: index + 1 })), [items]);
   const current = items.find((item) => (item.kind === 'soundcloud' || item.kind === 'link' ? source?.url === item.key : !source && cdCode === item.key));
   const isPlaying = (item) => (item.kind === 'soundcloud' || item.kind === 'link' ? source?.url === item.key : !source && cdCode === item.key);
   const loaded = Boolean(source || cdCode);
@@ -275,6 +291,7 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
             <span className="cdc-mini" style={nowFace ? { '--face': nowFace } : undefined} aria-hidden="true" />
             <span className="cdc-now" onClick={() => setPinned(!pinned)}><small>In the player</small><b key={nowTitle}>{nowTitle}</b></span>
             <span className="cdc-eq" aria-hidden="true"><i /><i /><i /></span>
+            <span className="cdc-tools">
             <button type="button" className="cdc-brass cdc-all" aria-label="Open the wide shelf with all CDs" onClick={openWall}>All CDs</button>
             {tracks.length > 0 && <button type="button" className="cdc-brass" aria-pressed={tracksOpen} onClick={() => { setTracksOpen(!tracksOpen); setSlip(false); }}>Tracks</button>}
             {/* Something that came with a shared room is not on this shelf yet: "Save" puts it there, and "Forget" takes it off again. */}
@@ -284,11 +301,13 @@ export default function CdRow({ source, cdCode, loadedCd, player, loading, error
             {current?.editable && <Link className="cdc-brass" to={`/cd/${encodeURIComponent(current.key)}?edit=1`} aria-label="Edit this CD">Edit</Link>}
             {current?.keptFromRoom && <button type="button" className="cdc-brass" aria-label="Forget this CD" onClick={() => { forgetCd(current.key); setMine(getMyCds()); }}>Forget</button>}
             {(source || cdCode) && <button type="button" className="cdc-brass" aria-label="Take the CD out of the player" onClick={onEject}>Eject</button>}
+            </span>
           </div>
           <div className="cdc-tower">
             <div className="cdc-cap" />
             <div className="cdc-stack" role="list" aria-label="CDs">
-              {items.map(caseFor)}
+              {shelf.map(caseFor)}
+              {shelf.length === 0 && <p className="cdc-none">No saved CDs yet. Open All CDs to play one, or add your own music below.</p>}
               <button type="button" className="cdc-cd cdc-add" aria-label="Add your own music" aria-expanded={slip} onClick={() => { setSlip(!slip); setTracksOpen(false); }}>
                 <span className="cdc-spine"><span className="cdc-paper"><span className="cdc-ttl">+ Add your own music</span></span></span>
               </button>

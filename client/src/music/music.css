@@ -3,8 +3,6 @@
 /* Styles of the CD tower in the room (.cdc-*), the wide CD shelf (.cdw-*) and the online player box (.online-player).
    Used by music/CdRow.jsx and music/ExternalMusic.jsx. Sizes of a pulled-out CD match PULL_FRONT / PULL_TOTAL in CdRow.jsx. */
 @keyframes cd-spin { to { transform: rotate(360deg); } }
-.cd-code-form { display: grid; gap: 8px; margin: 16px 0; font-size: .75rem; }
-.cd-code-form .chip-row { flex-wrap: nowrap; }
 .hp-btn:disabled { opacity: .35; cursor: default; }
 .online-track-list { list-style: none; margin: 8px 0; padding: 0; max-height: 280px; overflow: auto; }
 .online-track-list button { width: 100%; border: 0; border-bottom: 1px solid var(--line); padding: 10px 4px; background: none; color: var(--text); text-align: left; cursor: pointer; display: flex; gap: 8px; justify-content: space-between; }
@@ -53,7 +51,7 @@
 
 /* the paper tag on top of the tower: what is in the player */
 .cdc-body { position: relative; }
-.cdc-tag { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; margin: 0 0 8px 14px; padding: 7px 10px; border: 1px solid var(--edge); border-radius: 8px; background-color: var(--paper); background-image: var(--grain); color: var(--ink); box-shadow: 0 6px 14px #0005; }
+.cdc-tag { position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px 14px; padding: 7px 10px; border: 1px solid var(--edge); border-radius: 8px; background-color: var(--paper); background-image: var(--grain); color: var(--ink); box-shadow: 0 6px 14px #0005; }
 .cdc-mini { flex: none; width: 32px; height: 32px; border-radius: 50%; background: radial-gradient(circle, #0b0d14 0 7%, #d9dbe3 7% 15%, transparent 16%), var(--face, #7a7568); box-shadow: 0 2px 5px #0006; animation: cdc-spin 6s linear infinite; }
 @keyframes cdc-spin { to { transform: rotate(360deg); } }
 .cdc-now { flex: 1; min-width: 0; line-height: 1.1; }
@@ -214,3 +212,8 @@ a.cdc-brass { text-decoration: none; }
 .cdw-name small { display: block; font-size: 11px; opacity: .8; }
 
 @media (prefers-reduced-motion: reduce) { .cdw, .cdw *, .cdw *::before { animation: none !important; transition: none !important; } }
+
+/* the paper tag has two rows: the disc and the title on top, the small brass buttons under them */
+.cdc-tools { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+/* the tower holds only saved CDs; when there are none, one short line stands in its place */
+.cdc-none { margin: 0; padding: 12px 14px; border: 1px dashed #ffffff33; border-radius: 6px; color: #e6d8c3; font-size: 12.5px; line-height: 1.4; }

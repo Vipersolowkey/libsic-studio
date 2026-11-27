@@ -49,10 +49,6 @@
 .room[data-skin] .side-title { margin: 0 0 10px; font-family: var(--t-title-font); font-size: var(--t-title-size); font-weight: 600; letter-spacing: var(--t-title-track); text-transform: var(--t-title-case); color: var(--soft); }
 .room[data-skin] .sidebar .room-name { font-family: var(--t-name-font); font-size: var(--t-name-size); font-weight: 500; border-bottom: 1px solid var(--soft); padding: 2px 2px 4px; }
 /* the room picker: the card behind each room (the layouts below arrange them) */
-.room[data-skin] .room-list .tape { display: none; }
-.room[data-skin] .room-list .polaroid { background: var(--card-bg); color: var(--ink); border: 1px solid var(--card-edge); border-radius: var(--card-radius); box-shadow: none; transition: border-color 0.16s, background 0.16s; }
-.room[data-skin] .room-list .polaroid span { font-family: 'DM Sans', system-ui, sans-serif; font-size: 13px; font-weight: 500; padding-top: 6px; }
-.room[data-skin] .room-list .here, .room[data-skin] .room-list .others .polaroid:nth-child(odd), .room[data-skin] .room-list .others .polaroid:nth-child(even), .room[data-skin] .room-list .others .polaroid:hover { transform: none; }
 /* mood: the light switch, the effects, Decorate, and the buttons in the footer */
 .room[data-skin] .daynight { padding: 3px; border: 1px solid var(--ctl-edge); border-radius: var(--ctl-r); background: var(--ctl-bg); }
 .room[data-skin] .daynight button { min-height: 36px; border-radius: calc(var(--ctl-r) - 3px); font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; transition: background 0.16s, color 0.16s; }
@@ -61,7 +57,7 @@
 .room[data-skin] .stamp[aria-pressed='true'], .room[data-skin] .daynight button[aria-pressed='true'] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); box-shadow: none; transform: none; }
 .room[data-skin] .make { min-height: 44px; border: 1px solid var(--ink); border-radius: min(var(--ctl-r), 14px); font-size: 14px; transition: background 0.16s, color 0.16s; }
 .room[data-skin] .sidebar .chip, .room[data-skin] .side-note .chip { min-height: 40px; padding-inline: 16px; border: 1px solid var(--ctl-edge); border-radius: var(--ctl-r); background: var(--ctl-bg); font-size: 14px; box-shadow: none; transition: border-color 0.16s, background 0.16s; }
-.room[data-skin] .sidebar .chip:hover, .room[data-skin] .side-note .chip:hover, .room[data-skin] .stamp:hover, .room[data-skin] .room-list .polaroid:hover, .room[data-skin] .side-icon:hover { border-color: var(--accent); }
+.room[data-skin] .sidebar .chip:hover, .room[data-skin] .side-note .chip:hover, .room[data-skin] .stamp:hover, .room[data-skin] .side-icon:hover { border-color: var(--accent); }
 .room[data-skin] .sidebar .chip[aria-pressed='true'], .room[data-skin] .sidebar .chip.primary { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
 .room[data-skin] .side-open { width: 52px; height: 52px; border: 1px solid var(--bar-edge); border-radius: 50%; background: var(--bar-bg); box-shadow: var(--bar-shadow); transition: transform 0.18s ease, border-color 0.16s, opacity 0.7s ease; }
 .room[data-skin] .side-open:hover { transform: scale(1.06); border-color: var(--accent); }
@@ -90,20 +86,6 @@
 .room[data-skin] .side-section:has(> .side-title) { counter-increment: sec; }
 .room[data-skin] .side-title { display: flex; align-items: center; gap: 0; }
 .room[data-skin] .side-title::before { content: counter(sec, decimal-leading-zero) ' / '; margin-right: 0.35em; color: var(--accent); white-space: pre; }
-.room[data-skin] .room-list .here { display: block; width: 100%; margin: 0; padding: 0; overflow: hidden; text-align: left; border: 1px solid var(--hero-edge); border-radius: var(--hero-r); background: var(--card-bg); }
-.room[data-skin] .room-list .here img { display: block; width: 100%; height: 0; margin: 0; border-width: 0; border-radius: 0; object-fit: cover; opacity: 0; transform: scale(0.97); transition: height 0.34s cubic-bezier(0.3, 0.7, 0.3, 1), margin 0.34s cubic-bezier(0.3, 0.7, 0.3, 1), opacity 0.26s ease, transform 0.34s cubic-bezier(0.3, 0.7, 0.3, 1); }
-.room[data-skin] .room-list .here:hover img, .room[data-skin] .room-list .here:focus-visible img { height: 130px; margin: 0 0 2px; border-width: 1px; opacity: 1; transform: none; }
-.room[data-skin] .room-list .here span { display: flex; align-items: center; gap: 9px; padding: 11px 12px; font-family: var(--t-hero-font); font-size: var(--t-hero-size); font-weight: var(--t-hero-weight); font-style: var(--t-hero-style); letter-spacing: var(--t-hero-track); text-transform: var(--t-hero-case); color: var(--ink); }
-.room[data-skin] .room-list .here span::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-.room[data-skin] .room-list .others { display: flex; flex-direction: column; margin: 6px 0 0; counter-reset: r 1; }
-.room[data-skin] .room-list .others .polaroid { display: flex; flex-direction: row; flex-wrap: wrap; align-content: flex-start; align-items: center; gap: 12px; min-height: 42px; padding: 0 6px; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; background: none; text-align: left; counter-increment: r; }
-.room[data-skin] .room-list .others .polaroid::before { content: counter(r, decimal-leading-zero); flex: none; width: 22px; font-family: var(--t-num-font); font-size: 11.5px; color: var(--soft); }
-.room[data-skin] .room-list .others .polaroid::after { content: '\2192'; margin-left: auto; color: var(--accent); opacity: 0; transition: opacity 0.16s; }
-.room[data-skin] .room-list .others .polaroid:hover::after, .room[data-skin] .room-list .others .polaroid:focus-visible::after { opacity: 1; }
-.room[data-skin] .room-list .others .polaroid img { display: block; order: 9; flex: 0 0 100%; width: 100%; height: 0; margin: 0; object-fit: cover; border-radius: min(var(--hero-r), 12px); opacity: 0; transform: scale(0.96); transition: height 0.32s cubic-bezier(0.3, 0.7, 0.3, 1), margin 0.32s cubic-bezier(0.3, 0.7, 0.3, 1), opacity 0.26s ease, transform 0.32s cubic-bezier(0.3, 0.7, 0.3, 1); }
-.room[data-skin] .room-list .others .polaroid:hover img, .room[data-skin] .room-list .others .polaroid:focus-visible img { height: 104px; margin: 0 0 10px; opacity: 1; transform: none; }
-.room[data-skin] .room-list .others .polaroid span { display: flex; align-items: center; flex: 1; min-width: 0; min-height: 42px; padding: 0; transition: transform 0.2s ease; font-family: var(--t-list-font); font-size: var(--t-list-size); font-weight: var(--t-list-weight); font-style: var(--t-list-style); }
-.room[data-skin] .room-list .others .polaroid:hover { border-color: var(--rule); background: color-mix(in srgb, var(--accent) 9%, transparent); }
 .room[data-skin] .daynight button { font-family: var(--t-ctl-font); font-size: var(--t-ctl-size); text-transform: var(--t-ctl-case); letter-spacing: var(--t-ctl-track); }
 .room[data-skin] .stamps { display: flex; flex-direction: column; gap: 0; margin-top: 12px; }
 .room[data-skin] .stamp { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 12px; min-height: 46px; padding: 0 6px; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; background: none; text-align: left; font-family: var(--t-ctl-font); font-size: var(--t-ctl-size); text-transform: var(--t-ctl-case); letter-spacing: var(--t-ctl-track); }
@@ -124,49 +106,28 @@
 /* Golden Hour Loft: paper with a leather spine on the outer edge, the room as a framed print. */
 .room[data-skin='golden-loft'] .sidebar { --bar-r2: 12px; border-right: 9px solid #7b4f2a; background: var(--grain), var(--bar-bg); box-shadow: var(--bar-shadow), inset -6px 0 8px -6px #0005; }
 .room[data-skin='golden-loft'] .side-head { padding-bottom: 14px; }
-.room[data-skin='golden-loft'] .side-title::before, .room[data-skin='golden-loft'] .room-list .others .polaroid::before { font-style: italic; }
-.room[data-skin='golden-loft'] .room-list .here { padding: 8px 8px 0; background: #fffdf6; border-color: #dccb9f; box-shadow: 0 1px 0 #fff inset, 0 2px 10px #4a2f1c22; }
-.room[data-skin='golden-loft'] .room-list .here img { border: 1px solid #e8dab5; }
-.room[data-skin='golden-loft'] .room-list .here span { padding: 10px 2px 11px; }
-.room[data-skin='golden-loft'] .room-list .here span::before { box-shadow: none; }
-.room[data-skin='golden-loft'] .room-list .others .polaroid::before { font-size: 14px; color: var(--accent); }
+.room[data-skin='golden-loft'] .side-title::before { font-style: italic; }
 .room[data-skin='golden-loft'] .daynight button[aria-pressed='true'] { font-weight: 600; }
 
 /* Clam Cove: sea-glass, a single paper-cut shadow, rounded bubbles around the numbers, a pearl for the status light. */
 .room[data-skin='underwater-nook'] .sidebar { --bar-r2: 34px; background: linear-gradient(180deg, #f0faf7, #d8eee8); box-shadow: 5px 6px 0 #b4d9d2, 0 14px 30px #02303a55; }
-.room[data-skin='underwater-nook'] .room-list .here { padding: 5px; background: #fff; border-color: transparent; box-shadow: 0 0 0 2px var(--accent), 0 6px 14px #0a3a4433; }
-.room[data-skin='underwater-nook'] .room-list .here img { border-radius: 19px; }
-.room[data-skin='underwater-nook'] .room-list .here span { padding: 10px 8px 6px; }
-.room[data-skin='underwater-nook'] .room-list .here span::before { width: 9px; height: 9px; background: radial-gradient(circle at 35% 30%, #fff 0 20%, #f6b9a6 21% 60%, var(--accent) 61%); box-shadow: none; }
-.room[data-skin='underwater-nook'] .room-list .others .polaroid::before { display: grid; place-items: center; width: 24px; height: 24px; border: 1.5px solid #8fc3bd; border-radius: 50%; font-size: 10.5px; transition: border-color 0.16s, background 0.16s; }
-.room[data-skin='underwater-nook'] .room-list .others .polaroid:hover::before { border-color: var(--accent); background: #fff; }
-.room[data-skin='underwater-nook'] .room-list .others .polaroid { border-radius: 14px; border-bottom-color: transparent; }
 .room[data-skin='underwater-nook'] .make { border-radius: 99px; }
 
 /* Clover Hill Meadow: cream and green, leaf-shaped number tags, a strip of grass along the bottom edge. */
 .room[data-skin='clover-meadow'] .sidebar { --bar-r2: 26px; padding-bottom: 12px; }
 .room[data-skin='clover-meadow'] .sidebar::after { content: ''; display: block; position: absolute; left: 0; right: 0; bottom: 0; height: 12px; border-radius: 0 0 26px 0; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='12' viewBox='0 0 30 12'><path d='M0 12 L2 4 L5 12 M6 12 L9 1 L12 12 M12 12 L15 6 L19 12 M19 12 L23 2 L26 12 M25 12 L28 6 L30 12Z' fill='%236aa85b'/><path d='M3 12 L6 7 L9 12 M15 12 L18 6 L21 12 M23 12 L26 7 L29 12Z' fill='%234d8a43'/></svg>") 0 100% / 30px 12px repeat-x; pointer-events: none; }
 .room[data-skin='clover-meadow'] .brand-name, .room[data-skin='clover-meadow'] .side-title { color: #33592c; }
-.room[data-skin='clover-meadow'] .room-list .here { border-color: transparent; background: #fff; box-shadow: 0 0 0 2px #f3f0df, 0 0 0 4px var(--accent); }
-.room[data-skin='clover-meadow'] .room-list .here span { padding-bottom: 12px; }
-.room[data-skin='clover-meadow'] .room-list .others .polaroid::before { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 9px 2px 9px 2px; background: #dfe8cf; color: #33592c; font-size: 11px; font-weight: 700; }
-.room[data-skin='clover-meadow'] .room-list .others .polaroid:hover::before { background: var(--accent); color: #fff; }
 
 /* Aurora Observatory: a thin brass edge, stars, roman numerals, a double brass frame around the room you are in. */
-.room[data-skin='aurora-observatory'] .sidebar { --bar-r2: 28px; border: 1.5px solid #6f5b34; border-left: 0; background: radial-gradient(1px 1px at 30px 70px, #ffffff99 98%, transparent), radial-gradient(1.5px 1.5px at 236px 44px, #ffe9b8aa 98%, transparent), radial-gradient(1px 1px at 214px 560px, #ffffff66 98%, transparent), radial-gradient(1px 1px at 44px 620px, #ffffff55 98%, transparent), var(--bar-bg); }
+.room[data-skin='aurora-observatory'] .sidebar { --bar-r2: 28px; border: 1.5px solid #6f5b34; border-left: 0; }
 .room[data-skin='aurora-observatory'] .side-title { color: var(--brass); }
 .room[data-skin='aurora-observatory'] .side-title::before { content: counter(sec, upper-roman) '  \00B7  '; }
 .room[data-skin='aurora-observatory'] .side-title::after { content: ''; flex: 1; height: 1px; margin-left: 10px; background: linear-gradient(90deg, #d9b46e66, transparent); }
-.room[data-skin='aurora-observatory'] .room-list .here { padding: 4px; background: var(--bar-bg); box-shadow: inset 0 0 0 1px #6f5b3488; }
-.room[data-skin='aurora-observatory'] .room-list .here img { border-radius: 5px; }
-.room[data-skin='aurora-observatory'] .room-list .here span { padding: 10px 8px 8px; }
-.room[data-skin='aurora-observatory'] .room-list .others .polaroid::before { content: counter(r, upper-roman); width: 26px; font-size: 14px; font-style: italic; color: var(--brass); }
 .room[data-skin='aurora-observatory'] .make { border-color: var(--brass); color: var(--brass); }
 .room[data-skin='aurora-observatory'] .make:hover { background: var(--brass); color: #231a08; }
 
 /* ================================================================ the footer: one tidy block in every room.
-   Room name, one big Save, the share link on one line, New room and My rooms side by side, Delete as a small quiet link,
-   and the account button as a small quiet link at the very bottom. My rooms opens as a panel above the footer. */
+   Room name, one big Save, and the share link on one line. The "Go to" links come under it. */
 .room[data-skin='night-study'] .sidebar, .room[data-skin='night-study'] .side-note, .room[data-skin='night-study'] .side-open, .room[data-skin='aurora-observatory'] .sidebar, .room[data-skin='aurora-observatory'] .side-note, .room[data-skin='aurora-observatory'] .side-open { --danger: #ff9a86; }
 .room[data-skin='golden-loft'] .sidebar, .room[data-skin='golden-loft'] .side-note, .room[data-skin='golden-loft'] .side-open, .room[data-skin='underwater-nook'] .sidebar, .room[data-skin='underwater-nook'] .side-note, .room[data-skin='underwater-nook'] .side-open, .room[data-skin='clover-meadow'] .sidebar, .room[data-skin='clover-meadow'] .side-note, .room[data-skin='clover-meadow'] .side-open { --danger: #a8381f; }
 .room[data-skin] .side-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
@@ -177,30 +138,12 @@
 .room[data-skin] .savebar > .link-field { grid-column: 1 / -1; order: 2; display: flex; gap: 6px; margin: 0; }
 .room[data-skin] .savebar .link-field input { flex: 1; min-width: 0; min-height: 36px; padding: 0 12px; border: 1px solid var(--ctl-edge); border-radius: var(--ctl-r); background: var(--ctl-bg); color: var(--soft); font-size: 12px; box-shadow: none; }
 .room[data-skin] .savebar .link-field .chip { flex: none; min-height: 36px; padding-inline: 14px; font-size: 13px; }
-.room[data-skin] .savebar > a.chip { order: 3; display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding-inline: 8px; font-size: 13px; text-decoration: none; }
-.room[data-skin] .my-rooms { display: contents; }
-.room[data-skin] .my-rooms > .chip { order: 3; grid-column: 1 / -1; width: 100%; min-height: 38px; padding-inline: 8px; font-size: 13px; }
-.room[data-skin] .savebar > .chip.danger:not(.solid) { order: 5; grid-column: 1 / -1; justify-self: center; min-height: 28px; padding: 0 8px; border: 0; background: none; box-shadow: none; color: var(--danger); font-size: 12.5px; text-decoration: underline; text-underline-offset: 3px; }
-.room[data-skin] .savebar > .confirm { order: 5; grid-column: 1 / -1; }
 .room[data-skin] .savebar > .status { order: 7; grid-column: 1 / -1; }
-.room[data-skin] .my-rooms-panel { order: 4; grid-column: 1 / -1; position: static; max-height: 40vh; margin: 0; padding: 10px 12px; overflow-y: auto; border: 1px solid var(--ctl-edge); border-radius: 14px; background: var(--bar-bg); box-shadow: var(--bar-shadow); }
-.room[data-skin] .side-account { order: 6; grid-column: 1 / -1; display: flex; justify-content: center; }
-.room[data-skin] .account-chip { width: auto; min-height: 32px; justify-content: center; gap: 8px; padding: 0 10px; border: 0; border-radius: var(--ctl-r); background: none; box-shadow: none; color: var(--soft); font-family: 'DM Sans', system-ui, sans-serif; font-size: 13px; font-weight: 500; text-decoration: none; }
-.room[data-skin] .account-chip.signed-in { padding: 0 10px 0 6px; color: var(--ink); }
-.room[data-skin] .account-chip.signed-in span { max-width: 160px; }
-.room[data-skin] .account-chip .account-disc { flex: none; width: 20px; height: 20px; }
-.room[data-skin] .account-chip:hover { color: var(--ink); background: none; text-decoration: underline; text-underline-offset: 3px; }
-.room[data-skin='night-study'] .account-chip { font-family: 'Space Mono', ui-monospace, monospace; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; }
-.room[data-skin='golden-loft'] .account-chip { font-family: 'Fraunces', Georgia, serif; font-size: 14px; }
-.room[data-skin='clover-meadow'] .account-chip { font-family: 'Nunito', system-ui, sans-serif; font-weight: 600; }
-.room[data-skin='aurora-observatory'] .account-chip { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 16px; font-style: italic; font-weight: 600; }
 
 .room[data-skin='golden-loft'] .sidebar .chip { letter-spacing: 0.06em; font-size: 11.5px; }
 /* no scrollbars in the bar (it still scrolls with the wheel, touch and keys) and nothing can push it sideways */
 .room[data-skin] .side-body { overflow-x: hidden; scrollbar-width: none; }
 .room[data-skin] .side-body::-webkit-scrollbar { display: none; }
-.room[data-skin] .my-rooms-panel { scrollbar-width: none; }
-.room[data-skin] .my-rooms-panel::-webkit-scrollbar { display: none; }
 
 /* tucking the bar away and bringing it back: it slides and fades out (Sidebar.jsx keeps it on screen for the length of the exit), the round logo then pops in. */
 .room[data-skin] .sidebar.leaving { animation: side-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards; pointer-events: none; }
@@ -225,18 +168,7 @@
 .room[data-skin] .sidebar:not(.leaving) .side-section:nth-child(2) { animation-delay: 0.14s; }
 .room[data-skin] .sidebar:not(.leaving) .side-section:nth-child(3) { animation-delay: 0.22s; }
 .room[data-skin] .sidebar:not(.leaving) .side-section:nth-child(4) { animation-delay: 0.3s; }
-.room[data-skin] .sidebar:not(.leaving) .room-list .others .polaroid { animation: side-rise 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
-.room[data-skin] .sidebar:not(.leaving) .room-list .others .polaroid:nth-child(1) { animation-delay: 0.16s; }
-.room[data-skin] .sidebar:not(.leaving) .room-list .others .polaroid:nth-child(2) { animation-delay: 0.22s; }
-.room[data-skin] .sidebar:not(.leaving) .room-list .others .polaroid:nth-child(3) { animation-delay: 0.28s; }
-.room[data-skin] .sidebar:not(.leaving) .room-list .others .polaroid:nth-child(4) { animation-delay: 0.34s; }
-.room[data-skin] .room-list .here span::before { animation: light-ping 0.6s ease-out 0.3s backwards; }
 /* a room row: the number and name lean in, the arrow slides out, the pressed row dips */
-.room[data-skin] .room-list .others .polaroid::before { transition: transform 0.2s ease, color 0.2s, border-color 0.16s, background 0.16s; }
-.room[data-skin] .room-list .others .polaroid::after { transform: translateX(-8px); transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.3, 0.7, 0.3, 1); }
-.room[data-skin] .room-list .others .polaroid:hover::after, .room[data-skin] .room-list .others .polaroid:focus-visible::after { transform: none; }
-.room[data-skin] .room-list .others .polaroid:hover span, .room[data-skin] .room-list .others .polaroid:focus-visible span { transform: translateX(3px); }
-.room[data-skin] .room-list .polaroid:active { transform: scale(0.985); }
 /* switches, light buttons, big and small buttons */
 .room[data-skin] .daynight button, .room[data-skin] .sidebar .chip, .room[data-skin] .make, .room[data-skin] .stamp, .room[data-skin] .side-icon { transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.12s ease; }
 .room[data-skin] .daynight button:active, .room[data-skin] .sidebar .chip:active, .room[data-skin] .make:active, .room[data-skin] .stamp:active, .room[data-skin] .side-icon:active { transform: scale(0.96); }
@@ -245,25 +177,25 @@
 .room[data-skin] .stamp svg { transition: transform 0.2s ease; }
 .room[data-skin] .stamp:hover svg { transform: scale(1.12); }
 /* the panels that open: My rooms drops in above the footer, View settings slides out beside the bar */
-.room[data-skin] .my-rooms-panel { animation: side-drop 0.22s cubic-bezier(0.2, 0.8, 0.3, 1); transform-origin: 50% 100%; }
 .room[data-skin] .side-note { animation: note-in 0.24s cubic-bezier(0.2, 0.8, 0.3, 1); }
 @media (prefers-reduced-motion: reduce) {
   .room[data-skin] .sidebar *, .room[data-skin] .sidebar *::before, .room[data-skin] .sidebar *::after, .room[data-skin] .side-note, .room[data-skin] .sidebar .side-head, .room[data-skin] .sidebar .side-foot { animation: none !important; transition: none !important; }
 }
-.room[data-skin] .room-list .here:not(:hover):not(:focus-visible) img { border-width: 0; }
-/* Sign in: a real button (accent outline, soft tint, 42px tall) so it is easy to find; once signed in it goes back to a quiet name. */
-.room[data-skin] .side-account { margin-top: 2px; }
 .room[data-skin] .side-foot .link-field input { max-width: 100%; }
-.room[data-skin] .side-foot .account-chip:not(.signed-in) { display: flex; align-items: center; box-sizing: border-box; width: 100%; min-height: 42px; justify-content: center; line-height: 1; padding: 0 12px; border: 1px solid var(--accent); border-radius: var(--ctl-r); background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); font-size: 15px; font-weight: 600; font-style: normal; letter-spacing: 0.02em; text-transform: none; text-decoration: none; transition: background-color 0.2s, color 0.2s, transform 0.12s ease; }
-.room[data-skin] .side-foot .account-chip:not(.signed-in):hover, .room[data-skin] .side-foot .account-chip:not(.signed-in):focus-visible { background: var(--accent); color: var(--on-accent); text-decoration: none; }
-.room[data-skin] .side-foot .account-chip:not(.signed-in):active { transform: scale(0.97); }
-.room[data-skin='aurora-observatory'] .side-foot .account-chip:not(.signed-in) { border-color: var(--brass); background: color-mix(in srgb, var(--brass) 12%, transparent); color: var(--brass); font-family: 'Cormorant Garamond', Georgia, serif; font-size: 17px; font-style: italic; }
-.room[data-skin='aurora-observatory'] .side-foot .account-chip:not(.signed-in):hover, .room[data-skin='aurora-observatory'] .side-foot .account-chip:not(.signed-in):focus-visible { background: var(--brass); color: #231a08; }
-/* the last section is a section like the others: no stitched line above it, the same width, New room and My rooms side by side */
-.room[data-skin] .side-foot { position: static; z-index: auto; gap: 8px; padding: 0 0 8px; border: 0; }
-.room[data-skin] .savebar:has(> a.chip) ~ .my-rooms > .chip { grid-column: auto; }
-.room[data-skin] .side-account { margin-top: 10px; }
+/* the last section is a section like the others: no stitched line above it, the same width */
+.room[data-skin] .side-foot { position: static; z-index: auto; gap: 8px; padding: 0 0 18px; border: 0; }
 
 /* ONE logo for every room: the same vinyl with an amber centre, in the bar header and on the round button when the bar is tucked away. */
 .room[data-skin] .brand-disc, .room[data-skin] .side-open .brand-disc { width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle, #f0b45a 0 11%, #11141f 12% 16%, transparent 17%), conic-gradient(from 30deg, #2c3350, #0c0f1a, #39415f, #0c0f1a, #2c3350); box-shadow: 0 0 0 1px #343c58; filter: none; }
 .room[data-skin] .side-open .brand-disc { width: 32px; height: 32px; }
+
+/* "Go to": a short column of plain links (My studio, Sign in, Admin page). Same controls look as the link field above. */
+.room[data-skin] .side-go { display: grid; gap: 8px; }
+.room[data-skin] .side-go a { display: flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 40px; padding: 0 12px; border: 1px solid var(--ctl-edge); border-radius: var(--ctl-r); background: var(--ctl-bg); color: var(--ink); font-size: 14px; text-decoration: none; transition: border-color 0.16s, color 0.16s; }
+.room[data-skin] .side-go a:hover, .room[data-skin] .side-go a:focus-visible { border-color: var(--accent); color: var(--accent); }
+
+/* The bar keeps its full height. What belongs together stays together at the top (Mood and Decorate, then Share), and "Go to" is pinned to the
+   bottom of the bar under a thin line, so the free space sits between the two groups on purpose. */
+.room[data-skin] .side-body { display: flex; flex-direction: column; }
+.room[data-skin] .side-body > .side-section { flex: none; }
+.room[data-skin] .side-body > .side-pinned { margin-top: auto; padding: 14px 0 16px; border-top: 1px solid var(--ctl-edge); }

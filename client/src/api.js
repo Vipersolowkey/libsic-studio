@@ -75,6 +75,13 @@ export const claimMine = (rooms, cds) => request('/api/me/claim', { method: 'POS
 
 // Admin only (the API answers 403 to anyone else). Search text and page number go in the address; never anything private.
 export const adminStats = () => request('/api/admin/stats');
-export const adminList = (what, { q = '', page = 1 } = {}) =>
-  request(`/api/admin/${what}?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page) })}`);
+export const adminList = (what, { q = '', page = 1, scenes = [] } = {}) =>
+  request(`/api/admin/${what}?${new URLSearchParams({ ...(q ? { q } : {}), ...(q && scenes.length ? { scenes: scenes.join(',') } : {}), page: String(page) })}`);
+// Deletes a guest's room or CD (the API refuses ones that belong to an account).
 export const adminDelete = (what, code) => request(`/api/admin/${what}/${encodeURIComponent(code)}`, { method: 'DELETE' });
+// Deletes an account with all its rooms and CDs. The username is sent again as the confirmation. Returns { deletedRooms, deletedCds }.
+export const adminDeleteUser = (username) => request(`/api/admin/users/${encodeURIComponent(username)}?${new URLSearchParams({ confirm: username })}`, { method: 'DELETE' });
+// The studio's own music: the official CDs with their tracks, adding a track ({ title, artist, url, duration in seconds }), removing one.
+export const adminMusic = () => request('/api/admin/music');
+export const adminAddTrack = (code, track) => request(`/api/admin/music/${encodeURIComponent(code)}/tracks`, { method: 'POST', body: track });
+export const adminRemoveTrack = (code, id) => request(`/api/admin/music/${encodeURIComponent(code)}/tracks/${encodeURIComponent(id)}`, { method: 'DELETE' });

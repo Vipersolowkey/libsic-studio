@@ -1,20 +1,21 @@
 // Part of: App routes: which page each address shows.
 // Uses: AdminPage.jsx, CdPage.jsx, HomePage.jsx, LoginPage.jsx, MusicPage.jsx, ProfilePage.jsx, RoomPage.jsx, RoomScreen.jsx, music.css, workshop.css.
 // Used by: main.jsx.
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { trackPage } from './analytics.js';
 import HomePage from './pages/HomePage.jsx';
 import RoomPage from './pages/RoomPage.jsx';
-import CdPage from './pages/CdPage.jsx';
-import MusicPage from './pages/MusicPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
+const CdPage = lazy(() => import('./pages/CdPage.jsx'));
+const MusicPage = lazy(() => import('./pages/MusicPage.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 import ProfilePage from './pages/ProfilePage.jsx';
-import AdminPage from './pages/AdminPage.jsx';
+const AdminPage = lazy(() => import('./pages/AdminPage.jsx'));
 import './music/music.css';
 import './music/workshop.css';
 import RoomScreen from './room/RoomScreen.jsx';
 
+// The pages most visitors never open (login, admin, the CD workshop and CD page) are loaded only when they are visited (lazy), so the room opens sooner.
 // Every address of the site and its page. /new and /r/:code both show RoomScreen (new vs saved room).
 // Unknown addresses fall through to the "Page not found" route. music.css / workshop.css are loaded here because several pages share them.
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
   }, [pathname]);
 
   return (
+    <Suspense fallback={<main className="message-page"><p>Loading…</p></main>}>
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/new" element={<RoomScreen />} />
@@ -43,5 +45,6 @@ export default function App() {
         }
       />
     </Routes>
+    </Suspense>
   );
 }

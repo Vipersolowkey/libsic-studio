@@ -1,17 +1,16 @@
 // Part of: Room page: the main screen that holds all state and puts every piece together.
 // Uses: CdRow.jsx, Controls.jsx, DecorateHud.jsx, DecorateOverlay.jsx, ExternalMusic.jsx, HoloPlayer.jsx, Hologram.jsx,
-//   MyRooms.jsx, SaveBar.jsx, +18 more.
+//   SaveBar.jsx, +18 more.
 // Used by: App.jsx, RoomPage.jsx.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { createRoom, deleteRoom, getRoom, getScene, getScenes, getCd, updateRoom } from '../api.js';
+import { createRoom, getRoom, getScene, getScenes, getCd, updateRoom } from '../api.js';
 import CdRow from '../music/CdRow.jsx';
 import ExternalMusic, { EMPTY_ONLINE_PLAYER } from '../music/ExternalMusic.jsx';
 import { DEFAULT_MUSIC_SOURCE } from '../music/discovery.js';
 import {
   clearLastRoomCode,
   getMyRooms,
-  removeMyRoom,
   saveMyRoom,
   setLastRoomCode,
   updateMyRoom,
@@ -26,7 +25,6 @@ import Hologram, { HOLO_PLACES } from './Hologram.jsx';
 import Controls from './Controls.jsx';
 import DecorateHud from './DecorateHud.jsx';
 import DecorateOverlay from './DecorateOverlay.jsx';
-import MyRooms from './MyRooms.jsx';
 import SaveBar, { RoomNameField } from './SaveBar.jsx';
 import './kit.css';
 import './sidebarThemes.css'; // a different look for the side bar in each room (keyed by data-skin below)
@@ -48,8 +46,8 @@ const IDLE_MS = 4000;
 const NO_SCENE = { slug: '', layers: [], catalog: [], surfaces: [] };
 const NO_CD = { title: 'No CD', tracks: [] };
 
-// The scene list from the API holds only slug, name, description. A scene is fetched whole (layers...) when first opened,
-// then kept in the list, so going back to it makes no request. isWhole = has layers; wholeScene fetches if needed.
+// The scene list from the API holds only slug, name, description. The scene a room opens in is fetched whole (layers...)
+// and put in the list. isWhole = has layers; wholeScene fetches if needed.
 const isWhole = (scene) => Array.isArray(scene?.layers);
 const wholeScene = async (scene) => (!scene || isWhole(scene) ? scene : { ...scene, ...(await getScene(scene.slug)) });
 const withScene = (list, whole) => list.map((s) => (s.slug === whole.slug ? whole : s));
@@ -311,7 +309,7 @@ export default function RoomScreen({ code }) {
     );
   }
 
-  // ===== 7. SAVE / SHARE / DELETE: buttons are in SaveBar.jsx (side bar footer). isOwner = this browser has the edit key =====
+  // ===== 7. SAVE / SHARE: buttons are in SaveBar.jsx (side bar footer). isOwner = this browser has the edit key =====
   // dirty = something differs from the saved room (the Save changes button lights up).
   // Owner = this browser holds the edit key, or the signed-in account owns the room (the API says so with `mine`).
   const isOwner = Boolean(saved && (editKey || saved.mine));
@@ -343,22 +341,6 @@ export default function RoomScreen({ code }) {
     }
   }
 
-  // ----- changing room (picked in Controls.jsx RoomList): fetches the whole scene first when needed -----
-  const showScene = (next) => {
-    setSlug(next.slug);
-    setSettings(defaultSettings(next));
-    setItems(null); // the old objects belong to the old scene
-  };
-  // A scene picked for the first time is fetched whole before it is shown; the room on screen stays until then.
-  const chooseScene = (next) => {
-    if (isWhole(next)) return showScene(next);
-    return run(async () => {
-      const whole = await wholeScene(next);
-      setScenes((list) => withScene(list, whole));
-      showScene(whole);
-    });
-  };
-
   // Saves a new room (or a copy of someone else's), remembers its edit key in this browser and opens its page.
   // ----- POST /api/rooms (SaveBar: Save room / Save my own copy). The edit key is kept by myRooms.js -----
   const saveNew = () =>
@@ -382,22 +364,6 @@ export default function RoomScreen({ code }) {
       await persistChanges();
       setStatus({ kind: 'ok', text: 'Changes saved.' });
     });
-
-  // ----- DELETE /api/rooms/:code (SaveBar: Delete room) -----
-  const removeRoom = () => {
-    run(async () => {
-      await deleteRoom(saved.code, editKey);
-      removeMyRoom(saved.code);
-      clearLastRoomCode(saved.code);
-      navigate('/new');
-    });
-  };
-
-  const forget = (roomCode) => {
-    removeMyRoom(roomCode);
-    clearLastRoomCode(roomCode);
-    setMyRooms(getMyRooms());
-  };
 
   // The link opens the SAVED room, so an owner's unsaved changes (a new CD, another scene...) are saved first. Otherwise
   // the person who opens the link would see the old room, for example without the CD.
@@ -448,7 +414,7 @@ export default function RoomScreen({ code }) {
         )}
       </SceneStage>
       {playerPlace !== 'object' && hologram /* in the middle or at the top of the window */}
-      {/* LEFT SIDE BAR (Sidebar.jsx = frame). settings = View settings note; footer = name + SaveBar + MyRooms; children = Controls.jsx (rooms, mood, Decorate) or DecorateHud.jsx while decorating. */}
+      {/* LEFT SIDE BAR (Sidebar.jsx = frame). settings = View settings note; footer = name + SaveBar (the Share part); children = Controls.jsx (mood, Decorate) or DecorateHud.jsx while decorating. */}
       <Sidebar
         open={sidebarOpen}
         onToggle={toggleSidebar}
@@ -487,11 +453,9 @@ export default function RoomScreen({ code }) {
                 link={link}
                 onSaveNew={saveNew}
                 onSaveChanges={saveChanges}
-                onDelete={removeRoom}
                 onCopy={copyLink}
                 onDismissStatus={() => setStatus(null)}
               />
-              <MyRooms rooms={myRooms} scenes={scenes} currentCode={code} onForget={forget} />
             </>
           )
         }
@@ -504,10 +468,8 @@ export default function RoomScreen({ code }) {
         ) : (
           <>
             <Controls
-              scenes={scenes}
               scene={scene}
               settings={settings}
-              onChooseScene={chooseScene}
               onSettingsChange={setSettings}
               onDecorate={canDecorate ? () => setDecorating(true) : undefined}
             />

@@ -123,7 +123,7 @@ function createApp(models = {}, options = {}) {
   app.use('/api/music', musicRouter());
   app.use('/api/auth', authRouter({ User }, { secret, throttle, requireAuth: auth.requireAuth })); // sign up, sign in, my profile
   app.use('/api/me', auth.requireAuth, meRouter({ Room, Cd })); // my rooms and CDs on any device, claiming old ones
-  app.use('/api/admin', auth.requireAdmin, adminRouter({ Room, Cd, User })); // admin only
+  app.use('/api/admin', auth.requireAdmin, adminRouter({ Room, Cd, User, Track })); // admin only
   app.use('/api', visitsRouter({ Scene, DailyStat, DailyVisitor }, stats)); // POST /api/visits (anonymous page counter) and GET /api/stats (owner only)
   app.get('/stats', (req, res) => res.type('html').send(statsPage)); // the small page that shows the visit totals
 
