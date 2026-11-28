@@ -1,5 +1,8 @@
-// Store canonical provider URLs, never iframe HTML or expiring audio stream tokens.
-// No request to the submitted URL is made by the API.
+// Part of: Online music: checks pasted links (client copy: music/musicSource.js).
+// Used by: cds.js, music.js, rooms.js.
+// Checks a pasted music link and returns { provider, url } in canonical form (soundcloud, spotify, youtube, or a direct
+// audio file: mp3 m4a ogg wav aac). Throws a readable Error otherwise. Never requests the URL itself.
+// Rejects http, credentials, ports; direct audio links also need a public-looking host (no IP numbers, .local, .internal...).
 function parseMusicSource(input) {
   if (typeof input !== 'string' || input.length > 2048) throw new Error('Paste a supported music link');
   let value = input.trim();
@@ -38,6 +41,8 @@ function parseMusicSource(input) {
   throw new Error('Use SoundCloud, Spotify, YouTube or a direct https audio file link');
 }
 
+// For room input: normalises fields.musicSource in place and returns an error message or null.
+// Side effect: a valid musicSource sets cdCode to null, because a room uses a CD or a link, not both.
 function validateMusicFields(fields) {
   if (fields.musicSource === undefined || fields.musicSource === null) return null;
   const source = fields.musicSource;

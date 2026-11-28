@@ -1,12 +1,17 @@
+// Part of: Room picture: rain, snow, fireflies and other effects.
+// Uses: particles.js.
+// Used by: SceneStage.jsx.
 import { useMemo } from 'react';
 import { makeParticles, between, mulberry32 } from './particles.js';
 
-// Each effect is a pile of small elements animated with CSS (see scene.css).
-// The random numbers are fixed per effect, so nothing jumps when the page redraws.
+// Weather / ambient effects. Each is a set of small <i> elements animated by CSS (scene.css: .effect-<name>); the numbers
+// below are per-particle CSS variables. Seeds are fixed so nothing jumps on redraw. To add an effect: add it here AND to
+// EFFECTS in api/src/constants.js, scene.css, and the button label/icon in room/Controls.jsx.
 const px = (n) => `${n.toFixed(1)}px`;
 const pct = (n) => `${n.toFixed(2)}%`;
 const sec = (n) => `${n.toFixed(2)}s`;
 
+// ===== PARTICLE EFFECTS (snow, fireflies, dust, bubbles, plankton, glitter, stars): how many, where, how big, how fast =====
 const BUILDERS = {
   snow: () =>
     makeParticles(320, 22, (r) => ({
@@ -79,13 +84,10 @@ const BUILDERS = {
     })),
 };
 
-// Rain is drawn differently from the other effects. Hundreds of separate drops would each be one more thing for the
-// graphics card to move, so the drops are painted once into two see-through sheets that slide down forever.
-// The back sheet holds the far rain (fine, short, faint) and the middle rain; the near sheet holds a few long, bright
-// streaks and falls faster, which gives the rain depth. Every sheet covers the whole picture and moves on every
-// redraw, so each one costs about as much as a full background: two is the fewest that still shows depth.
-// It is a light rain: few, thin, faint streaks that fall unhurried.
-// On top of that a few drops sit on the window glass and run down it now and then.
+// Rain is special (GPU cost): instead of hundreds of drop elements, streaks are painted once into 2 tiling SVG sheets that
+// slide down forever. "back" = far fine rain, "near" = a few long bright streaks (falls faster, gives depth). Each sheet
+// costs about one full-screen layer, so keep it to 2. 16 drops on the glass (rain-drop) run down now and then.
+// ===== RAIN: drawn as 2 tiling sheets (see the note above) =====
 const SHEETS = [
   {
     name: 'back',
@@ -97,10 +99,10 @@ const SHEETS = [
   },
   { name: 'near', seed: 7, groups: [{ count: 11, length: [18, 34], width: 0.9, alpha: [0.16, 0.34] }] },
 ];
-const TILE = 300; // the sheet is a square picture that repeats; this is its size in drawing units
-const SLANT = 0.07; // a light rain falls almost straight down (keep --slant in scene.css the same)
+const TILE = 300; // the sheet is a repeating square of this size (SVG units)
+const SLANT = 0.07; // sideways lean of a streak. Keep equal to --slant in scene.css.
 
-// The repeating picture of one sheet: slanted streaks, each fading in toward its lower end like a falling drop.
+// Returns a CSS url() of an SVG tile of slanted streaks (brighter toward the bottom end, like a falling drop).
 export function rainTile({ seed, groups }) {
   const r = mulberry32(seed);
   let drawn = '';
@@ -144,7 +146,8 @@ function Rain() {
   );
 }
 
-// Draws one effect by name. 'none' (or an unknown name) draws nothing.
+// Draws one effect by name. 'none' or an unknown name draws nothing.
+// ===== ENTRY POINT: SceneStage.jsx renders <Effect name=...> inside layer scene.effectLayer =====
 export default function Effect({ name }) {
   if (name === 'rain') return <Rain />;
   return <Particles name={name} />;

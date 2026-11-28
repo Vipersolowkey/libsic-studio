@@ -1,3 +1,6 @@
+// Part of: Room picture: draws all layers, effects and clickable objects.
+// Uses: Clock.jsx, Effects.jsx, framePace.js, parallax.js, placement.js, scene.css, sceneSettings.js.
+// Used by: RoomScreen.jsx.
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import Clock from './Clock.jsx';
 import Effect from './Effects.jsx';
@@ -7,42 +10,36 @@ import { buildDrawList, defaultItems } from './placement.js';
 import { activeEffect, applyObjectAction } from './sceneSettings.js';
 import './scene.css';
 
-// Draws one scene: its layers stacked on top of each other (moving with the mouse),
-// the effect on the right layer, and a button over each clickable object.
-//   scene            the scene from the API
-//   settings         { effect, lightOn, curtainsClosed }, kept by the parent so a saved room can remember them
-//   onSettingsChange called with the new settings after a click
-//   onNextTrack      called when the music object is clicked (the CD player will use this)
-//   playing          true while music plays: the record spins and the tonearm rests on it
-//   items            the objects a visitor placed (see placement.js); null shows the scene's default arrangement
-//   frozen           true while decorating: the layers stay still instead of following the mouse
-//   still            true when the whole picture is shown: the layers stay still, the mouse only moves them once zoomed in
-//   calm             true in low power mode: every movement of the scene is stopped, so the graphics card can rest
-//   children         drawn on top of everything inside the stage (the decorate overlay)
-//
-// A layer is a picture with a few optional extras (all set in the scene data):
-//   box     where the picture sits, in percent of the stage (default: the whole stage)
-//   blend   "screen" for glows, so they add light instead of covering what is below
-//   light   true for lamp light: it disappears when the lights are switched off
-//   night   true for a picture that only shows at night, when the lights are off (the night sky in a window)
-//   glide   a slow trip across the scene that repeats (a fish, a drifting jellyfish)
-//   curtain a curtain: it is drawn wider while settings.curtainsClosed is true
-//   anim    a small movement: spin, tonearm, sway, steam, pulse, breathe, drift, flick, billow, throb, sweep, shut or cover
-//   kind    "clock" draws the live clock instead of a picture
-//   tile    repeats a small picture over the layer (film grain)
-//   item    the layer belongs to an object a visitor can move: it is drawn once for each copy of that object
+// Draws one scene: all its layers stacked back to front (moving with the mouse), the effect on scene.effectLayer,
+// and a clickable button (hotspot) over each object. Most visual rules (light/night, animations, curtains) are CSS
+// in scene.css, switched by the classes and data-attributes set here.
+//   scene             from the API
+//   settings          { effect, lightOn, curtainsClosed }: the saved part of a room
+//   onSettingsChange  new settings after a click on an object
+//   onNextTrack       the music object was clicked (RoomScreen toggles the hologram)
+//   playing           music is playing: the record spins (class `paused` otherwise)
+//   items             placed decorations; null = the scene's default arrangement
+//   frozen            decorating: no parallax, hotspots disabled
+//   still             whole picture shown (zoom < 1.25): no parallax
+//   calm              low power mode: all animation stopped
+//   disc              CSS gradient of the chosen CD's printed face, drawn on the spinning record
+//   children          drawn on top inside the stage (the decorate overlay)
+// Layer options (box, blend, light, night, glide, curtain, anim, kind, tile, item) are documented in api/src/models/Scene.js.
 export default function SceneStage({ scene, settings, onSettingsChange, onNextTrack, playing = true, items = null, frozen = false, still = false, calm = false, disc = null, children }) {
+  // ===== 1. DRAW LIST: scene layers + the decorations a room placed, in drawing order (scene/placement.js) =====
   const drawList = useMemo(() => buildDrawList(scene, items ?? defaultItems(scene)), [scene, items]);
   const depths = useMemo(() => drawList.map(({ layer }) => layer.depth), [drawList]);
+  // ===== 2. HOOKS: mouse parallax (parallax.js), 30 fps pacing (framePace.js), fade-in when pictures arrive, day/night warm-up =====
   const { stageRef, layerRef, handlers } = useParallax(depths, !frozen && !still);
-  useFramePace(stageRef, undefined, !calm); // the slow movements are redrawn 30 times per second instead of 60 (and stopped in low power mode)
+  useFramePace(stageRef, undefined, !calm); // animations redraw at 30 fps instead of 60; calm = hand them back to the browser (they are stopped by CSS)
   const arrived = usePicturesArrived(stageRef, scene.slug);
   const hasLights = drawList.some(({ layer }) => layer.light || layer.night);
   useWarmUp(stageRef, arrived && hasLights, scene.slug);
 
-  // The layers are only worked out again when the scene, the objects or the settings change. Zooming, typing the
-  // room name or the buttons fading away redraw the room screen, but not the many layers of the picture.
+  // Memoised on purpose: there are ~100 layers, so they are rebuilt only when scene / items / settings change, not on zoom or typing.
+  // ===== 3. THE LAYERS: one <div class="layer"> per draw-list entry, with its picture, clickable objects (hotspots) and effect =====
   const layers = useMemo(() => {
+    // A click on an object: the music object tells RoomScreen (toggles the hologram); the others change light / effect / curtains (sceneSettings.js).
     function handleClick(object) {
       if (object.action.type === 'nextTrack') onNextTrack?.(object);
       else onSettingsChange(applyObjectAction(settings, object));
@@ -62,6 +59,7 @@ export default function SceneStage({ scene, settings, onSettingsChange, onNextTr
         <LayerContent layer={layer} disc={disc} />
       );
 
+    // The invisible buttons of the scene's clickable objects (API: scene.objects, set in api/src/seed/<room>.js).
     const hotspots = (templateIndex) =>
       scene.objects
         .filter((object) => object.layer === templateIndex)
@@ -85,6 +83,7 @@ export default function SceneStage({ scene, settings, onSettingsChange, onNextTr
           </button>
         ));
 
+    // One wrapper per layer: a glide (fish, jellyfish), a curtain, or a normal layer. The effect (rain...) is drawn inside layer scene.effectLayer.
     return drawList.map(({ key, layer, box, templateIndex, itemId, flip }, i) => (
       <div
         key={key}
@@ -130,9 +129,8 @@ export default function SceneStage({ scene, settings, onSettingsChange, onNextTr
   );
 }
 
-// False while the pictures of a newly opened scene are still coming in, true once they are all there.
-// Until then the stage is kept see-through and then fades in as one picture, instead of the layers popping in one
-// by one. It never waits longer than a few seconds: a slow or missing picture must not hide the room.
+// false until the pictures of a newly opened scene have loaded (then the stage fades in as one picture).
+// Gives up after 4 s so a slow or missing picture never hides the room.
 const ARRIVE_WAIT_MS = 4000;
 function usePicturesArrived(stageRef, slug) {
   const [arrivedSlug, setArrivedSlug] = useState(null);
@@ -161,9 +159,8 @@ function usePicturesArrived(stageRef, slug) {
   return arrivedSlug === slug;
 }
 
-// Once a room with day and night pictures has arrived, the pictures of the other time of day are drawn once, almost
-// see-through (the class `warming`, see scene.css), so that the first switch between day and night does not have to
-// prepare them all at that moment. The class is set on the element directly, so the many layers are not redrawn.
+// Pre-draws the hidden day/night layers once (almost invisible, class `warming`) so the first day/night switch does not stutter.
+// The class is set on the element directly, so React does not redraw the layers.
 const WARM_UP_MS = 700;
 function useWarmUp(stageRef, ready, slug) {
   useEffect(() => {
@@ -178,8 +175,7 @@ function useWarmUp(stageRef, ready, slug) {
   }, [stageRef, ready, slug]);
 }
 
-// Position of a layer that does not cover the whole stage. The picture scales a little around the
-// middle of the stage (see scene.css), so the point it scales from is worked out for this box.
+// Inline style for a layer with a box. transformOrigin is set so the parallax scale(1.06) grows around the STAGE centre, not the box centre.
 export function layerStyle(box) {
   const style = {};
   if (box) {
@@ -198,13 +194,13 @@ function glideStyle({ from, to, duration, delay }) {
   return { '--fx': `${from.x}%`, '--fy': `${from.y}%`, '--tx': `${to.x}%`, '--ty': `${to.y}%`, '--dur': `${duration}s`, '--delay': `${delay ?? 0}s` };
 }
 
-// The record of a player is a flat picture of a disc (disc_flat or vinyl_flat). When a CD is chosen, its own printed
-// face is drawn there instead, so the disc that turns is the CD the visitor picked. The pearl of the clam stays a pearl.
+// A spinning layer whose image name ends in disc_flat / vinyl_flat is replaced by the chosen CD's printed face. (Name-based: keep this naming for new record layers.)
 const PLAYER_DISC = /(disc|vinyl)_flat\.webp$/;
 
+// What is INSIDE a layer: the live clock, a tiled picture, or the picture with its animation (CSS classes anim-<name> in scene.css).
 const LayerContent = memo(function LayerContent({ layer, disc = null }) {
   if (layer.kind === 'clock') {
-    // The clock face in the picture is turned a little, so the digits are tilted to match.
+    // anim.skew tilts the digits to match a clock drawn at an angle.
     const skew = layer.anim?.skew ? { transform: `skewY(${layer.anim.skew}deg)`, transformOrigin: '0 0' } : undefined;
     return (
       <div className="clock" style={skew}>
@@ -233,7 +229,7 @@ const LayerContent = memo(function LayerContent({ layer, disc = null }) {
     style['--sy1'] = anim.scaleTo.y;
   }
   if (anim.name === 'spin') {
-    // The record turns inside a box that is squashed to match the view from above and in front.
+    // The disc turns inside a box squashed by anim.squash (the view from the side).
     return (
       <div className="anim anim-spin" style={style}>
         <div className="spin">{picture}</div>
@@ -247,13 +243,9 @@ const LayerContent = memo(function LayerContent({ layer, disc = null }) {
   );
 });
 
-// The picture of one layer.
-//
-// A plain <img> is enough to show it, but the browser then keeps a second copy of every layer, redrawn at the size
-// of the screen. On a 4K screen that is about 230 MB of graphics memory for one room, and the copies are redrawn
-// when the picture is zoomed. So, once the file has arrived, the picture is handed to the graphics card one time,
-// at its own size (an ImageBitmap shown by a <canvas>), and the <img> steps aside. The card then only moves and
-// enlarges that one sheet. Where the browser cannot do this, the <img> simply stays.
+// One layer's picture. GPU-memory workaround: a plain <img> makes the browser keep a screen-sized copy of every layer
+// (~230 MB on a 4K screen, redrawn on zoom). So once loaded, the image is handed to a <canvas> at its own size
+// (ImageBitmap) and the <img> hides (class stepped-aside). Browsers without createImageBitmap just keep the <img>.
 function LayerPicture({ src }) {
   const imgRef = useRef(null);
   const canvasRef = useRef(null);

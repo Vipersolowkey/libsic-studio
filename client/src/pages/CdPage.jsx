@@ -1,3 +1,6 @@
+// Part of: CD page (/cd/:code): listen, share, edit and delete a CD.
+// Uses: CdEditor.jsx, CdPreview.jsx, Desk.jsx, HoloPlayer.jsx, api.js, cdLook.js, myCds.js, myLinks.js, usePlayer.js.
+// Used by: App.jsx.
 import { useEffect, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { deleteCd, getCd, updateCd } from '../api.js';
@@ -17,6 +20,7 @@ export default function CdPage() {
 }
 function CdDetails({ code }) {
   const location = useLocation();
+  // ===== STATE: the CD (GET /api/cds/:code), edit key (from myCds.js or the URL), editing / deleting flags =====
   const [cd, setCd] = useState(null);
   const [error, setError] = useState('');
   const [notFound, setNotFound] = useState(false);
@@ -36,6 +40,7 @@ function CdDetails({ code }) {
     getCd(code).then((value) => { if (!cancelled) setCd(value); }).catch((err) => { if (!cancelled) { setError(err.message); setNotFound(err.status === 404); } });
     return () => { cancelled = true; };
   }, [code, attempt]);
+  // ===== ACTIONS: save changes (PUT /api/cds/:code), delete (DELETE), copy the link. All three need the edit key =====
   async function save(input) {
     setBusy(true); setError('');
     try {
@@ -50,14 +55,15 @@ function CdDetails({ code }) {
   async function copy() {
     try { await navigator.clipboard.writeText(link); setStatus('CD link copied.'); } catch { setStatus('Select the share link and copy it by hand.'); }
   }
-  if (deleted) return <Desk nav={<Link to="/music">Make a CD</Link>}><header className="mk-head"><h1>CD deleted</h1><p className="mk-lede"><Link to="/music">Back to the workshop</Link></p></header></Desk>;
-  if (!cd) return <Desk nav={<Link to="/music">Make a CD</Link>}><header className="mk-head"><h1>{notFound ? 'CD not found' : 'Opening the case…'}</h1><p className="mk-lede">{error || 'Loading CD…'}</p>{error && !notFound && <button className="mk-brass" onClick={() => setAttempt((n) => n + 1)}>Retry CD</button>}<p className="mk-lede"><Link to="/music">Make a CD</Link></p></header></Desk>;
+  if (deleted) return <Desk current="cds"><header className="mk-head"><h1>CD deleted</h1><p className="mk-lede"><Link to="/music">Back to the workshop</Link></p></header></Desk>;
+  if (!cd) return <Desk current="cds"><header className="mk-head"><h1>{notFound ? 'CD not found' : 'Opening the case…'}</h1><p className="mk-lede">{error || 'Loading CD…'}</p>{error && !notFound && <button className="mk-brass" onClick={() => setAttempt((n) => n + 1)}>Retry CD</button>}<p className="mk-lede"><Link to="/music">Make a CD</Link></p></header></Desk>;
   const look = cdLook(code, cd.title, cd.look);
   const entries = cd.links?.length
     ? cd.links.map((link) => ({ id: link.url, title: linkTitle(link), meta: providerName(link.provider), href: link.url }))
     : cd.tracks.map((track) => ({ id: track.id, title: track.title, meta: formatTime(track.duration) }));
   return (
-    <Desk nav={<Link to="/music">Make a CD / My CDs</Link>}>
+    <Desk current="cds">
+      {/* PAGE TOP + LEFT: CD preview with its disc, the playlist, and the hologram player for our own tracks (usePlayer.js) */}
       <header className="mk-head">
         <p className="mk-eyebrow">{cd.official ? 'Studio collection' : 'A personal mix'}</p>
         <h1>{cd.title}</h1>
@@ -77,6 +83,7 @@ function CdDetails({ code }) {
           {cd.links?.length ? <p className="mk-note">The links play one after the other when you put this CD in a room.</p> : <div className="mk-display"><HoloPlayer player={player} /></div>}
           <Link className="mk-press" to={`/new?cd=${encodeURIComponent(code)}`}>Listen in a room</Link>
         </section>
+        {/* RIGHT: share link + back-up edit key, then Manage CD (only for custom CDs: edit opens CdEditor.jsx) */}
         <aside className="mk-stand mk-stand-plain">
           <section className="mk-sheet">
             <h2 className="mk-hand">Share this CD</h2>

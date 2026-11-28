@@ -1,5 +1,6 @@
-// A small random number generator that always gives the same numbers for the same seed.
-// The effects use it so the rain or snow looks the same on every render instead of jumping around.
+// Part of: Room picture: random numbers for the effects.
+// Used by: Effects.jsx.
+// Seeded random numbers: the same seed gives the same sequence, so effects look identical on every render (no jumping).
 export function mulberry32(seed) {
   let a = seed;
   return function () {

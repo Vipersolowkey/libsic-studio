@@ -1,23 +1,29 @@
+// Part of: Music: online players (SoundCloud, Spotify, YouTube, audio link).
+// Uses: api.js, discovery.js, providerSdk.js, usePlayer.js.
+// Used by: RoomScreen.jsx.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePlayer } from '../room/usePlayer.js';
 import { embedUrl, PROVIDER_NAMES, sourceName } from './discovery.js';
 import { loadProviderSdk } from './providerSdk.js';
 import { getSoundcloudMetadata } from '../api.js';
 
+// Plays music from a provider's own embedded player (SoundCloud, YouTube, Spotify) or a direct audio link, and reports its
+// state through onPlayer in the same shape as usePlayer, so the hologram can show it. We never get the audio itself.
 const noop = () => {};
 const safely = (action) => { try { action(); } catch { /* A provider iframe can already be detached during React cleanup. */ } };
+// Stand-in player (same shape as usePlayer) used before an online player has reported anything.
 export const EMPTY_ONLINE_PLAYER = {
   cd: { title: 'Online music', tracks: [] }, track: null, index: 0, count: 0,
   playing: false, time: 0, duration: 0, volume: 0.7,
   toggle: noop, pause: noop, next: noop, prev: noop, seek: noop, setVolume: noop,
 };
 
-// The provider's own player stays visible. It also drives the room's hologram.
+// Props: source { provider, url }; onPlayer(player) = latest state for the hologram; onClose = eject;
+// onEnded = the source finished (a CD of several links moves to the next link); autoplay = start by itself.
+// The provider's own player must stay visible (their terms), so it can only be folded, never removed.
 export default function ExternalMusic({ source, onPlayer, onClose, onEnded, autoplay = false }) {
   const [attempt, setAttempt] = useState(0);
-  // The provider's own player is only needed to read, to sign in or to see the video, so SoundCloud starts folded
-  // (its title bar shows, the player keeps running). A person can unfold it with the button.
-  // YouTube's rules say its player must stay visible and at least 200 x 200, so it is never hidden: folded, it is a small tile.
+  // SoundCloud and YouTube start folded. YouTube's rules need its player visible and at least 200 x 200, so folded it is a small tile, never hidden.
   const [folded, setFolded] = useState(source.provider === 'soundcloud' || source.provider === 'youtube');
   return (
     <aside className={`online-player online-${source.provider}${folded ? ' folded' : ''}`} aria-label="Online music player">
@@ -34,6 +40,8 @@ export default function ExternalMusic({ source, onPlayer, onClose, onEnded, auto
   );
 }
 
+// A plain https audio file played with our own usePlayer (a one-track CD).
+// ===== CASE 1: a direct audio link (own player, usePlayer.js) =====
 function DirectAudio({ source, onPlayer, onEnded, autoplay }) {
   const cd = useMemo(() => {
     const filename = new URL(source.url).pathname.split('/').pop();
@@ -46,31 +54,35 @@ function DirectAudio({ source, onPlayer, onEnded, autoplay }) {
   return <div className="direct-audio"><p>{player.track?.title}</p><button className="chip" onClick={player.toggle}>{player.playing ? 'Pause audio' : 'Play audio'}</button>{player.error && <p role="alert">{player.error}</p>}</div>;
 }
 
+// Wraps one provider SDK. Each branch inside the big effect below does the same 3 jobs: listen to the provider's events
+// -> patch(state), fill controls.current with play/pause/next/seek/volume, and set dispose() to clean up.
 function EmbeddedMusic({ source, onPlayer, onRetry, onEnded, autoplay }) {
   const frame = useRef(null);
-  // A CD made of several links moves on to the next link when this one is over, and starts it by itself.
+  // Refs keep the latest onEnded/autoplay without restarting the provider player. onEnded is how a multi-link CD moves on.
   const endedRef = useRef(onEnded);
   endedRef.current = onEnded;
   const autoplayRef = useRef(autoplay);
   const spotifyHost = useRef(null);
   const controls = useRef(null);
+  // ===== CASE 2: SoundCloud / Spotify / YouTube. STATE below is reported to RoomScreen (onPlayer) in the same shape as usePlayer.js =====
   const [state, setState] = useState(() => ({ tracks: [], track: null, index: 0, playing: false, time: 0, duration: 0, volume: 0.7, ready: false, error: '' }));
   const title = sourceName(source);
   const methods = useMemo(() => Object.fromEntries(['toggle', 'pause', 'next', 'prev', 'seek', 'setVolume', 'skip'].map((key) => [key, (...args) => controls.current?.[key]?.(...args)])), []);
   const player = useMemo(() => ({
     ...state, ...methods, cd: { title, tracks: state.tracks }, count: state.tracks.length,
+    // What the hologram may offer. Spotify allows only play/pause; seeking only for podcast episodes.
     canNavigate: source.provider !== 'spotify' && (source.provider === 'soundcloud' || state.tracks.length > 1),
     canSeek: source.provider !== 'spotify' || source.url.includes('/episode/'),
     canVolume: source.provider !== 'spotify',
   }), [state, methods, title, source.provider, source.url]);
+  // ===== THE BIG EFFECT: connects to the provider's player and wires events + controls. One branch per provider =====
   useEffect(() => { onPlayer(player); }, [onPlayer, player]);
 
   useEffect(() => {
     let active = true;
     let dispose = noop;
     let timer;
-    // The providers report the play time several times a second, and every report redraws the whole room page (the
-    // hologram shows whole seconds only). A report that only moves the time by less than a second is ignored.
+    // Providers report time several times a second and each report redraws the room, so a time change under 1 s is ignored.
     const patch = (changes) => {
       if (!active) return;
       setState((old) => {
@@ -84,7 +96,9 @@ function EmbeddedMusic({ source, onPlayer, onRetry, onEnded, autoplay }) {
     const setup = async () => {
       const api = await loadProviderSdk(source.provider);
       if (!active) return;
+      // Gives up if the player is not ready after 20 s.
       timer = setTimeout(() => fail(`${PROVIDER_NAMES[source.provider]} is taking too long. Retry or choose another source.`), 20000);
+      // ----- SoundCloud: widget events, track list, titles from our API (api.js getSoundcloudMetadata) -----
       if (source.provider === 'soundcloud') {
         const widget = api.Widget(frame.current);
         const events = api.Widget.Events;
@@ -121,7 +135,7 @@ function EmbeddedMusic({ source, onPlayer, onRetry, onEnded, autoplay }) {
           enrichMetadata();
           if (!tracks.length) fail('This SoundCloud playlist has no playable tracks. Choose another playlist.');
         });
-        // SoundCloud may return id-only placeholders while playlist metadata is loading.
+        // SoundCloud first returns id-only tracks; re-ask every 1.5 s (max 10 times) until titles arrive. Titles also come from our API (enrichMetadata).
         const metadataPoll = setInterval(() => {
           metadataReads++;
           if (metadataReads > 10 || tracks.length && tracks.every((track) => !track.pending)) clearInterval(metadataPoll);
@@ -151,6 +165,7 @@ function EmbeddedMusic({ source, onPlayer, onRetry, onEnded, autoplay }) {
           [events.PLAY]: () => { playing = true; patch({ playing: true, error: '' }); readTrack(); },
           [events.PAUSE]: () => { playing = false; patch({ playing: false }); },
           [events.PLAY_PROGRESS]: (event) => patch({ time: event.currentPosition / 1000 }),
+          // End of the LAST track = the source is over: move on (CD) or loop the playlist.
           [events.FINISH]: () => {
             if (!tracks.length || index !== tracks.length - 1) return;
             if (endedRef.current) endedRef.current();
@@ -168,7 +183,9 @@ function EmbeddedMusic({ source, onPlayer, onRetry, onEnded, autoplay }) {
           setVolume: (volume) => { const value = Math.min(1, Math.max(0, volume)); widget.setVolume(value * 100); patch({ volume: value }); },
         };
         dispose = () => { clearInterval(metadataPoll); safely(() => widget.pause()); Object.keys(listeners).forEach((event) => safely(() => widget.unbind(event))); };
+      // ----- Spotify: only play/pause/seek, no track list -----
       } else if (source.provider === 'spotify') {
+        // Spotify gives no track list and no next/prev here, so those controls are off (canNavigate / canVolume below).
         let controller;
         api.createController(spotifyHost.current, { url: source.url, width: '100%', height: 352 }, (value) => {
           if (!active) { value.destroy(); return; }
@@ -185,6 +202,7 @@ function EmbeddedMusic({ source, onPlayer, onRetry, onEnded, autoplay }) {
           controls.current = { toggle: () => value.togglePlay(), pause: () => value.pause(), seek: (seconds) => value.seek(seconds) };
         });
         dispose = () => controller?.destroy();
+      // ----- YouTube: no time events, so it is polled once a second -----
       } else if (source.provider === 'youtube') {
         const controller = new api.Player(frame.current, { events: {
           onReady: () => { ready(); controller.setVolume(70); update(); if (autoplayRef.current) controller.playVideo(); },
@@ -203,6 +221,7 @@ function EmbeddedMusic({ source, onPlayer, onRetry, onEnded, autoplay }) {
           const playlist = controller.getPlaylist?.() || [];
           patch({ track: { title: data.title || 'YouTube' }, tracks: playlist.length ? playlist.map((id) => ({ id, title: id })) : [{ id: data.video_id, title: data.title || 'YouTube' }], index: Math.max(0, controller.getPlaylistIndex?.() || 0), time: controller.getCurrentTime?.() || 0, duration: controller.getDuration?.() || 0 });
         }
+        // YouTube has no time or title events, so ask once a second.
         const poll = setInterval(update, 1000);
         controls.current = {
           toggle: () => controller.getPlayerState() === 1 ? controller.pauseVideo() : controller.playVideo(), pause: () => controller.pauseVideo(),

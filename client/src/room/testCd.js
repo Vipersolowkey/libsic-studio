@@ -1,6 +1,6 @@
-// A small built-in CD so the player can be tried out before the real CDs arrive from the API (the music side).
-// The three tracks are short calm loops we generated ourselves from plain tones, so they are free to use.
-// A CD from the API can replace this later as long as it has the same shape: { title, tracks: [{ title, src }] }.
+// Part of: Music: sample CD, not used by the app now.
+// A 3-track sample CD (synthesized loops in public/audio/test/). Not used by the app now (real CDs come from the API);
+// kept as a handy fixture. A CD has this shape: { title, tracks: [{ title, src }] }.
 export const TEST_CD = {
   title: 'Test CD',
   tracks: [

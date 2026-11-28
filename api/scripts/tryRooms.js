@@ -1,7 +1,7 @@
-// Walks through saving, opening, changing and deleting a room against the running API,
-// and prints what happened at each step. Start the API first (npm start), then run:
-//   npm run try:rooms
-// The API address can be changed with: API_URL=https://... npm run try:rooms
+// Part of: Developer check script, not part of the site (npm run try:rooms).
+// Walks through create / open / change / delete of a room against a RUNNING API and prints each step
+// (start it first with npm start, then npm run try:rooms). Use API_URL=https://... to test another address.
+// Needs the scene "night-study" in the database.
 const BASE = process.env.API_URL || 'http://localhost:4000';
 
 async function call(label, method, path, { body, key } = {}) {

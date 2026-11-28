@@ -7,6 +7,8 @@ import { cdLook } from './cdLook.js';
 import { DISCOVERY_PLAYLISTS } from './discovery.js';
 import { getMyCds, rememberCd } from './myCds.js';
 import * as api from '../api.js';
+import { AuthProvider } from '../account/AuthContext.jsx';
+import { saveSession } from '../auth.js';
 
 const STUDIO = [
   { code: 'night-study', title: 'Quiet Pages', tracks: [{}, {}, {}, {}], official: true },
@@ -35,24 +37,45 @@ const openSlip = async () => {
 afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); });
 
 describe('the row of CDs', () => {
-  it('lists the studio CDs, the online playlists and the CDs made in this browser, each with its place number', async () => {
+  it('stands only the CDs the person saved in the tower, numbered from 1, and not the studio CDs or playlists', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
     rememberCd({ code: 'mine-1', title: 'Exam Week', editKey: 'k' });
     show();
-    expect(await screen.findByRole('listitem', { name: 'Quiet Pages, Studio · 4 tracks' })).toHaveTextContent('01');
-    expect(screen.getByRole('listitem', { name: 'Below the Tide, Studio · 2 tracks' })).toHaveTextContent('02');
-    expect(screen.getByRole('listitem', { name: 'Chillhop Essentials · Fall, SoundCloud playlist' })).toHaveTextContent('03');
-    expect(screen.getByRole('listitem', { name: 'Exam Week, My CD' })).toHaveTextContent('05');
+    expect(await screen.findByRole('listitem', { name: 'Exam Week, My CD' })).toHaveTextContent('ME 01');
+    await waitFor(() => expect(api.getCds).toHaveBeenCalled());
+    expect(screen.queryByRole('listitem', { name: /Quiet Pages/ })).toBeNull();
+    expect(screen.queryByRole('listitem', { name: /Below the Tide/ })).toBeNull();
+    expect(screen.queryByRole('listitem', { name: /SoundCloud playlist/ })).toBeNull();
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
   });
 
-  it('stands every CD in one tower, studio first, then the playlists, then your own', async () => {
+  it('stands saved CDs and saved links in the tower, in the order they were saved', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
     rememberCd({ code: 'mine-1', title: 'Exam Week', editKey: 'k' });
+    rememberCd({ code: 'mine-2', title: 'Late Night', editKey: 'k' });
     show();
-    await screen.findByRole('listitem', { name: /Quiet Pages/ });
+    await screen.findByRole('listitem', { name: /Exam Week/ });
     const titles = screen.getAllByRole('listitem').map((item) => item.querySelector('.cdc-ttl').textContent);
-    expect(titles).toEqual(['Quiet Pages', 'Below the Tide', ...DISCOVERY_PLAYLISTS.map((p) => p.title), 'Exam Week']);
-    expect(screen.getByRole('listitem', { name: 'Exam Week, My CD' })).toHaveTextContent('ME 05');
+    expect(titles).toEqual(getMyCds().map((cd) => cd.title));
+    expect(titles).toHaveLength(2);
+  });
+
+  it('says so when nothing is saved yet, and the add case is still there', async () => {
+    vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    show();
+    expect(await screen.findByText(/No saved CDs yet/)).toBeInTheDocument();
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+    expect(screen.getByRole('button', { name: 'Add your own music' })).toBeInTheDocument();
+  });
+
+  it('also stands the CDs of the signed-in account in the tower', async () => {
+    saveSession({ token: 'a.b.c', user: { username: 'tony', displayName: 'Tony', avatarHue: 200, role: 'user', createdAt: '2026-11-01T00:00:00Z' } });
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ username: 'tony', displayName: 'Tony', avatarHue: 200, role: 'user', createdAt: '2026-11-01T00:00:00Z' }) })));
+    vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    vi.spyOn(api, 'getAccountCds').mockResolvedValue([{ code: 'acct-1', title: 'From my account', look: null, updatedAt: '2026-11-20T00:00:00Z' }]);
+    render(<MemoryRouter><AuthProvider><CdRow source={null} cdCode={null} player={null} loading={false} error="" onChooseSource={() => {}} onChooseCd={() => {}} onEject={() => {}} onRetry={() => {}} /></AuthProvider></MemoryRouter>);
+    expect(await screen.findByRole('listitem', { name: 'From my account, My CD' })).toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 
   it('stands a CD that came with a shared room in the tower and names it in the player', async () => {
@@ -104,33 +127,37 @@ describe('the row of CDs', () => {
     expect(onEject).toHaveBeenCalled();
   });
 
-  it('picks a studio CD by its code', async () => {
+  it('picks a saved CD by its code', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    rememberCd({ code: 'mine-1', title: 'Exam Week', editKey: 'k' });
     const { onChooseCd } = show();
     await openRow();
-    await userEvent.click(await screen.findByRole('listitem', { name: /Below the Tide/ }));
-    expect(onChooseCd).toHaveBeenCalledWith('clam-cove');
+    await userEvent.click(await screen.findByRole('listitem', { name: /Exam Week/ }));
+    expect(onChooseCd).toHaveBeenCalledWith('mine-1');
   });
 
   it('loads a whole playlist when its CD is picked', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue([]);
     const { onChooseSource } = show();
-    await openRow();
-    await userEvent.click(screen.getByRole('listitem', { name: /Chillhop Essentials · Fall/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Open the wide shelf with all CDs' })); // the online playlists are on the wide shelf
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'All CDs' })).getByRole('button', { name: /Chillhop Essentials · Fall/ }));
     expect(onChooseSource).toHaveBeenCalledWith({ provider: 'soundcloud', url: DISCOVERY_PLAYLISTS[0].url });
   });
 
   it('leaves an empty place where the CD in the player stands', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
-    show({ cdCode: 'night-study' });
-    expect(await screen.findByRole('listitem', { name: /Quiet Pages/ })).toBeDisabled();
-    expect(screen.getByRole('listitem', { name: /Below the Tide/ })).toBeEnabled();
+    rememberCd({ code: 'mine-1', title: 'Exam Week', editKey: 'k' });
+    rememberCd({ code: 'mine-2', title: 'Late Night', editKey: 'k' });
+    show({ cdCode: 'mine-1' });
+    expect(await screen.findByRole('listitem', { name: /Exam Week/ })).toBeDisabled();
+    expect(screen.getByRole('listitem', { name: /Late Night/ })).toBeEnabled();
   });
 
   it('has no button to fold it away: it lowers itself and a tap on the tag keeps it lifted', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    rememberCd({ code: 'mine-1', title: 'Exam Week', editKey: 'k' });
     const { container } = render(<MemoryRouter><CdRow source={null} cdCode="night-study" player={null} loading={false} error="" onChooseSource={() => {}} onChooseCd={() => {}} onEject={() => {}} onRetry={() => {}} /></MemoryRouter>);
-    await screen.findByRole('listitem', { name: /Below the Tide/ });
+    await screen.findByRole('listitem', { name: /Exam Week/ });
     expect(screen.queryByRole('button', { name: 'Close the CD shelf' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Choose a CD' })).toBeNull();
     const shelf = container.querySelector('.cdc');
@@ -157,7 +184,8 @@ describe('the row of CDs', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Cannot reach the server.');
     await userEvent.click(screen.getByRole('button', { name: 'Retry CDs' }));
     await waitFor(() => expect(getCds).toHaveBeenCalledTimes(2));
-    expect(await screen.findByRole('listitem', { name: /Quiet Pages/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Open the wide shelf with all CDs' }));
+    expect(await within(screen.getByRole('dialog', { name: 'All CDs' })).findByRole('button', { name: /Quiet Pages/ })).toBeInTheDocument();
   });
 
   it('keeps a CD error visible while the row is closed, with Retry and Eject', async () => {
@@ -181,8 +209,8 @@ describe('the wide shelf', () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
     rememberCd({ code: 'mine-1', title: 'Exam Week', editKey: 'k' });
     show();
-    await screen.findByRole('listitem', { name: /Quiet Pages/ });
     const wall = await openWall();
+    await within(wall).findByRole('button', { name: /Quiet Pages/ });
     const titles = within(wall).getAllByRole('button').map((button) => button.getAttribute('aria-label'));
     expect(titles).toContain('Quiet Pages, Studio · 4 tracks');
     expect(titles).toContain('Exam Week, My CD');
@@ -193,8 +221,8 @@ describe('the wide shelf', () => {
   it('names the CD that is pointed at and says what is in the player when none is', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
     show({ cdCode: 'clam-cove' });
-    await screen.findByRole('listitem', { name: /Quiet Pages/ });
     const wall = await openWall();
+    await within(wall).findByRole('button', { name: /Quiet Pages/ });
     expect(within(wall).getByText('Below the Tide', { selector: 'b' })).toBeInTheDocument();
     expect(within(wall).getByText(/In the player/)).toBeInTheDocument();
     await userEvent.hover(within(wall).getByRole('button', { name: /Quiet Pages/ }));
@@ -205,8 +233,8 @@ describe('the wide shelf', () => {
   it('plays a CD that is clicked and closes', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
     const { onChooseCd } = show();
-    await screen.findByRole('listitem', { name: /Quiet Pages/ });
     const wall = await openWall();
+    await within(wall).findByRole('button', { name: /Quiet Pages/ });
     await userEvent.click(within(wall).getByRole('button', { name: /Below the Tide/ }));
     expect(onChooseCd).toHaveBeenCalledWith('clam-cove');
     expect(screen.queryByRole('dialog', { name: 'All CDs' })).toBeNull();
@@ -215,15 +243,14 @@ describe('the wide shelf', () => {
   it('leaves the place of the CD in the player empty', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
     show({ cdCode: 'clam-cove' });
-    await screen.findByRole('listitem', { name: /Quiet Pages/ });
     const wall = await openWall();
+    await within(wall).findByRole('button', { name: /Quiet Pages/ });
     expect(within(wall).getByRole('button', { name: /Below the Tide/ })).toBeDisabled();
   });
 
   it('closes with Close, on Escape and on the dark backdrop', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
     show();
-    await screen.findByRole('listitem', { name: /Quiet Pages/ });
     await openWall();
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'All CDs' })).toBeNull());
@@ -248,8 +275,9 @@ describe('the wide shelf', () => {
 describe('the pulled-out front', () => {
   it('stays inside the window for a CD low in the tower', async () => {
     vi.spyOn(api, 'getCds').mockResolvedValue(STUDIO);
+    rememberCd({ code: 'mine-1', title: 'Exam Week', editKey: 'k' });
     show();
-    const item = await screen.findByRole('listitem', { name: /Quiet Pages/ });
+    const item = await screen.findByRole('listitem', { name: /Exam Week/ });
     const body = document.querySelector('.cdc-body');
     Object.defineProperty(body, 'offsetWidth', { value: 268 });
     body.getBoundingClientRect = () => ({ top: 400, left: 700, width: 268 * 1.5, height: 300, bottom: 700, right: 1100 });

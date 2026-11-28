@@ -1,3 +1,6 @@
+// Part of: CD workshop page (/music).
+// Uses: CdEditor.jsx, Desk.jsx, api.js, myCds.js.
+// Used by: App.jsx.
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createCd } from '../api.js';
@@ -5,7 +8,8 @@ import CdEditor from '../music/CdEditor.jsx';
 import Desk from '../music/Desk.jsx';
 import { getMyCds, rememberCd } from '../music/myCds.js';
 
-// The CD workshop (/music): make a CD from several online links or from our own tracks, and paint it.
+// The CD workshop (/music): build a CD (online links or our tracks), name and paint it.
+// The edit key from createCd is saved in this browser (myCds.js). If storage is blocked it is passed to the CD page so the visitor can copy it.
 export default function MusicPage() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -20,7 +24,7 @@ export default function MusicPage() {
   }
   const mine = getMyCds();
   return (
-    <Desk nav={<Link to="/new">Back to a room</Link>}>
+    <Desk current="music">
       <header className="mk-head">
         <p className="mk-eyebrow">The CD workshop</p>
         <h1>Make a CD</h1>

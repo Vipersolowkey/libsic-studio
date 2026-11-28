@@ -1,11 +1,14 @@
+// Part of: Saved rooms: share code, settings, music, placed items.
+// Uses: constants.js.
+// Used by: app.js.
 const mongoose = require('mongoose');
 const { EFFECTS } = require('../constants');
 
 const { Schema } = mongoose;
 
-// One object the visitor placed in the room (see the catalog of the scene). x and y are where its
-// contact point sits, in percent of the scene; scale is the visitor's own size on top of the perspective size.
-// The server checks the values against the scene (utils/roomItems), not this schema.
+// One decoration the visitor placed. key = catalog entry of the scene. x, y = its contact point (percent of the scene).
+// scale = the visitor's own size on top of the perspective size. Values are checked against the scene in utils/roomItems, not here.
+// ===== PLACED ITEM (Decorate mode). Client: scene/itemsEdit.js, placement.js =====
 const itemSchema = new Schema(
   {
     id: { type: String, required: true },
@@ -18,17 +21,20 @@ const itemSchema = new Schema(
   { _id: false, id: false }
 );
 
+// A saved room: which scene, which music, the settings and the placed items. Anyone with the code can view it;
+// only the holder of the edit key, or the signed-in owner, can change it.
 const roomSchema = new Schema(
   {
     code: { type: String, required: true, unique: true }, // the short share code in the link
-    // Only a hash of the secret edit key is stored, never the key itself.
-    // select: false keeps it out of query results unless we ask for it.
+    // Only a hash of the secret edit key is stored. select: false hides it unless a query asks with .select('+editKeyHash').
     editKeyHash: { type: String, required: true, select: false },
+    // Optional: the account that owns this room. Empty for a room saved as a guest, which only its edit key can change.
+    owner: { type: Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     name: { type: String, default: 'Untitled room', trim: true, maxlength: 60 },
-    // Scenes and CDs are referenced by their stable text codes (not database ids),
-    // so re-running the seed scripts never breaks a saved room.
+    // Scenes and CDs are referenced by their text codes, not database ids, so re-seeding never breaks a saved room.
     sceneSlug: { type: String, required: true },
     cdCode: { type: String, default: null, trim: true, maxlength: 64, match: [/^[A-Za-z0-9_-]+$/, 'Invalid CD code'] },
+    // Optional online music (SoundCloud, Spotify, YouTube or a direct audio link) instead of a CD.
     musicSource: {
       type: new Schema({
         provider: { type: String, enum: ['soundcloud', 'spotify', 'youtube', 'audio'], required: true },
@@ -42,10 +48,10 @@ const roomSchema = new Schema(
       curtainsClosed: { type: Boolean, default: false },
       volume: { type: Number, min: 0, max: 1, default: 0.7 },
     },
-    // Missing means "show the scene's default arrangement", an empty list means an empty room.
+    // Missing (undefined) = show the scene's default arrangement. [] = an empty room. The difference matters.
     items: { type: [itemSchema], default: undefined },
   },
-  { timestamps: true } // adds createdAt and updatedAt automatically
+  { timestamps: true } // adds createdAt / updatedAt
 );
 
 module.exports = mongoose.model('Room', roomSchema);

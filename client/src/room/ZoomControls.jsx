@@ -1,6 +1,9 @@
+// Part of: Room page: zoom buttons.
+// Uses: view.js.
+// Used by: RoomScreen.jsx.
 import { MAX_ZOOM, MIN_ZOOM } from './view.js';
 
-// Zoom in, zoom out, and "Fit" to see the whole room.
+// + / Fit / - buttons. The mouse wheel and the + - 0 keys do the same (useRoomView).
 export default function ZoomControls({ zoom, onZoomIn, onZoomOut, onFit }) {
   return (
     <div className="zoom" role="group" aria-label="Zoom">

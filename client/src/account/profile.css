@@ -1,0 +1,143 @@
+/* Part of: Profile page (/me). Used by: pages/ProfilePage.jsx.
+   The page uses the admin page's shell and colours (admin.css); this file only adds the profile form, the room cards and the CD cards.
+   The same rules apply: flat chips, a thin line, amber only for the current item, the main button and hover. */
+
+.pf .account-disc { flex: none; }
+.pf .account-disc.pf-mini { width: 38px; height: 38px; }
+
+/* ----- The profile form ----- */
+.pf-form { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 28px; padding: 28px; border: 1px solid var(--edge); border-radius: 10px; background: var(--card); }
+.pf-preview { margin-top: 4px; }
+.pf-fields { display: flex; flex: 1 1 320px; flex-direction: column; gap: 10px; min-width: 0; max-width: 520px; }
+.pf-fields label, .pf-label { color: var(--soft); font: 600 10.5px/1.2 'Space Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; }
+.pf-fields input[type='text'] { min-height: 44px; padding: 0 14px; border: 1px solid var(--ctl-edge); border-radius: 6px; background: var(--page); color: var(--ink); font: 400 15px 'DM Sans', system-ui, sans-serif; }
+.pf-fields input[type='text']::placeholder { color: var(--faint); }
+.pf-fields input[type='text']:focus-visible { border-color: var(--accent); outline: 0; }
+.pf-label { margin-top: 10px; }
+.pf-swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.pf-swatch { width: 34px; height: 34px; padding: 0; border: 2px solid transparent; border-radius: 50%; background: var(--disc); box-shadow: 0 0 0 2px var(--card) inset; cursor: pointer; transition: border-color 0.16s, transform 0.16s; }
+.pf-swatch:hover { transform: scale(1.08); }
+.pf-swatch[aria-checked='true'] { border-color: var(--ink); }
+.pf-swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.pf-save { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 14px; }
+.pf-note { font-size: 14px; }
+.pf-note.ok { color: #8fd694; }
+.pf-note.error { color: var(--danger); }
+
+/* ----- My rooms: a picture card for each room ----- */
+.pf-rooms, .pf-cds { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.pf-rooms { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.pf-cds { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.pf-room, .pf-cd { position: relative; overflow: hidden; border: 1px solid var(--edge); border-radius: 10px; background: var(--card); transition: border-color 0.16s, background 0.16s; }
+.pf-room:hover, .pf-cd:hover { border-color: rgba(240, 180, 90, 0.55); background: rgba(240, 180, 90, 0.05); }
+.pf-room img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #0a0d16; }
+.pf-room-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 14px 16px 16px; }
+.pf-room-text a { color: var(--ink); font-size: 16px; font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+.pf-room-text a::after { content: ''; position: absolute; inset: 0; } /* the whole card is the link */
+.pf-room-text a:hover, .pf-room:hover .pf-room-text a, .pf-cd:hover .pf-room-text a { color: var(--accent); }
+.pf-room-text a:focus-visible { outline: 0; }
+.pf-room:has(a:focus-visible), .pf-cd:has(a:focus-visible) { border-color: var(--accent); }
+.pf-room-text span { color: var(--soft); font-size: 14px; }
+.pf-room-text small { color: var(--faint); font: 400 11px 'Space Mono', ui-monospace, monospace; }
+
+/* ----- My CDs: a small disc in the CD's own colour ----- */
+.pf-cd { display: flex; align-items: center; gap: 4px; padding-left: 16px; }
+.pf-cd .pf-room-text { padding-left: 14px; }
+.pf-cd-disc { flex: none; position: relative; width: 52px; height: 52px; border-radius: 50%; background: conic-gradient(from 30deg, hsl(var(--h) 55% 62%), hsl(var(--h) 40% 30%), hsl(var(--h) 55% 62%), hsl(var(--h) 40% 30%), hsl(var(--h) 55% 62%)); }
+.pf-cd-disc::after { content: ''; position: absolute; inset: 40%; border-radius: 50%; background: var(--card); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4); }
+
+/* The button row above the CD cards */
+.pf-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin: -4px 0 18px; }
+.pf-actions .adm-lead { margin: 0; }
+.pf .adm-btn.primary { text-decoration: none; }
+
+/* A room or CD that only this browser knows has a small Forget button (above the card's link). */
+.pf-forget { position: absolute; z-index: 1; top: 10px; right: 10px; min-height: 30px; padding: 0 12px; border: 1px solid var(--ctl-edge); border-radius: 6px; background: rgba(15, 19, 31, 0.85); color: var(--soft); font: 500 12px/1 'DM Sans', system-ui, sans-serif; cursor: pointer; transition: border-color 0.16s, color 0.16s; }
+.pf-forget:hover { border-color: var(--danger); color: var(--danger); }
+.pf-cd .pf-forget { position: static; margin-left: auto; margin-right: 14px; }
+.pf-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 28px; border: 1px dashed var(--ctl-edge); border-radius: 10px; color: var(--soft); }
+.pf-empty p { margin: 0; font-size: 15px; }
+.pf-scenes { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.pf .adm-lead a { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .pf-form { padding: 20px; gap: 20px; }
+}
+
+/* ----- The CD workshop (/music) and the page of one CD (/cd/:code) in the studio's look -----
+   Their classes (.mk-*, music/workshop.css) were made for a wooden desk with paper. Here the same classes get the studio's colours:
+   flat dark cards with a thin line, flat chip buttons, amber only for the main button and what is on, DM Sans and Space Mono. */
+/* sub-items of the menu (New room under My rooms, Make a CD under My CDs): indented, smaller, with a thin line down the side */
+.adm-menu a.adm-sub { min-height: 36px; margin-left: 20px; width: calc(100% - 20px); padding-left: 14px; border-left: 1px solid var(--edge); border-radius: 0 6px 6px 0; font-size: 13px; }
+.adm-menu a.adm-sub .adm-ico { width: 16px; height: 16px; }
+.adm-menu a.adm-sub[aria-current='page'] { border-left-color: var(--accent); border-radius: 0 6px 6px 0; }
+.adm-menu a[aria-current='page'] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.adm-menu a[aria-current='page'] .adm-menu-count { color: rgba(35, 21, 6, 0.7); }
+
+.pf .mk-desk {
+  --paper: #141826; --paper2: #0f131f; --ink: #eae3d0; --soft: #a3a39c; --accent: #f0b45a; --on-accent: #231506;
+  --edge: #2a3148; --stitch: #343c58; --w1: #2a3148; --w2: #2a3148; --brass: #f0b45a; --brass2: #f0b45a; --brass-ink: #231506; --back: #0f131f;
+  min-height: 0; background: none; color: var(--ink);
+}
+.pf .mk-wrap { max-width: none; padding: 0; }
+.pf .mk-head { margin-bottom: 24px; color: var(--ink); }
+.pf .mk-eyebrow { margin: 0 0 10px; color: var(--accent); font: 600 10.5px/1.2 'Space Mono', ui-monospace, monospace; letter-spacing: 0.16em; text-transform: uppercase; }
+.pf .mk-head h1 { margin: 0 0 12px; font: 700 22px/1.2 'Space Mono', ui-monospace, monospace; font-style: normal; letter-spacing: 0.06em; text-transform: uppercase; text-shadow: none; }
+.pf .mk-lede { max-width: 62ch; color: var(--soft); }
+.pf .mk-lede a { color: var(--accent); }
+.pf .mk-hand { font: 700 17px/1.25 'DM Sans', system-ui, sans-serif; }
+.pf .mk-block legend { font: 700 17px/1.25 'DM Sans', system-ui, sans-serif; }
+.pf .mk-step { box-shadow: none; font-family: 'Space Mono', ui-monospace, monospace; }
+.pf .mk-sheet { padding: 24px; border: 1px solid var(--edge); border-radius: 10px; background: var(--paper); box-shadow: none; outline: 0; }
+.pf .mk-sheet code, .pf .mk-confirm { border-color: var(--edge); }
+.pf .mk-sheet code { background: var(--paper2); color: var(--accent); }
+
+.pf .mk-desk input:not([type='checkbox']):not([type='range']), .pf .mk-desk textarea { border-color: var(--ctl-edge); background: var(--paper2); box-shadow: none; }
+.pf .mk-desk input:focus-visible, .pf .mk-desk textarea:focus-visible { border-color: var(--accent); outline: 0; }
+.pf .mk-switch { border-color: var(--edge); background: var(--paper2); }
+.pf .mk-switch button[aria-selected='true'] { box-shadow: none; }
+.pf .mk-picker, .pf .mk-playlist li, .pf .mk-options button { background: var(--paper2); border-color: var(--edge); }
+.pf .mk-picker label:hover { background: rgba(240, 180, 90, 0.07); }
+.pf .mk-options button[aria-checked='true'] { box-shadow: none; border-color: var(--accent); }
+.pf .mk-swatches button { box-shadow: 0 0 0 1px var(--edge); }
+.pf .mk-swatches button[aria-checked='true'] { box-shadow: 0 0 0 2px var(--ink); transform: none; }
+.pf .mk-tools button { background: var(--paper2); border-color: var(--edge); }
+.pf .mk-mark { box-shadow: none; }
+
+/* buttons: flat chips; the one main button of a form is solid amber */
+.pf .mk-brass { border: 1px solid var(--ctl-edge); border-radius: 6px; background: transparent; color: var(--ink) !important; font: 500 14px/1 'DM Sans', system-ui, sans-serif; box-shadow: none; }
+.pf .mk-brass:hover:not(:disabled) { filter: none; border-color: var(--accent); background: rgba(240, 180, 90, 0.07); }
+.pf .mk-brass:active:not(:disabled) { transform: none; }
+.pf .mk-press { border: 1px solid var(--accent); border-radius: 999px; background: var(--accent); color: var(--on-accent) !important; box-shadow: none; font: 700 12px/1 'Space Mono', ui-monospace, monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+.pf .mk-press:hover:not(:disabled) { filter: none; background: #f6c16f; }
+.pf .mk-danger { border-color: rgba(196, 85, 60, 0.7); background: transparent; color: var(--danger) !important; }
+.pf .mk-danger:hover:not(:disabled) { border-color: #c4553c; background: rgba(196, 85, 60, 0.12); }
+.pf .mk-link { color: var(--accent); }
+.pf .mk-warn { color: var(--danger); }
+.pf .mk-ok { color: #8fd694; }
+.pf .mk-banner { border-color: rgba(196, 85, 60, 0.6); background: rgba(196, 85, 60, 0.1); }
+
+/* the CD on its stand and the list of my CDs */
+.pf .mk-stand { border: 1px solid var(--edge); border-radius: 10px; background: var(--paper); box-shadow: none; color: var(--ink); }
+.pf .mk-stand-plain { border: 0; background: none; }
+.pf .mk-count { font: 400 12px 'Space Mono', ui-monospace, monospace; color: var(--soft); }
+.pf .mk-hint { color: var(--soft); }
+.pf .mk-mine { border-top-color: var(--edge); }
+.pf .mk-mine h2 { color: var(--ink); font-size: 17px; }
+.pf .mk-mine p { color: var(--soft); }
+.pf .mk-mine a, .pf .mk-edit > h2 { color: var(--accent); }
+.pf .mk-edit > h2 { font-size: 20px; }
+.pf .mk-display { background: var(--paper2); box-shadow: none; border: 1px solid var(--edge); }
+
+/* the small buttons under a room card: Copy link, Forget, Delete (above the card's own link, so they stay clickable) */
+.pf-tools { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 16px 14px; }
+.pf-tool { min-height: 30px; padding: 0 12px; border: 1px solid var(--ctl-edge); border-radius: 6px; background: transparent; color: var(--soft); font: 500 12px/1 'DM Sans', system-ui, sans-serif; cursor: pointer; transition: border-color 0.16s, color 0.16s; }
+.pf-tool:hover, .pf-tool:focus-visible { border-color: var(--accent); color: var(--accent); outline: 0; }
+.pf-tool.del:hover, .pf-tool.del:focus-visible { border-color: var(--danger); color: var(--danger); }
+.pf-tool.hot { border-color: #c4553c; background: #c4553c; color: #fff; }
+.pf-tool.hot:hover, .pf-tool.hot:focus-visible { color: #fff; filter: brightness(1.1); }
+.pf-sure p { width: 100%; margin: 0 0 2px; color: var(--soft); font-size: 13px; line-height: 1.4; }
+
+/* The "add the rooms from this browser" question sits in the page here, not floating over the start page. */
+.pf .intro-claim { position: static; transform: none; width: auto; max-width: 560px; margin: 0 0 18px; text-align: left; backdrop-filter: none; }
+.pf .intro-claim div { justify-content: flex-start; }

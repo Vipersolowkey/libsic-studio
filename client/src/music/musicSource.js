@@ -1,5 +1,7 @@
-// Store canonical provider URLs, never iframe HTML or expiring audio stream tokens.
-// No request to the submitted URL is made by the API.
+// Part of: Music: checks pasted links (API copy: api/src/utils/musicSource.js).
+// Used by: CdEditor.jsx, CdRow.jsx.
+// Browser copy of api/src/utils/musicSource.js: checks a pasted link and returns { provider, url } in canonical form,
+// or throws a readable Error. KEEP BOTH FILES IN STEP (the API re-checks everything anyway). Makes no network request.
 export function parseMusicSource(input) {
   if (typeof input !== 'string' || input.length > 2048) throw new Error('Paste a supported music link');
   let value = input.trim();

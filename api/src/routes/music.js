@@ -1,9 +1,17 @@
+// Part of: Online music: expands short links, gets SoundCloud titles. Client: api.js resolveMusicLink /
+//   getSoundcloudMetadata (CdRow, CdEditor, ExternalMusic).
+// Uses: musicSource.js.
+// Used by: app.js.
 const express = require('express');
 const { parseMusicSource } = require('../utils/musicSource');
 
+// Helpers for online music links (not our own tracks).
+// POST /api/music/soundcloud/metadata: titles for SoundCloud track ids. POST /api/music/resolve: turns a short link into a full one.
 const shortHosts = { 'on.soundcloud.com': 'soundcloud', 'spotify.link': 'spotify' };
-const metadataCache = new Map();
+const metadataCache = new Map(); // track id -> cached lookup; entries last 15 min, max 500 kept
 
+// Looks up title and artist through SoundCloud's public oEmbed, max 4 requests at a time, 6 s timeout each.
+// Failed lookups are skipped and not cached, so the result may be shorter than ids. fetcher is swapped by tests.
 async function soundcloudMetadata(ids, fetcher = fetch) {
   if (!Array.isArray(ids) || !ids.length || ids.length > 50 || ids.some((id) => typeof id !== 'string' || !/^\d{1,20}$/.test(id))) throw new Error('Send 1 to 50 SoundCloud track ids');
   const unique = [...new Set(ids)];
@@ -39,8 +47,8 @@ async function soundcloudMetadata(ids, fetcher = fetch) {
   return results.filter(Boolean);
 }
 
-// Follow only the provider's own shortener. Redirect targets are checked before
-// requesting another URL; final provider pages and arbitrary hosts are never fetched.
+// Expands on.soundcloud.com / spotify.link by following redirects by hand (max 4). Safety: only these two hosts are ever
+// requested, every redirect target is checked first, and the final provider page is never fetched.
 async function resolveMusicLink(input, fetcher = fetch) {
   try { return parseMusicSource(input); } catch (original) {
     let link;
@@ -65,10 +73,12 @@ async function resolveMusicLink(input, fetcher = fetch) {
 
 function musicRouter() {
   const router = express.Router();
+  // POST /api/music/soundcloud/metadata <- client api.js getSoundcloudMetadata <- ExternalMusic (SoundCloud track titles)
   router.post('/soundcloud/metadata', async (req, res) => {
     try { res.json(await soundcloudMetadata(req.body?.ids)); }
     catch (error) { res.status(400).json({ error: error.message }); }
   });
+  // POST /api/music/resolve <- client api.js resolveMusicLink <- CdRow slip and CdEditor (short links like spotify.link)
   router.post('/resolve', async (req, res) => {
     try { res.json(await resolveMusicLink(req.body?.url)); }
     catch (error) {

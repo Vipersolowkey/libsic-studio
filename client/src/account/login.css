@@ -1,0 +1,80 @@
+/* Sign in / create account (/login). The page shows the same drifting rooms as the start page (intro-* rules in
+   styles.css) and the card wears the look of the room on screen: data-room on .login picks one of five looks below. */
+.login { position: fixed; inset: 0; overflow: auto; display: grid; place-items: center; padding: 24px 16px; background: #000; color: var(--text); }
+.login .intro-bg, .login .intro-shade { position: fixed; }
+.login .intro-bg { transition: transform 0.8s cubic-bezier(0.5, 0, 0.9, 0.4); }
+.login.leaving .intro-bg { transform: scale(1.7); }
+.login.leaving .login-card { opacity: 0; transform: scale(1.08); }
+
+/* The five looks: only variables, so the card can glide from one to the next. */
+.login {
+  --card: rgba(12, 16, 28, 0.74);
+  --card-edge: rgba(255, 255, 255, 0.16);
+  --ink: #ecebf2;
+  --ink-soft: #a9a8b8;
+  --lit: #e8b86a;
+  --on-lit: #1a1306;
+  --field: rgba(255, 255, 255, 0.08);
+  --round: 16px;
+  --head: inherit;
+  --glow: 0 0 60px rgba(232, 184, 106, 0.18);
+}
+.login[data-room='night-study'] { --card: rgba(8, 14, 30, 0.76); --card-edge: rgba(127, 182, 255, 0.28); --lit: #8fc0ff; --on-lit: #07101f; --round: 10px; --glow: 0 0 70px rgba(100, 160, 255, 0.2); }
+.login[data-room='golden-loft'] { --card: rgba(40, 22, 10, 0.72); --card-edge: rgba(240, 178, 92, 0.32); --lit: #f0b25c; --on-lit: #261405; --round: 22px; --head: Georgia, 'Times New Roman', serif; --glow: 0 0 70px rgba(240, 160, 70, 0.26); }
+.login[data-room='underwater-nook'] { --card: rgba(5, 42, 52, 0.6); --card-edge: rgba(110, 230, 222, 0.34); --lit: #6fe3da; --on-lit: #032a30; --round: 30px; --glow: 0 0 80px rgba(80, 220, 210, 0.24); }
+.login[data-room='clover-meadow'] { --card: rgba(247, 243, 224, 0.88); --card-edge: rgba(90, 140, 60, 0.5); --ink: #27341d; --ink-soft: #566346; --lit: #4f8f3a; --on-lit: #f6fbe9; --field: rgba(60, 90, 40, 0.1); --round: 18px; --head: Georgia, 'Times New Roman', serif; --glow: 0 0 60px rgba(150, 200, 90, 0.3); }
+.login[data-room='aurora-observatory'] { --card: rgba(14, 10, 38, 0.74); --card-edge: rgba(150, 120, 255, 0.38); --lit: #86f0bf; --on-lit: #04231a; --round: 14px; --glow: 0 0 80px rgba(120, 90, 255, 0.28), 0 0 40px rgba(110, 240, 190, 0.12); }
+
+.login-card {
+  position: relative; width: min(420px, 100%); padding: 26px 26px 20px; box-sizing: border-box;
+  border: 1px solid var(--card-edge); border-radius: var(--round);
+  background: var(--card); color: var(--ink); box-shadow: var(--glow), 0 24px 60px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  transition: background-color 1.4s, border-color 1.4s, border-radius 1.4s, box-shadow 1.4s, color 1.4s, opacity 0.5s, transform 0.8s cubic-bezier(0.5, 0, 0.9, 0.4);
+  animation: login-in 0.9s ease both;
+}
+@keyframes login-in { from { opacity: 0; transform: translateY(14px); } }
+.login[data-room='clover-meadow'] .login-card { border-style: dashed; border-width: 2px; }
+.login-card h1 { margin: 16px 0 14px; font-family: var(--head); font-size: 26px; font-weight: 600; letter-spacing: 0.01em; }
+
+.login-brand { display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; font-weight: 600; letter-spacing: 0.22em; font-size: 15px; }
+.login-brand small { margin-left: 0.5em; color: var(--lit); font-size: 0.7em; font-weight: 500; letter-spacing: 0.4em; }
+.login-disc { position: relative; width: 34px; height: 34px; border-radius: 50%; box-shadow: 0 0 0 1px var(--card-edge), 0 0 18px var(--lit); }
+.login-disc i {
+  position: absolute; inset: 0; border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 30%, #1b1408 0 1.5px, transparent 2px),
+    radial-gradient(circle, var(--lit) 0 17%, #14161f 18% 21%, transparent 22%),
+    repeating-radial-gradient(circle, #1d2130 0 2px, #0c0e15 2px 4px);
+  animation: intro-spin 6s linear infinite;
+}
+
+.login-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 18px; padding: 4px; border-radius: 999px; background: var(--field); }
+.login-tabs button { padding: 8px 10px; border: 0; border-radius: 999px; background: none; color: var(--ink-soft); font: inherit; font-size: 14px; cursor: pointer; transition: background-color 0.3s, color 0.3s; }
+.login-tabs button[aria-selected='true'] { background: var(--lit); color: var(--on-lit); font-weight: 600; }
+.login-tabs button:focus-visible, .login-submit:focus-visible, .login-password button:focus-visible, .login-skip:focus-visible, .login-brand:focus-visible { outline: 2px solid var(--lit); outline-offset: 2px; }
+
+.login form { display: flex; flex-direction: column; }
+.login label { margin: 12px 0 6px; font-size: 13px; color: var(--ink-soft); }
+.login input {
+  width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid var(--card-edge); border-radius: calc(var(--round) / 1.8);
+  background: var(--field); color: var(--ink); font: inherit; font-size: 16px; /* 16px stops phones zooming into the field */
+}
+.login input:focus { outline: 2px solid var(--lit); outline-offset: 1px; }
+.login-password { position: relative; }
+.login-password input { padding-right: 64px; }
+.login-password button { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); padding: 4px 8px; border: 0; border-radius: 8px; background: none; color: var(--ink-soft); font: inherit; font-size: 13px; cursor: pointer; }
+.login-password button:hover { color: var(--ink); }
+.login-hint { margin: 6px 2px 0; color: var(--ink-soft); font-size: 12.5px; line-height: 1.4; }
+.login-error { min-height: 1.3em; margin: 12px 0 4px; color: #ff9d95; font-size: 14px; }
+.login[data-room='clover-meadow'] .login-error { color: #a3261b; }
+.login-submit { padding: 12px; border: 0; border-radius: 999px; background: var(--lit); color: var(--on-lit); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s, filter 0.2s; }
+.login-submit:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
+.login-submit:disabled { opacity: 0.6; cursor: default; }
+.login-skip { display: block; margin-top: 16px; text-align: center; color: var(--ink-soft); font-size: 14px; }
+.login-skip:hover { color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card, .login-disc i { animation: none; }
+  .login .intro-bg, .login-card { transition: none; }
+}

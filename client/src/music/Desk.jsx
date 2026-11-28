@@ -1,17 +1,16 @@
-import { Link } from 'react-router-dom';
-import { skinOf } from '../room/skins.js';
+// Part of: Music: the frame of the CD pages (/music and /cd/:code): the studio menu down the left, the page next to it.
+// Uses: StudioShell.jsx.
+// Used by: CdPage.jsx, MusicPage.jsx.
+import StudioShell from '../account/StudioShell.jsx';
 
-// The wooden desk that the CD pages stand on. It uses the paper, wood and brass of the Golden Hour Loft, like the CD tower in the rooms.
-export default function Desk({ nav, children }) {
+// `current` says which item of the studio menu is lit: music (Make a CD) or cds (the page of one CD). The look of what is inside
+// (the .mk-* classes of workshop.css) is turned to the studio's dark colours by account/profile.css.
+export default function Desk({ current, children }) {
   return (
-    <main className="mk-desk" style={skinOf('golden-loft').vars}>
-      <div className="mk-wrap">
-        <nav className="mk-nav">
-          <Link to="/" className="mk-brand"><i aria-hidden="true" />Libsic Studio</Link>
-          <span>{nav}</span>
-        </nav>
-        {children}
+    <StudioShell current={current}>
+      <div className="mk-desk mk-work">
+        <div className="mk-wrap">{children}</div>
       </div>
-    </main>
+    </StudioShell>
   );
 }

@@ -1,14 +1,18 @@
+// Part of: Room page: the left side bar frame.
+// Used by: Controls.jsx, DecorateHud.jsx, RoomScreen.jsx.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import GoTo from '../account/GoTo.jsx';
 
-// The side bar at the left of the room: a page of paper pinned over the picture. Everything a visitor can press lives
-// in here and nowhere else: the logo, the rooms, the mood of the room, saving and sharing.
-//   open       false: the bar is tucked away and only the round logo button is left, so the whole picture shows
-//   onToggle   called by the hide button and by the logo button
-//   settings   the rarely used view settings (zoom, where the player floats, low power). They are not in the page
-//              itself: a small button at the top opens them in a little note next to the bar.
-//   footer     what stays pinned at the bottom of the page (naming and keeping the room)
-//   children   the sections of the page (see Section below); they scroll when the window is low
+// The left side bar (a wheel turn over it only scrolls it and never zooms the picture): ALL controls live here (logo, mood, decorate, share, and where to go next).
+//   open       false = tucked away (it slides out), only the round logo button remains
+//   onToggle   hide / show
+//   settings   rarely used view settings; shown in a small note opened by the top button (Esc closes it)
+//   footer     the Share section (room name, save, share link); under it comes the "Go to" section (studio, sign in, admin)
+//   children   the scrolling sections (use <Section>)
+const EXIT_MS = 220; // same as the side-out animation in sidebarThemes.css
+const canAnimate = () => typeof window.matchMedia === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 export default function Sidebar({ open, onToggle, footer, settings, children }) {
   const [notes, setNotes] = useState(false); // the settings note is shown
   useEffect(() => {
@@ -18,15 +22,29 @@ export default function Sidebar({ open, onToggle, footer, settings, children }) 
     return () => window.removeEventListener('keydown', onKey);
   }, [notes]);
 
-  if (!open) {
+  // Tucking the bar away: keep it on screen for the length of its exit animation, then show the round logo.
+  // (No exit when the person prefers reduced motion, or where the browser cannot tell, as in the tests.)
+  const [wasOpen, setWasOpen] = useState(open);
+  const [leaving, setLeaving] = useState(false);
+  if (wasOpen !== open) {
+    setWasOpen(open);
+    setLeaving(wasOpen && !open && canAnimate());
+  }
+  useEffect(() => {
+    if (!leaving) return undefined;
+    const timer = setTimeout(() => setLeaving(false), EXIT_MS);
+    return () => clearTimeout(timer);
+  }, [leaving]);
+
+  if (!open && !leaving) {
     return (
-      <button type="button" className="side-open side-fade" aria-label="Show the side bar" aria-expanded="false" onClick={onToggle}>
+      <button type="button" className="side-open side-fade" aria-label="Show the side bar" aria-expanded="false" onClick={onToggle} onWheel={(e) => e.stopPropagation()}>
         <span className="brand-disc" aria-hidden="true" />
       </button>
     );
   }
   return (
-    <aside className="sidebar paper side-fade" aria-label="Room controls">
+    <aside className={`sidebar paper side-fade${leaving ? ' leaving' : ''}`} aria-label="Room controls" aria-hidden={leaving || undefined} onWheel={(e) => e.stopPropagation()}>
       <header className="side-head">
         <Link className="brand" to="/" aria-label="Libsic Studio, back to the start page">
           <span className="brand-disc" aria-hidden="true" />
@@ -47,16 +65,25 @@ export default function Sidebar({ open, onToggle, footer, settings, children }) 
         </span>
       </header>
       {settings && notes && <div className="side-note paper" role="group" aria-label="View settings">{settings}</div>}
-      <div className="side-body">{children}</div>
-      {footer && <footer className="side-foot">{footer}</footer>}
+      <div className="side-body">
+        {children}
+        {footer && (
+          <section className="side-section side-foot">
+            <h2 className="side-title">Share</h2>
+            {footer}
+          </section>
+        )}
+        {footer && <Section title="Go to" pinned><GoTo /></Section>}
+      </div>
     </aside>
   );
 }
 
 // One titled block of the side bar.
-export function Section({ title, children }) {
+// pinned = stays at the bottom of the bar when there is spare room (the "Go to" links).
+export function Section({ title, pinned, children }) {
   return (
-    <section className="side-section">
+    <section className={`side-section${pinned ? ' side-pinned' : ''}`}>
       {title && <h2 className="side-title">{title}</h2>}
       {children}
     </section>

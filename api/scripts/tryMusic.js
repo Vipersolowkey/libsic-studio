@@ -1,5 +1,6 @@
-// Run against a local/dev API: API_URL=http://localhost:4000 npm run try:music
-// Creates its own temporary CD and room, checks them, then deletes only those records.
+// Part of: Developer check script, not part of the site (npm run try:music).
+// Smoke test of tracks, CDs, music links and the docs against a RUNNING API: API_URL=http://localhost:4000 npm run try:music
+// Makes its own temporary CD and room and deletes only those afterwards. Expects the seeded 12 tracks and 3 official CDs.
 const assert = require('node:assert/strict');
 const base = process.env.API_URL || 'http://localhost:4000';
 let checks = 0;

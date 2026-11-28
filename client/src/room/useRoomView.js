@@ -1,3 +1,6 @@
+// Part of: Room page: zoom and mouse panning of the picture.
+// Uses: view.js.
+// Used by: RoomScreen.jsx.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { clampZoom, MIN_ZOOM, MOVE_MIN_ZOOM, panOffset, startZoom, ZOOM_STEP } from './view.js';
 
@@ -22,12 +25,11 @@ function saveZoom(zoom) {
   }
 }
 
-// How close the room is shown, and where the picture sits. This is a preference of the person looking, so it
-// stays in their browser and is not saved with the room.
-//   zoomIn, zoomOut, fit   change the zoom (the mouse wheel and the + and - keys do the same)
-//   roomRef                put it on the element that holds the room: it receives --zoom and the pan shift
-// With { panning: false } the picture stays in the middle instead of following the mouse (while decorating).
+// Zoom and pan of the picture. A viewer preference: saved in localStorage ("libsic.zoom"), not with the room.
+// Returns { roomRef, zoom, zoomIn, zoomOut, fit, onWheel }. Put roomRef on the room element: it gets --pan-x / --pan-y
+// (the picture follows the mouse, only when zoom >= MOVE_MIN_ZOOM). { panning: false } keeps it centred (used while decorating).
 export function useRoomView({ panning = true } = {}) {
+  // ===== STATE: window size, the zoom the visitor chose (or the start zoom for this window) =====
   const roomRef = useRef(null);
   const lastPointer = useRef({ x: 0.5, y: 0.5 }); // where the mouse was last, from 0 to 1 across the window
   const [size, setSize] = useState(windowSize);
@@ -50,6 +52,7 @@ export function useRoomView({ panning = true } = {}) {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  // ===== MOUSE PANNING: sets --pan-x / --pan-y on the room element; styles.css .room uses them to shift the picture =====
   // The mouse looks around the picture when it is bigger than the window.
   useEffect(() => {
     const room = roomRef.current;
@@ -61,11 +64,10 @@ export function useRoomView({ panning = true } = {}) {
       room.style.setProperty('--pan-y', `${y}px`);
     };
     const follows = panning && zoom >= MOVE_MIN_ZOOM;
-    // After a zoom step the picture stays where the mouse is looking. Jumping back to the middle first and to the
-    // mouse on its next move made the picture shake at every step.
+    // Keep the pan where the mouse is looking after a zoom step (centring first made the picture shake).
     shift(follows ? lastPointer.current : { x: 0.5, y: 0.5 });
-    // The mouse is watched at every zoom, also while the picture does not follow it yet. Otherwise the first zoom
-    // step that makes it follow would use an old mouse position, and the picture would jump on the next move.
+    // Track the mouse at every zoom, even before panning starts, so the first panning step does not use a stale position and jump.
+    // Moves over the side bar, CD tower or hologram are ignored (the mouse is using those, not looking around).
     const onMove = (e) => {
       if (e.pointerType === 'touch' || e.target?.closest?.('.sidebar, .side-note, .cdc, .holo')) return;
       lastPointer.current = { x: e.clientX / size.width, y: e.clientY / size.height };
@@ -80,6 +82,7 @@ export function useRoomView({ panning = true } = {}) {
     };
   }, [zoom, size, panning]);
 
+  // ===== KEYS (+ - 0) and WHEEL: the same as ZoomControls.jsx buttons =====
   // Plus and minus keys, unless the visitor is typing in a field.
   useEffect(() => {
     const onKey = (e) => {
@@ -99,11 +102,9 @@ export function useRoomView({ panning = true } = {}) {
   return { roomRef, zoom, zoomIn, zoomOut, fit, onWheel };
 }
 
-// The zoom the picture is drawn with. A room that has just been opened is drawn at its normal size for two frames
-// and only then enlarged to the chosen zoom. The graphics card keeps the sheet of each layer at the size it was
-// first drawn in, so this keeps the sheets small. Drawn first at a big zoom they would be big for good, and zooming
-// out again would need more graphics memory than many computers have (layers then go black).
-//   key   changes when another room is opened (the scene's slug)
+// GPU-memory workaround: a newly opened room is drawn at zoom 1 for two frames, then at the chosen zoom. The GPU keeps each
+// layer's texture at the size it was first drawn, so starting big would use too much graphics memory (layers then turn black).
+// key = the scene slug; a new key restarts the two-frame wait.
 export function useDrawnZoom(zoom, key) {
   const [ready, setReady] = useState(false);
   useEffect(() => {

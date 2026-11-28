@@ -1,8 +1,9 @@
+// Part of: Room picture: the live clock inside a scene.
+// Used by: SceneStage.jsx.
 import { useEffect, useState } from 'react';
 
-// A red seven-segment clock face. It sits on the digit window of the clock in the picture
-// and shows the real time of the visitor's computer.
-//   segments of one digit: a top, b top right, c bottom right, d bottom, e bottom left, f top left, g middle
+// Red seven-segment clock drawn over the clock in a scene's picture (layer kind "clock"), showing the visitor's real time.
+// Segment letters: a top, b top right, c bottom right, d bottom, e bottom left, f top left, g middle.
 const SEGMENTS = {
   0: 'abcdef',
   1: 'bc',
@@ -46,7 +47,7 @@ function Digit({ value, x }) {
   );
 }
 
-// `now` is only for tests; the real clock reads the time itself and updates every few seconds.
+// `now` = fixed time for tests only. Otherwise updates every 5 s. Colours: .seg in scene.css.
 export default function Clock({ now }) {
   const [time, setTime] = useState(() => now ?? new Date());
   useEffect(() => {

@@ -1,3 +1,6 @@
+// Part of: Decorate mode: selection and undo.
+// Uses: itemsEdit.js, placement.js.
+// Used by: RoomScreen.jsx.
 import { useRef, useState } from 'react';
 import { addItem, flipItem, moveItem, removeItem, scaleItem } from '../scene/itemsEdit.js';
 import { defaultItems } from '../scene/placement.js';
@@ -6,12 +9,9 @@ const MAX_STEPS = 20; // how many edits "Undo" can take back
 
 const fresh = (slug) => ({ slug, selectedId: null, history: [] });
 
-// The state of decorating one room: which object is selected, and the edits that Undo can take back.
-// The list of items itself belongs to the parent (it is saved with the room); every edit is passed up
-// with onChange. `items` is null while the room shows the scene's default arrangement.
-//
-// A drag, or a slide of the size slider, sends many edits of the same kind for the same object in a row;
-// they count as one step. Selecting an object (or any other edit) starts a new step.
+// Decorate-mode state: the selected item and an Undo history (max 20 steps). The items list itself is owned by RoomScreen
+// (it is saved with the room); each edit is sent up via onChange. items === null = the scene's default arrangement.
+// Many edits of one kind on one item in a row (a drag, the size slider) count as ONE undo step (the `join` key).
 export function useItemsEditor(scene, items, onChange) {
   const [state, setState] = useState(() => fresh(scene.slug));
   if (state.slug !== scene.slug) setState(fresh(scene.slug)); // another scene: start over

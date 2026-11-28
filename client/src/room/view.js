@@ -1,4 +1,6 @@
-// How close the room is shown. Zoom 1 shows the whole picture; bigger numbers move in.
+// Part of: Room page: zoom maths.
+// Used by: RoomScreen.jsx, ZoomControls.jsx, useRoomView.js.
+// Zoom maths (no React). Zoom 1 shows the whole 16:9 picture; bigger numbers move in.
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 2.4;
 // Below this zoom the whole picture is on screen: nothing follows the mouse. Zoomed in further, the mouse looks around.
@@ -24,8 +26,7 @@ export function startZoom(width, height) {
   return clampZoom(1 + (fillZoom(width, height) - 1) / 2);
 }
 
-// How far to shift the picture so that the mouse looks around it. `pointer` is the mouse position from 0 to 1
-// across the window. The picture only moves as far as it sticks out past the window edge, in each direction.
+// Pan shift in px. pointer = mouse position 0-1 across the window. Only moves as far as the picture sticks out past the window.
 export function panOffset(pointer, zoom, width, height) {
   const stageWidth = fitWidth(width, height) * zoom;
   const stageHeight = (stageWidth * 9) / 16;

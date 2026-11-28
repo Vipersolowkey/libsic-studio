@@ -1,13 +1,14 @@
-// The look of the side bar and the CD rack in each room. They are made of paper, wood and brass, in the colours of
-// the room they stand in, so they belong to the picture instead of sitting on it like a program window.
-// A skin is a set of CSS variables, put on the room element (see RoomScreen.jsx) and used by kit.css.
+// Part of: Room page: colours of the side bar and CD tower per room.
+// Used by: Controls.jsx, Desk.jsx, RoomScreen.jsx.
+// Colours of the side bar and CD tower per room (paper, wood, brass), keyed by scene slug. A skin = CSS variables put on the
+// room element (RoomScreen.jsx) and read by kit.css. A new scene without a skin falls back to golden-loft.
 //   paper, paper2   the side bar's paper and the darker paper of buttons on it
 //   ink, soft       main and quiet writing on paper
 //   accent          the colour of what is switched on; on-accent is the writing on it
 //   edge, stitch    the thin edge of the paper and the dashed stitching inside it
 //   w1, w2          the light and the shaded side of the wood; back is the dark back of the CD rack
 //   brass, brass2, brass-ink   the little brass labels and buttons
-// `light` names the two states of the room's light, as that room would say them.
+// `light` = the two labels of the light switch ([on, off]), worded to suit the room.
 export const SKINS = {
   'golden-loft': {
     vars: { '--paper': '#f3e5c8', '--paper2': '#ead6af', '--ink': '#4a2f1c', '--soft': '#7e5f3f', '--accent': '#d9733a', '--on-accent': '#fff6e6', '--edge': '#c9a56c', '--stitch': '#b98a52', '--w1': '#c28a55', '--w2': '#a8733f', '--brass': '#e0b05a', '--brass2': '#b8863a', '--brass-ink': '#3b2610', '--back': '#5e3e22' },
@@ -31,5 +32,5 @@ export const SKINS = {
   },
 };
 
-// A room that has no skin of its own (a new one added later) gets the warm one.
+// Falls back to the Golden Loft skin.
 export const skinOf = (slug) => SKINS[slug] || SKINS['golden-loft'];

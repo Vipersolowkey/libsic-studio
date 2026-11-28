@@ -1,3 +1,5 @@
+/* Part of: Room page: look of the paper side bar.
+   Used by: RoomScreen.jsx. */
 /* The room kit: the side bar as a page of paper pinned over the picture. The colours come from the room's skin (see skins.js),
    which sets CSS variables on .room. Everything here is scoped to .sidebar / .side-open, so the rest of the page is untouched. */
 
@@ -91,18 +93,8 @@
   border-top: 1.5px dashed var(--stitch);
 }
 
-/* the rooms: the one you are in is a big polaroid, the others sit in a two-column grid of small polaroids to pick */
-.room-list .polaroid { position: relative; padding: 6px 6px 5px; border: 0; background: #fffdf6; color: #3a2a1a; text-align: center; box-shadow: 0 3px 8px #0004; cursor: pointer; font: inherit; }
-.room-list .polaroid img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--paper2); }
-.room-list .polaroid span { display: block; padding-top: 3px; font-family: 'Caveat', cursive; font-weight: 700; font-size: 19px; line-height: 1.1; }
-.room-list .tape { position: absolute; left: 50%; top: -9px; width: 56px; height: 16px; margin-left: -28px; background: color-mix(in srgb, var(--accent) 55%, #fff6); opacity: 0.85; transform: rotate(-3deg); }
-.room-list .here { display: block; width: 206px; margin: 0 auto; transform: rotate(-1.2deg); }
-.room-list .others { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
-.room-list .others .polaroid { display: flex; flex-direction: column; min-width: 0; transition: transform 0.15s; }
-.room-list .others .polaroid:nth-child(odd) { transform: rotate(1.6deg); }
-.room-list .others .polaroid:nth-child(even) { transform: rotate(-1.4deg); }
-.room-list .others .polaroid:hover { transform: rotate(0) translateY(-3px); }
-.room-list .others .polaroid span { font-size: 15px; }
+/* Below: the room cards, the mood switches and the chips are drawn by Controls.jsx and SaveBar.jsx. */
+
 
 /* mood: light as a two-way switch, weather as round stamps */
 .daynight { display: flex; padding: 3px; border: 1.5px solid var(--edge); border-radius: 99px; background: var(--paper2); }
@@ -121,11 +113,9 @@
 .room .sidebar .chip:hover, .room .side-note .chip:hover { border-color: var(--accent); }
 .room .sidebar .chip[aria-pressed='true'], .room .side-note .chip[aria-pressed='true'] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; }
 .room .sidebar .chip.primary { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
-.room .sidebar .chip.danger.solid { color: #fff; }
 .room .sidebar .room-name { padding: 0 2px 2px; border: 0; border-bottom: 2px solid var(--stitch); border-radius: 0; background: transparent; color: var(--ink); font-family: 'Caveat', cursive; font-weight: 700; font-size: 24px; }
 .room .sidebar .room-name::placeholder { color: var(--soft); opacity: 0.7; }
-.room .sidebar .link-field input, .room .sidebar .my-rooms-panel { border-color: var(--stitch); background: var(--paper2); color: var(--ink); }
-.room .sidebar .confirm { border-color: #c4553c; background: #c4553c14; }
+.room .sidebar .link-field input { border-color: var(--stitch); background: var(--paper2); color: var(--ink); }
 .room .sidebar .link-button { color: var(--soft); }
 .room .sidebar .muted { color: var(--soft); }
 .room .sidebar a:focus-visible, .room .sidebar button:focus-visible, .room .side-note button:focus-visible, .room .sidebar input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -141,11 +131,6 @@
 @media (max-height: 600px) {
   .room .brand-tag { display: none; }
   .room .side-head { padding-top: 10px; }
-  .room-list .here { width: 150px; }
-  .room-list .others { margin-top: 8px; gap: 6px; }
-  .room-list .polaroid { padding: 4px 4px 3px; }
-  .room-list .polaroid span { font-size: 15px; }
-  .room-list .others .polaroid span { font-size: 13px; }
   .room .side-foot { padding: 8px 16px 10px; gap: 5px; }
   .room .sidebar .room-name { font-size: 20px; }
   .daynight button { padding: 4px; }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getScenes, getScene, getRoom, createRoom, updateRoom, deleteRoom, request, ApiError } from './api.js';
+import { getScenes, getScene, getRoom, createRoom, updateRoom, deleteRoom, createCd, updateCd, deleteCd, request, ApiError } from './api.js';
 
 const reply = (status, body) => Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(body) });
 
@@ -78,6 +78,45 @@ describe('api', () => {
       await deleteRoom('abc', 'secret');
       expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'PUT', headers: expect.objectContaining({ 'x-edit-key': 'secret' }) });
       expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: 'DELETE', headers: { 'x-edit-key': 'secret' } });
+    });
+  });
+
+  describe('saving CDs and the limits of the API', () => {
+    it('createCd posts the CD; updateCd and deleteCd send the edit key', async () => {
+      const fetchMock = vi.fn(() => reply(200, {}));
+      vi.stubGlobal('fetch', fetchMock);
+      await createCd({ title: 'Mix', trackIds: ['a'] });
+      await updateCd('abc', 'secret', { title: 'Renamed' });
+      await deleteCd('abc', 'secret');
+
+      expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/cds');
+      expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST' });
+      expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ title: 'Mix', trackIds: ['a'] });
+      expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: 'PUT', headers: expect.objectContaining({ 'x-edit-key': 'secret' }) });
+      expect(fetchMock.mock.calls[2][1]).toMatchObject({ method: 'DELETE', headers: { 'x-edit-key': 'secret' } });
+    });
+
+    it('turns the field errors of a refused CD into one readable message', async () => {
+      vi.stubGlobal('fetch', vi.fn(() => reply(400, { error: 'Validation failed', details: { title: 'Give the CD a name', links: 'Use a SoundCloud link' } })));
+      const error = await createCd({}).catch((e) => e);
+      expect(error.status).toBe(400);
+      expect(error.message).toBe('Give the CD a name. Use a SoundCloud link');
+    });
+
+    it.each([
+      [429, 'You are saving too fast. Please wait a minute and try again.'],
+      [503, 'The server is full right now. Please try again later.'],
+    ])('keeps the status %s and the message of the API, so the page can show it', async (status, message) => {
+      vi.stubGlobal('fetch', vi.fn(() => reply(status, { error: message })));
+      const error = await createRoom({ sceneSlug: 'x' }).catch((e) => e);
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error.status).toBe(status);
+      expect(error.message).toBe(message);
+    });
+
+    it('falls back to a generic message when the answer is not JSON (for example a proxy error page)', async () => {
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, status: 502, json: () => Promise.reject(new Error('html')) })));
+      await expect(createRoom({})).rejects.toThrow('Request failed (502)');
     });
   });
 });
