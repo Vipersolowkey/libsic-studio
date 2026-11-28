@@ -54,15 +54,15 @@ function authRouter({ User }, { secret, throttle, requireAuth }) {
     const body = credentials(req.body);
     if (!body) return invalid(res, { body: 'Send a username and a password as text' });
     const username = normalizeUsername(body.username).slice(0, 64);
-    if (throttle.blocked(username)) return res.status(429).json({ error: 'Too many failed tries for this username. Please wait a few minutes.' });
+    if (throttle.blocked(username, req.ip)) return res.status(429).json({ error: 'Too many failed tries for this username. Please wait a few minutes.' });
 
     const user = await User.findOne({ username }).select('+passwordHash');
     const ok = await verifyPassword(body.password, user ? user.passwordHash : await dummyHash());
     if (!user || !ok) {
-      throttle.fail(username);
+      throttle.fail(username, req.ip);
       return res.status(401).json({ error: 'Wrong username or password' });
     }
-    throttle.clear(username);
+    throttle.clear(username, req.ip);
     res.json(issue(user));
   });
 

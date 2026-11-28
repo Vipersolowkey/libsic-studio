@@ -137,3 +137,7 @@
 .pf-tool.hot { border-color: #c4553c; background: #c4553c; color: #fff; }
 .pf-tool.hot:hover, .pf-tool.hot:focus-visible { color: #fff; filter: brightness(1.1); }
 .pf-sure p { width: 100%; margin: 0 0 2px; color: var(--soft); font-size: 13px; line-height: 1.4; }
+
+/* The "add the rooms from this browser" question sits in the page here, not floating over the start page. */
+.pf .intro-claim { position: static; transform: none; width: auto; max-width: 560px; margin: 0 0 18px; text-align: left; backdrop-filter: none; }
+.pf .intro-claim div { justify-content: flex-start; }

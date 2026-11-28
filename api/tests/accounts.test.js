@@ -119,6 +119,24 @@ describe('POST /api/auth/login', () => {
     expect((await signIn({ username: 'maya', password: PASSWORD })).status).toBe(200);
   });
 
+  it('does not let a stranger lock the owner out: the 5-try block is for the address that failed', async () => {
+    await signUp();
+    const from = (ip, password) => request(app).post('/api/auth/login').set('X-Forwarded-For', ip).send({ username: 'tony', password });
+    for (let i = 0; i < 5; i += 1) expect((await from('1.1.1.1', `wrong ${i}`)).status).toBe(401);
+    expect((await from('1.1.1.1', PASSWORD)).status).toBe(429); // the guesser is held back
+    expect((await from('2.2.2.2', PASSWORD)).status).toBe(200); // the real owner, from another address, is not
+  });
+
+  it('still stops guessing from many addresses: 30 failures for one username block it for everybody', async () => {
+    const { UsernameThrottle } = require('../src/middleware/authLimits');
+    const throttle = new UsernameThrottle();
+    for (let i = 0; i < 30; i += 1) throttle.fail('tony', `10.0.0.${i}`); // one failure each, so no single address hits 5
+    expect(throttle.blocked('tony', '10.0.0.99')).toBe(true);
+    expect(throttle.blocked('maya', '10.0.0.99')).toBe(false);
+    throttle.clear('tony', '10.0.0.99'); // a good sign-in resets the count
+    expect(throttle.blocked('tony', '10.0.0.99')).toBe(false);
+  });
+
   it('counts only failed sign-ins against a connection', async () => {
     setup({ loginFailuresPerQuarter: 3, usernameFailures: 100 });
     await signUp();
