@@ -4,17 +4,21 @@
 const { verifyToken } = require('../utils/token');
 
 // Three guards, built once with the secret and the User model:
-//   optionalAuth  runs on every /api address. A good token puts { id } in req.user; no token or a bad one just means "guest".
+//   optionalAuth  runs on every /api address. A good token for an account that still exists puts { id } in req.user; no token, a bad one,
+//                 or one of a deleted account just means "guest".
 //   requireAuth   401 unless req.user is set.
 //   requireAdmin  401 without a login, 403 unless the account's role is admin. The role is read from the database on every call,
 //                 never from the token, so removing someone's admin role takes effect at once.
 // The token travels only in the Authorization header ("Bearer <token>"), never in a link, so it cannot end up in a log or a history.
 function createAuth({ User, secret }) {
-  function optionalAuth(req, res, next) {
+  async function optionalAuth(req, res, next) {
     const header = req.get('authorization') || '';
     const match = /^Bearer (\S+)$/.exec(header);
     const id = match ? verifyToken(match[1], secret) : null;
-    req.user = id ? { id } : null;
+    // A good token is not enough: the account must still exist. Without this check, an account an admin deleted could keep
+    // making rooms (owned by an account that is gone) until its token expires.
+    const exists = id ? await User.findById(id).select('_id').lean() : null;
+    req.user = exists ? { id } : null;
     next();
   }
 

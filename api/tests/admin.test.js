@@ -129,7 +129,7 @@ describe('admin addresses', () => {
   });
 
   it('refuse a token for an account that no longer exists', async () => {
-    expect((await request(app).get('/api/admin/stats').set(bearer('c'.repeat(24)))).status).toBe(403);
+    expect((await request(app).get('/api/admin/stats').set(bearer('c'.repeat(24)))).status).toBe(401);
   });
 
   it('show the totals', async () => {
