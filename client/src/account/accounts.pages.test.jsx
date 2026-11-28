@@ -186,6 +186,23 @@ describe('the start page when signed in', () => {
     });
   });
 
+  it('offers the same question on the studio page (/me) and loads the rooms again after adding them', async () => {
+    saveMyRoom({ code: 'guest111', editKey: 'key-room', name: 'Old room', sceneSlug: 'night-study' });
+    let added = false;
+    pretendApi({
+      'GET /api/auth/me': () => [200, user],
+      'GET /api/me/rooms': () => [200, added ? [{ code: 'guest111', name: 'Old room', sceneSlug: 'night-study', updatedAt: null }] : []],
+      'GET /api/me/cds': () => [200, []],
+      'POST /api/me/claim': () => { added = true; return [200, { claimed: [{ type: 'room', code: 'guest111' }], skipped: [] }]; },
+    });
+    const u = userEvent.setup();
+    renderAt('/me');
+    expect(await screen.findByText(/We found 1 room and 0 CDs saved in this browser/)).toBeInTheDocument();
+    await u.click(screen.getByRole('button', { name: 'Add them' }));
+    expect(await screen.findByText(/Added 1 room and 0 CDs to your account/)).toBeInTheDocument();
+    await waitFor(() => expect(calls.filter((c) => c.key === 'GET /api/me/rooms').length).toBeGreaterThan(1)); // the list was fetched again
+  });
+
   it('remembers "Not now" and does not ask again', async () => {
     saveMyRoom({ code: 'guest111', editKey: 'key-room', name: 'Old room', sceneSlug: 'night-study' });
     pretendApi({ 'GET /api/auth/me': () => [200, user], 'GET /api/me/rooms': () => [200, []], 'GET /api/me/cds': () => [200, []] });

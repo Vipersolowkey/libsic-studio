@@ -2,7 +2,7 @@
 // open your CDs, and (signed in) change your name and disc colour. It works without an account too: a guest sees the rooms and
 // CDs saved in this browser. It wears the same look as the admin page (a menu down the left, one page for each item), see
 // account/admin.css and profile.css.
-// Uses: AuthContext.jsx, AdminIcon.jsx, api.js, myRooms.js, music/myCds.js, introRooms.js, account.css, admin.css, profile.css.
+// Uses: AuthContext.jsx, ClaimPrompt.jsx, AdminIcon.jsx, api.js, myRooms.js, music/myCds.js, introRooms.js, account.css, admin.css, profile.css.
 // Used by: App.jsx.
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -13,6 +13,7 @@ import { deleteRoom, getAccountCds, getAccountRooms } from '../api.js';
 import { INTRO_ROOMS } from '../introRooms.js';
 import { getMyCds, forgetCd } from '../music/myCds.js';
 import { clearLastRoomCode, getMyRooms, removeMyRoom } from '../myRooms.js';
+import ClaimPrompt from '../account/ClaimPrompt.jsx';
 import StudioShell from '../account/StudioShell.jsx';
 
 const sceneName = (slug) => INTRO_ROOMS.find((r) => r.slug === slug)?.name ?? slug;
@@ -44,6 +45,7 @@ export default function ProfilePage() {
   const [note, setNote] = useState(null); // { kind: 'ok' | 'error', text }
   const [rooms, setRooms] = useState(null); // null = loading, 'error' = could not load
   const [cds, setCds] = useState(null);
+  const [reloaded, setReloaded] = useState(0); // goes up after rooms from this browser were added to the account, so the lists load again
 
   // The account's rooms and CDs (any device). A guest has none, only what this browser saved.
   const who = user?.username;
@@ -59,7 +61,7 @@ export default function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [who]);
+  }, [who, reloaded]);
 
   // Rooms and CDs of the account, then the ones only this browser knows (they stay until they are added to an account or forgotten).
   const roomList = rooms === 'error' ? 'error' : rooms === null ? null : [
@@ -134,6 +136,9 @@ export default function ProfilePage() {
       <header className="adm-topbar">
         <h1 className="adm-h1">{shownName}</h1>
       </header>
+
+      {/* Signed in with rooms or CDs saved in this browser as a guest: offers to add them to the account (asks first). */}
+      {(here === 'rooms' || here === 'cds') && <ClaimPrompt onClaimed={() => setReloaded((n) => n + 1)} />}
 
       {here === 'rooms' && (
         <section className="adm-sec" aria-labelledby="rooms-h">

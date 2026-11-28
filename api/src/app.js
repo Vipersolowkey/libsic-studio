@@ -40,7 +40,7 @@ const apiSpec = YAML.parse(fs.readFileSync(path.join(__dirname, '..', 'openapi.y
 //   jwtSecret             the secret that signs login tokens (JWT_SECRET, at least 32 characters; required on the live server)
 //   registersPerQuarter   new accounts per visitor in 15 minutes   (REGISTERS_PER_15_MIN, 30)
 //   loginFailuresPerQuarter  failed sign-ins per visitor in 15 minutes (LOGIN_FAILURES_PER_15_MIN, 10)
-//   usernameFailures      failed sign-ins for one username in 15 minutes (5)
+//   usernameFailures      failed sign-ins for one username from one address in 15 minutes (5); from all addresses together 6 times that
 // The creation limit is roomy on purpose: many people at one event share one internet address.
 const number = (value, fallback) => Number(value) || fallback;
 function createApp(models = {}, options = {}) {
