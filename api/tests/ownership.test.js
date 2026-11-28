@@ -101,6 +101,15 @@ describe('rooms and the account that owns them', () => {
     const res = await request(app).put(`/api/rooms/${room.code}`).set({ Authorization: 'Bearer nonsense' }).send({ name: 'x' });
     expect(res.status).toBe(401);
   });
+
+  it('are not made for an account that was deleted: its old token counts as a guest', async () => {
+    const headers = await person('gone');
+    users.store.delete('gone'); // what an admin deleting the account does
+    const { room } = await makeRoom(headers); // saved as a guest room, never owned by the missing account
+    expect(room.mine).toBe(false);
+    expect(rooms.store.get(room.code).owner).toBeNull();
+    expect((await request(app).get('/api/me/rooms').set(headers)).status).toBe(401);
+  });
 });
 
 describe('CDs and the account that owns them', () => {
